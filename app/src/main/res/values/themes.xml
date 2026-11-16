@@ -1,0 +1,15 @@
+<resources>
+    <style name="Base.Theme.FitPlan" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#B8F261</item>
+        <item name="colorOnPrimary">#10160C</item>
+        <item name="colorSecondary">#8EB6FF</item>
+        <item name="android:windowBackground">#0C0E11</item>
+        <item name="android:colorAccent">#B8F261</item>
+        <item name="android:textColorPrimary">#F1F5F2</item>
+        <item name="android:textColorSecondary">#A2ADA8</item>
+        <item name="android:statusBarColor">#0C0E11</item>
+        <item name="android:navigationBarColor">#0C0E11</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    <style name="Theme.FitPlan" parent="Base.Theme.FitPlan"/>
+</resources>

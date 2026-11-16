@@ -1,0 +1,21 @@
+# Machine-local files and build outputs
+.gradle/
+.idea/
+**/build/
+local.properties
+*.iml
+.DS_Store
+.externalNativeBuild/
+.cxx/
+captures/
+*.jks
+*.keystore
+key.properties
+.env
+.env.*
+# Personal/device data and temporary artifacts
+*.db
+*.db-*
+*.log
+before-*/
+tmp/
