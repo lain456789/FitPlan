@@ -20,7 +20,7 @@ Java 原生 Android 离线训练记录应用。支持每日状态填写、规则
 
 ## 在 Android Studio 运行
 
-1. 克隆仓库并用 Android Studio 打开项目根目录。
+1. 克隆仓库并用 Android Studio 打开项目根目录。Windows 上请使用不含中文等非 ASCII 字符的目录，例如 `C:\AndroidProjects\FitPlan`，避免 Android Gradle Plugin 的路径检查失败。
 2. 安装 Android SDK Platform 37，并使用兼容 Android Gradle Plugin 9.5.1、Gradle 9.6.0 的 JDK。当前工程在 Android Studio 2026.2.2 Patch 1 自带 JBR 25 上构建验证。
 3. 等待 Gradle Sync 完成。SDK 路径由本机 Android Studio 配置，`local.properties` 不提交。
 4. 选择 API 24 以上的安卓设备或模拟器，运行 `app`。
