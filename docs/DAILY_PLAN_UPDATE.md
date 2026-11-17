@@ -31,6 +31,6 @@
 
 ## 运行
 
-双击项目根目录的 `启动FitPlan.command`。安装包为 `downloads/FitPlan-v0.2.2-debug.apk`，校验值在 `downloads/SHA256SUMS`。`构建FitPlan.command` 已更新为构建并复制 v0.2.2 安装包。
+安装包为 `downloads/FitPlan-v0.2.2-debug.apk`，校验值在 `downloads/SHA256SUMS`。开发运行与构建步骤见 [README](../README.md)。
 
 原工程与升级前的模拟器数据库已备份在本机工作目录的 `output/backups`。

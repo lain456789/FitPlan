@@ -39,6 +39,6 @@
 
 ## 运行与文件
 
-双击根目录 `启动FitPlan.command` 打开当前版本；`构建FitPlan.command` 已更新为构建并复制 v0.3.0 安装包。APK 为 `downloads/FitPlan-v0.3.0-debug.apk`，校验值见 SHA256SUMS。
+APK 为 `downloads/FitPlan-v0.3.0-debug.apk`，校验值见 `downloads/SHA256SUMS`。开发运行与构建步骤见 [README](../README.md)。
 
 原工程和更新前的数据已备份在本机工作目录 `output/backups`。验证用模拟器已关闭，日常 FitPlanP0 模拟器保留运行。
