@@ -177,7 +177,7 @@
     <string name="definitions">How statistics work</string>
     <string name="definitions_text">Performed sets and actual reps count, including sets below target. Records with no performed sets are excluded from the workout count. A set meets its target when actual reps reach the target. Volume = weight × actual reps. Bodyweight sets and reps still count. Duration includes rest and time outside the app. Weeks run Monday–Sunday in your local time zone, based on workout finish time. Editing or deleting history recalculates reports.</string>
     <string name="privacy">Your data stays on this device. No account or cloud sync.</string>
-    <string name="version">Version 0.4.1 · Native Android / Java</string>
+    <string name="version">v0.4.0</string>
     <string name="back_label">Back</string>
     <string name="ex0">Barbell bench press</string>
     <string name="ex1">Incline dumbbell press</string>

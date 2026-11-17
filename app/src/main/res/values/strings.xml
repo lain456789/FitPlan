@@ -177,7 +177,7 @@
     <string name="definitions">统计口径</string>
     <string name="definitions_text">只统计已训练组及其实际次数，未达目标的已训练组也会计入；零已训练组的记录不计训练次数。达标组是实际次数达到目标的已训练组。训练量 = 重量 × 实际次数，自重动作仍计入组数和次数。训练时长包含休息及离开应用时间。自然周为本地时间周一至周日，按训练结束时间归属；历史修改或删除后重新计算。</string>
     <string name="privacy">数据保存在本机，不使用账号或云同步。</string>
-    <string name="version">版本 0.4.1 · Java 原生 Android</string>
+    <string name="version">v0.4.0</string>
     <string name="back_label">返回</string>
     <string name="ex0">杠铃卧推</string>
     <string name="ex1">哑铃上斜卧推</string>

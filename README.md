@@ -2,12 +2,6 @@
 
 Java 原生 Android 离线训练记录应用。支持每日状态填写、规则推荐、训练计划、逐组记录、休息计时、历史修正，以及中英双语周报和趋势图。
 
-## v0.4.1 代码风格与术语整理
-
-业务与测试 Java 统一使用 4 空格缩进、明确导入和自动排版；关键变量及规则常量使用清晰名称。中英界面区分“已训练组数”和“达标组数”，训练规则和已有数据字段保持原值。
-
-新增 `.editorconfig`、`formatJava` 和 `checkJavaFormat`，根项目 `check` 包含格式检查。协作规范见 [开发说明](CONTRIBUTING.md)，本次范围与验证见 [风格整理记录](docs/STYLE_CLEANUP.md)。
-
 ## v0.4.0 训练反馈与下次建议
 
 逐组记录“轻松 / 合适 / 吃力”和未达目标原因；提前结束时可为尚未记录的组统一填写原因，已记录内容保留。历史与周报新增表现分析，对同一动作、相同实际重量、组数和目标次数，比较总次数、达标组数、已训练组数与难度。
@@ -49,11 +43,11 @@ Java 原生 Android 离线训练记录应用。支持每日状态填写、规则
 
 ## 安装体验
 
-[下载 v0.4.1 调试 APK](downloads/FitPlan-v0.4.1-debug.apk)。[v0.4.0](downloads/FitPlan-v0.4.0-debug.apk)、[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
+[下载 v0.4.0 调试 APK](downloads/FitPlan-v0.4.0-debug.apk)。[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
 
 覆盖安装相同签名版本可保留数据。真机和模拟器不共享历史；安装包本身不包含演示训练记录。
 
-本机 v0.2.1 至 v0.4.1 使用相同的 Mac 调试密钥，可覆盖更新；与原 v0.2 APK 的签名不同。已使用独立的 `FitPlanP0` 模拟器运行新版，并复制、核对了原模拟器的数据。两个模拟器后续新增数据分别保存。
+本机 v0.2.1 至 v0.4.0 使用相同的 Mac 调试密钥，可覆盖更新；与原 v0.2 APK 的签名不同。已使用独立的 `FitPlanP0` 模拟器运行新版，并复制、核对了原模拟器的数据。两个模拟器后续新增数据分别保存。
 
 ## 在 Android Studio 运行
 
