@@ -92,11 +92,11 @@
     <string name="stop_rest">End rest</string>
     <string name="finish">Finish and save workout</string>
     <string name="one_set">Record a performed set or a reason for not training first</string>
-    <string name="finish_confirm">Finish workout? Uncompleted sets will not count toward statistics.</string>
+    <string name="finish_confirm">Finish workout? Performed sets and actual reps count, including sets below target.</string>
     <string name="discard">Discard workout</string>
     <string name="discard_confirm">Discard and delete this active workout?</string>
     <string name="done">Performed</string>
-    <string name="not_done">Not completed</string>
+    <string name="not_done">Not performed</string>
     <string name="log_line">Set %1$d · %2$s · %3$s kg × %4$d reps</string>
     <string name="edit_set">Edit set %1$d</string>
     <string name="record_set">Record set %1$d</string>
@@ -108,7 +108,7 @@
     <string name="max_sets">Maximum 20 sets per exercise</string>
     <string name="history_title">Workout history</string>
     <string name="empty_history">Your completed workouts will appear here.</string>
-    <string name="history_line">%1$s · %2$d sets · %3$s kg·reps</string>
+    <string name="history_line">%1$s · %2$d performed sets · %3$s kg·reps</string>
     <string name="correct_record">View / correct record</string>
     <string name="delete_record">Delete record</string>
     <string name="delete_record_confirm">Delete this workout? Statistics and future recommendations will be recalculated.</string>
@@ -149,7 +149,7 @@
     <string name="back_current">This week</string>
     <string name="sessions">Workouts</string>
     <string name="days">Training days</string>
-    <string name="completed_sets">Completed sets</string>
+    <string name="completed_sets">Performed sets</string>
     <string name="total_volume">Volume</string>
     <string name="duration">Duration</string>
     <string name="minutes_unit">min</string>
@@ -157,9 +157,9 @@
     <string name="vs_previous">Change vs previous: %1$s</string>
     <string name="no_comparison">Previous period was 0; change %1$s</string>
     <string name="empty_week">No completed workouts this week. Save a workout with a completed set to see your progress.</string>
-    <string name="summary">Workouts: %1$d · Training days: %2$d · Completed sets: %3$d</string>
+    <string name="summary">Workouts: %1$d · Training days: %2$d · Performed sets: %3$d</string>
     <string name="part_summary">%1$s · Completed sets: %2$d</string>
-    <string name="daily_chart">Daily completed sets</string>
+    <string name="daily_chart">Daily performed sets</string>
     <string name="part_chart">Sets by body part</string>
     <string name="eight_weeks">Eight-week trend</string>
     <string name="metric">Metric</string>
@@ -175,9 +175,9 @@
     <string name="follow_system">Follow system</string>
     <string name="apply_language">Apply language</string>
     <string name="definitions">How statistics work</string>
-    <string name="definitions_text">Only completed sets count; workouts with no completed sets are excluded. Volume = weight × reps. Bodyweight sets and reps still count. Duration includes rest and time outside the app. Weeks run Monday–Sunday in your local time zone, based on workout finish time. Editing or deleting history recalculates reports.</string>
+    <string name="definitions_text">Performed sets and actual reps count, including sets below target. Records with no performed sets are excluded from the workout count. A set meets its target when actual reps reach the target. Volume = weight × actual reps. Bodyweight sets and reps still count. Duration includes rest and time outside the app. Weeks run Monday–Sunday in your local time zone, based on workout finish time. Editing or deleting history recalculates reports.</string>
     <string name="privacy">Your data stays on this device. No account or cloud sync.</string>
-    <string name="version">Version 0.4.0 · Native Android / Java</string>
+    <string name="version">Version 0.4.1 · Native Android / Java</string>
     <string name="back_label">Back</string>
     <string name="ex0">Barbell bench press</string>
     <string name="ex1">Incline dumbbell press</string>
@@ -201,17 +201,17 @@
     <string name="demo_upper">[Demo] Upper body</string>
     <string name="demo_recovery">[Demo] Light recovery</string>
     <string name="demo_note">Demo data for previewing reports; not an actual workout record.</string>
-    <string name="remaining_summary">Completed sets kept: %1$d · Remaining sets: %2$d · Estimate: %3$d min</string>
+    <string name="remaining_summary">Performed sets kept: %1$d · Pending sets: %2$d · Estimate: %3$d min</string>
     <string name="remaining_estimate_note">Estimate: about 3 minutes per remaining set, plus the current rest. Actual time can vary.</string>
     <string name="shorten_remaining">Shorten remaining workout</string>
     <string name="remaining_minutes">Minutes remaining from now (0–180)</string>
     <string name="preview_adjustment">Preview adjustment</string>
     <string name="adjustment_preview">Adjustment preview</string>
     <string name="apply_adjustment">Apply adjustment</string>
-    <string name="completed_protected">The %1$d completed set records stay unchanged</string>
+    <string name="completed_protected">The %1$d performed set records stay unchanged</string>
     <string name="time_preview_summary">Keep %1$d pending sets and cancel %2$d sets. Remaining estimate: %3$d min.</string>
     <string name="time_change_line">%1$s: pending sets %2$d → %3$d</string>
-    <string name="adjust_nothing_left">No pending sets remain. Finish to save completed records, or discard if no sets were completed.</string>
+    <string name="adjust_nothing_left">No pending sets remain. Finish to save recorded outcomes, or discard if nothing was recorded.</string>
     <string name="adjust_already_fits">The remaining workout already fits this budget.</string>
     <string name="adjust_invalid">Invalid workout adjustment. Go back and try again.</string>
     <string name="adjust_time_invalid">Enter a whole number of minutes from 0 to 180.</string>
@@ -232,7 +232,7 @@
     <string name="replace_no_equipment">This movement needs no equipment, so equipment replacement does not apply.</string>
     <string name="replace_equipment_required">Select the equipment that is unavailable.</string>
     <string name="replace_values_invalid">Enter a valid weight and rep count for the replacement.</string>
-    <string name="replacement_retired">Pending sets were replaced. Completed records for the original movement are kept.</string>
+    <string name="replacement_retired">Pending sets were replaced. Performed records for the original movement are kept.</string>
     <string name="replacement_confirmed">Weight and reps were confirmed for this replacement.</string>
     <string name="set_time_cancelled">Set %1$d · Cancelled by time adjustment</string>
     <string name="set_replaced">Set %1$d · Continued by the replacement movement</string>

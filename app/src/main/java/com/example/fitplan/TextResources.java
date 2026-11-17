@@ -1,340 +1,680 @@
 package com.example.fitplan;
+
 final class TextResources {
- static int id(String key){switch(key){
-case "app_name": return R.string.app_name;
-case "home": return R.string.home;
-case "training": return R.string.training;
-case "records": return R.string.records;
-case "profile": return R.string.profile;
-case "plans": return R.string.plans;
-case "library": return R.string.library;
-case "history": return R.string.history;
-case "weekly": return R.string.weekly;
-case "today_title": return R.string.today_title;
-case "local_daily": return R.string.local_daily;
-case "parts_question": return R.string.parts_question;
-case "chest": return R.string.chest;
-case "shoulders": return R.string.shoulders;
-case "back": return R.string.back;
-case "legs": return R.string.legs;
-case "arms": return R.string.arms;
-case "core": return R.string.core;
-case "unknown": return R.string.unknown;
-case "minutes_label": return R.string.minutes_label;
-case "volume_label": return R.string.volume_label;
-case "light": return R.string.light;
-case "normal": return R.string.normal;
-case "high": return R.string.high;
-case "sleep_label": return R.string.sleep_label;
-case "good": return R.string.good;
-case "fair": return R.string.fair;
-case "poor": return R.string.poor;
-case "food_label": return R.string.food_label;
-case "adequate": return R.string.adequate;
-case "insufficient": return R.string.insufficient;
-case "soreness_label": return R.string.soreness_label;
-case "none_sore": return R.string.none_sore;
-case "mild_sore": return R.string.mild_sore;
-case "severe_sore": return R.string.severe_sore;
-case "notes_label": return R.string.notes_label;
-case "rules": return R.string.rules;
-case "generate": return R.string.generate;
-case "choose_part": return R.string.choose_part;
-case "rest_only": return R.string.rest_only;
-case "daily_save_error": return R.string.daily_save_error;
-case "continue_workout": return R.string.continue_workout;
-case "plan_note": return R.string.plan_note;
-case "daily_plan": return R.string.daily_plan;
-case "library_intro": return R.string.library_intro;
-case "search": return R.string.search;
-case "part_filter": return R.string.part_filter;
-case "all": return R.string.all;
-case "add_custom": return R.string.add_custom;
-case "exercise_name": return R.string.exercise_name;
-case "part": return R.string.part;
-case "custom": return R.string.custom;
-case "name_required": return R.string.name_required;
-case "no_matches": return R.string.no_matches;
-case "plans_title": return R.string.plans_title;
-case "plans_intro": return R.string.plans_intro;
-case "new_plan": return R.string.new_plan;
-case "plan_name": return R.string.plan_name;
-case "my_plan": return R.string.my_plan;
-case "new_plan_title": return R.string.new_plan_title;
-case "enter_name": return R.string.enter_name;
-case "empty_plans": return R.string.empty_plans;
-case "exercise_count": return R.string.exercise_count;
-case "view_edit": return R.string.view_edit;
-case "start_workout": return R.string.start_workout;
-case "delete_plan": return R.string.delete_plan;
-case "delete_plan_confirm": return R.string.delete_plan_confirm;
-case "back_plans": return R.string.back_plans;
-case "rename": return R.string.rename;
-case "name": return R.string.name;
-case "rename_plan": return R.string.rename_plan;
-case "add_exercise": return R.string.add_exercise;
-case "choose_exercise": return R.string.choose_exercise;
-case "prescription": return R.string.prescription;
-case "adjust": return R.string.adjust;
-case "remove_exercise": return R.string.remove_exercise;
-case "start_plan": return R.string.start_plan;
-case "weight_label": return R.string.weight_label;
-case "sets_label": return R.string.sets_label;
-case "reps_label": return R.string.reps_label;
-case "active_exists": return R.string.active_exists;
-case "add_first": return R.string.add_first;
-case "workout_title": return R.string.workout_title;
-case "no_active": return R.string.no_active;
-case "choose_plan": return R.string.choose_plan;
-case "started": return R.string.started;
-case "logging_help": return R.string.logging_help;
-case "rest_timer": return R.string.rest_timer;
-case "rest60": return R.string.rest60;
-case "rest90": return R.string.rest90;
-case "stop_rest": return R.string.stop_rest;
-case "finish": return R.string.finish;
-case "one_set": return R.string.one_set;
-case "finish_confirm": return R.string.finish_confirm;
-case "discard": return R.string.discard;
-case "discard_confirm": return R.string.discard_confirm;
-case "done": return R.string.done;
-case "not_done": return R.string.not_done;
-case "log_line": return R.string.log_line;
-case "edit_set": return R.string.edit_set;
-case "record_set": return R.string.record_set;
-case "actual_weight": return R.string.actual_weight;
-case "actual_reps": return R.string.actual_reps;
-case "set_done": return R.string.set_done;
-case "set_title": return R.string.set_title;
-case "add_set": return R.string.add_set;
-case "max_sets": return R.string.max_sets;
-case "history_title": return R.string.history_title;
-case "empty_history": return R.string.empty_history;
-case "history_line": return R.string.history_line;
-case "correct_record": return R.string.correct_record;
-case "delete_record": return R.string.delete_record;
-case "delete_record_confirm": return R.string.delete_record_confirm;
-case "back_history": return R.string.back_history;
-case "session_time": return R.string.session_time;
-case "snapshot": return R.string.snapshot;
-case "cancel": return R.string.cancel;
-case "save": return R.string.save;
-case "confirm": return R.string.confirm;
-case "range_error": return R.string.range_error;
-case "integer_error": return R.string.integer_error;
-case "rest_left": return R.string.rest_left;
-case "rest_done": return R.string.rest_done;
-case "reason_first": return R.string.reason_first;
-case "reason_up": return R.string.reason_up;
-case "reason_down": return R.string.reason_down;
-case "reason_same": return R.string.reason_same;
-case "reason_recovery": return R.string.reason_recovery;
-case "reason_time": return R.string.reason_time;
-case "reason_comparable": return R.string.reason_comparable;
-case "reason_reference": return R.string.reason_reference;
-case "reason_user": return R.string.reason_user;
-case "reason_original": return R.string.reason_original;
-case "reason_before_edit": return R.string.reason_before_edit;
-case "plan_budget": return R.string.plan_budget;
-case "plan_baseline": return R.string.plan_baseline;
-case "plan_time_limit": return R.string.plan_time_limit;
-case "plan_missing_parts": return R.string.plan_missing_parts;
-case "plan_over_budget": return R.string.plan_over_budget;
-case "confirm_weight_hint": return R.string.confirm_weight_hint;
-case "confirm_weight_before_start": return R.string.confirm_weight_before_start;
-case "weekly_title": return R.string.weekly_title;
-case "this_week": return R.string.this_week;
-case "to_date": return R.string.to_date;
-case "full_week": return R.string.full_week;
-case "previous_week": return R.string.previous_week;
-case "next_week": return R.string.next_week;
-case "back_current": return R.string.back_current;
-case "sessions": return R.string.sessions;
-case "days": return R.string.days;
-case "completed_sets": return R.string.completed_sets;
-case "total_volume": return R.string.total_volume;
-case "duration": return R.string.duration;
-case "minutes_unit": return R.string.minutes_unit;
-case "volume_unit": return R.string.volume_unit;
-case "vs_previous": return R.string.vs_previous;
-case "no_comparison": return R.string.no_comparison;
-case "empty_week": return R.string.empty_week;
-case "summary": return R.string.summary;
-case "part_summary": return R.string.part_summary;
-case "daily_chart": return R.string.daily_chart;
-case "part_chart": return R.string.part_chart;
-case "eight_weeks": return R.string.eight_weeks;
-case "metric": return R.string.metric;
-case "exercise_trend": return R.string.exercise_trend;
-case "exercise_hint": return R.string.exercise_hint;
-case "no_exercise": return R.string.no_exercise;
-case "chart_point": return R.string.chart_point;
-case "chart_help": return R.string.chart_help;
-case "loading": return R.string.loading;
-case "read_error": return R.string.read_error;
-case "language": return R.string.language;
-case "language_help": return R.string.language_help;
-case "follow_system": return R.string.follow_system;
-case "apply_language": return R.string.apply_language;
-case "definitions": return R.string.definitions;
-case "definitions_text": return R.string.definitions_text;
-case "privacy": return R.string.privacy;
-case "version": return R.string.version;
-case "back_label": return R.string.back_label;
-case "ex0": return R.string.ex0;
-case "ex1": return R.string.ex1;
-case "ex2": return R.string.ex2;
-case "ex3": return R.string.ex3;
-case "ex4": return R.string.ex4;
-case "ex5": return R.string.ex5;
-case "ex6": return R.string.ex6;
-case "ex7": return R.string.ex7;
-case "ex8": return R.string.ex8;
-case "ex9": return R.string.ex9;
-case "ex10": return R.string.ex10;
-case "ex11": return R.string.ex11;
-case "ex12": return R.string.ex12;
-case "ex13": return R.string.ex13;
-case "ex14": return R.string.ex14;
-case "ex15": return R.string.ex15;
-case "demo_chest": return R.string.demo_chest;
-case "demo_pull": return R.string.demo_pull;
-case "demo_legs": return R.string.demo_legs;
-case "demo_upper": return R.string.demo_upper;
-case "demo_recovery": return R.string.demo_recovery;
-case "demo_note": return R.string.demo_note;
-case "remaining_summary": return R.string.remaining_summary;
-case "remaining_estimate_note": return R.string.remaining_estimate_note;
-case "shorten_remaining": return R.string.shorten_remaining;
-case "remaining_minutes": return R.string.remaining_minutes;
-case "preview_adjustment": return R.string.preview_adjustment;
-case "adjustment_preview": return R.string.adjustment_preview;
-case "apply_adjustment": return R.string.apply_adjustment;
-case "completed_protected": return R.string.completed_protected;
-case "time_preview_summary": return R.string.time_preview_summary;
-case "time_change_line": return R.string.time_change_line;
-case "adjust_nothing_left": return R.string.adjust_nothing_left;
-case "adjust_already_fits": return R.string.adjust_already_fits;
-case "adjust_invalid": return R.string.adjust_invalid;
-case "adjust_time_invalid": return R.string.adjust_time_invalid;
-case "adjust_no_pending": return R.string.adjust_no_pending;
-case "adjust_stale": return R.string.adjust_stale;
-case "adjust_save_error": return R.string.adjust_save_error;
-case "replace_remaining": return R.string.replace_remaining;
-case "unavailable_equipment": return R.string.unavailable_equipment;
-case "equipment_select": return R.string.equipment_select;
-case "find_replacements": return R.string.find_replacements;
-case "choose_replacement": return R.string.choose_replacement;
-case "replacement_notice": return R.string.replacement_notice;
-case "replacement_weight_notice": return R.string.replacement_weight_notice;
-case "replacement_settings": return R.string.replacement_settings;
-case "replacement_set_count": return R.string.replacement_set_count;
-case "replacement_change_line": return R.string.replacement_change_line;
-case "replace_no_candidates": return R.string.replace_no_candidates;
-case "replace_no_equipment": return R.string.replace_no_equipment;
-case "replace_equipment_required": return R.string.replace_equipment_required;
-case "replace_values_invalid": return R.string.replace_values_invalid;
-case "replacement_retired": return R.string.replacement_retired;
-case "replacement_confirmed": return R.string.replacement_confirmed;
-case "set_time_cancelled": return R.string.set_time_cancelled;
-case "set_replaced": return R.string.set_replaced;
-case "adjustment_history": return R.string.adjustment_history;
-case "adjustment_history_count": return R.string.adjustment_history_count;
-case "time_audit": return R.string.time_audit;
-case "equipment_audit": return R.string.equipment_audit;
-case "equipment_unspecified": return R.string.equipment_unspecified;
-case "equipment_none": return R.string.equipment_none;
-case "eq_barbell": return R.string.eq_barbell;
-case "eq_dumbbell": return R.string.eq_dumbbell;
-case "eq_bench": return R.string.eq_bench;
-case "eq_cable": return R.string.eq_cable;
-case "eq_pulldown": return R.string.eq_pulldown;
-case "eq_row_machine": return R.string.eq_row_machine;
-case "eq_leg_press": return R.string.eq_leg_press;
-case "eq_leg_curl": return R.string.eq_leg_curl;
-case "eq_band": return R.string.eq_band;
-case "eq_pullup_bar": return R.string.eq_pullup_bar;
-case "ex16": return R.string.ex16;
-case "ex17": return R.string.ex17;
-case "ex18": return R.string.ex18;
-case "ex19": return R.string.ex19;
-case "ex20": return R.string.ex20;
-case "ex21": return R.string.ex21;
-case "ex22": return R.string.ex22;
-case "ex23": return R.string.ex23;
-case "ex24": return R.string.ex24;
-case "ex25": return R.string.ex25;
-case "ex26": return R.string.ex26;
-case "ex27": return R.string.ex27;
-case "ex28": return R.string.ex28;
-case "ex29": return R.string.ex29;
-case "effort_label": return R.string.effort_label;
-case "effort_unknown": return R.string.effort_unknown;
-case "effort_easy": return R.string.effort_easy;
-case "effort_appropriate": return R.string.effort_appropriate;
-case "effort_hard": return R.string.effort_hard;
-case "cause_unknown": return R.string.cause_unknown;
-case "cause_none": return R.string.cause_none;
-case "cause_time": return R.string.cause_time;
-case "cause_equipment": return R.string.cause_equipment;
-case "cause_too_hard": return R.string.cause_too_hard;
-case "cause_discomfort": return R.string.cause_discomfort;
-case "cause_other": return R.string.cause_other;
-case "incomplete_reason_label": return R.string.incomplete_reason_label;
-case "feedback_target": return R.string.feedback_target;
-case "feedback_help": return R.string.feedback_help;
-case "feedback_record_line": return R.string.feedback_record_line;
-case "feedback_invalid": return R.string.feedback_invalid;
-case "feedback_cancelled": return R.string.feedback_cancelled;
-case "feedback_done_reps": return R.string.feedback_done_reps;
-case "feedback_reason_required": return R.string.feedback_reason_required;
-case "feedback_end_required": return R.string.feedback_end_required;
-case "feedback_stale": return R.string.feedback_stale;
-case "feedback_save_error": return R.string.feedback_save_error;
-case "end_reason_label": return R.string.end_reason_label;
-case "progress_title": return R.string.progress_title;
-case "progress_scope": return R.string.progress_scope;
-case "progress_no_data": return R.string.progress_no_data;
-case "progress_status_no_data": return R.string.progress_status_no_data;
-case "progress_status_discomfort": return R.string.progress_status_discomfort;
-case "progress_status_context": return R.string.progress_status_context;
-case "progress_status_incomparable": return R.string.progress_status_incomparable;
-case "progress_status_insufficient": return R.string.progress_status_insufficient;
-case "progress_status_completion_improved": return R.string.progress_status_completion_improved;
-case "progress_status_reps_improved": return R.string.progress_status_reps_improved;
-case "progress_status_easier": return R.string.progress_status_easier;
-case "progress_status_stable": return R.string.progress_status_stable;
-case "progress_status_review": return R.string.progress_status_review;
-case "progress_status_mixed": return R.string.progress_status_mixed;
-case "progress_latest": return R.string.progress_latest;
-case "progress_configuration": return R.string.progress_configuration;
-case "progress_no_load": return R.string.progress_no_load;
-case "progress_actual": return R.string.progress_actual;
-case "progress_effort": return R.string.progress_effort;
-case "progress_compare_date": return R.string.progress_compare_date;
-case "progress_compare_reps": return R.string.progress_compare_reps;
-case "progress_compare_completion": return R.string.progress_compare_completion;
-case "progress_compare_performed": return R.string.progress_compare_performed;
-case "progress_compare_effort": return R.string.progress_compare_effort;
-case "progress_sample_count": return R.string.progress_sample_count;
-case "progress_unknown_feedback": return R.string.progress_unknown_feedback;
-case "progress_next_title": return R.string.progress_next_title;
-case "progress_optional_rule": return R.string.progress_optional_rule;
-case "progress_generate_next": return R.string.progress_generate_next;
-case "progress_plan_title": return R.string.progress_plan_title;
-case "progress_plan_mismatch": return R.string.progress_plan_mismatch;
-case "progress_adopt": return R.string.progress_adopt;
-case "progress_advice_stale": return R.string.progress_advice_stale;
-case "progress_adopt_preview": return R.string.progress_adopt_preview;
-case "advice_record": return R.string.advice_record;
-case "advice_review_discomfort": return R.string.advice_review_discomfort;
-case "advice_equipment": return R.string.advice_equipment;
-case "advice_time": return R.string.advice_time;
-case "advice_adjusted": return R.string.advice_adjusted;
-case "advice_check_records": return R.string.advice_check_records;
-case "advice_optional_rep": return R.string.advice_optional_rep;
-case "advice_review_settings": return R.string.advice_review_settings;
-case "advice_repeat": return R.string.advice_repeat;
-case "advice_complete_target": return R.string.advice_complete_target;
-default: throw new IllegalArgumentException("Unknown text key: "+key);
-}}}
+    static int id(String key) {
+        switch (key) {
+            case "app_name":
+                return R.string.app_name;
+            case "home":
+                return R.string.home;
+            case "training":
+                return R.string.training;
+            case "records":
+                return R.string.records;
+            case "profile":
+                return R.string.profile;
+            case "plans":
+                return R.string.plans;
+            case "library":
+                return R.string.library;
+            case "history":
+                return R.string.history;
+            case "weekly":
+                return R.string.weekly;
+            case "today_title":
+                return R.string.today_title;
+            case "local_daily":
+                return R.string.local_daily;
+            case "parts_question":
+                return R.string.parts_question;
+            case "chest":
+                return R.string.chest;
+            case "shoulders":
+                return R.string.shoulders;
+            case "back":
+                return R.string.back;
+            case "legs":
+                return R.string.legs;
+            case "arms":
+                return R.string.arms;
+            case "core":
+                return R.string.core;
+            case "unknown":
+                return R.string.unknown;
+            case "minutes_label":
+                return R.string.minutes_label;
+            case "volume_label":
+                return R.string.volume_label;
+            case "light":
+                return R.string.light;
+            case "normal":
+                return R.string.normal;
+            case "high":
+                return R.string.high;
+            case "sleep_label":
+                return R.string.sleep_label;
+            case "good":
+                return R.string.good;
+            case "fair":
+                return R.string.fair;
+            case "poor":
+                return R.string.poor;
+            case "food_label":
+                return R.string.food_label;
+            case "adequate":
+                return R.string.adequate;
+            case "insufficient":
+                return R.string.insufficient;
+            case "soreness_label":
+                return R.string.soreness_label;
+            case "none_sore":
+                return R.string.none_sore;
+            case "mild_sore":
+                return R.string.mild_sore;
+            case "severe_sore":
+                return R.string.severe_sore;
+            case "notes_label":
+                return R.string.notes_label;
+            case "rules":
+                return R.string.rules;
+            case "generate":
+                return R.string.generate;
+            case "choose_part":
+                return R.string.choose_part;
+            case "rest_only":
+                return R.string.rest_only;
+            case "daily_save_error":
+                return R.string.daily_save_error;
+            case "continue_workout":
+                return R.string.continue_workout;
+            case "plan_note":
+                return R.string.plan_note;
+            case "daily_plan":
+                return R.string.daily_plan;
+            case "library_intro":
+                return R.string.library_intro;
+            case "search":
+                return R.string.search;
+            case "part_filter":
+                return R.string.part_filter;
+            case "all":
+                return R.string.all;
+            case "add_custom":
+                return R.string.add_custom;
+            case "exercise_name":
+                return R.string.exercise_name;
+            case "part":
+                return R.string.part;
+            case "custom":
+                return R.string.custom;
+            case "name_required":
+                return R.string.name_required;
+            case "no_matches":
+                return R.string.no_matches;
+            case "plans_title":
+                return R.string.plans_title;
+            case "plans_intro":
+                return R.string.plans_intro;
+            case "new_plan":
+                return R.string.new_plan;
+            case "plan_name":
+                return R.string.plan_name;
+            case "my_plan":
+                return R.string.my_plan;
+            case "new_plan_title":
+                return R.string.new_plan_title;
+            case "enter_name":
+                return R.string.enter_name;
+            case "empty_plans":
+                return R.string.empty_plans;
+            case "exercise_count":
+                return R.string.exercise_count;
+            case "view_edit":
+                return R.string.view_edit;
+            case "start_workout":
+                return R.string.start_workout;
+            case "delete_plan":
+                return R.string.delete_plan;
+            case "delete_plan_confirm":
+                return R.string.delete_plan_confirm;
+            case "back_plans":
+                return R.string.back_plans;
+            case "rename":
+                return R.string.rename;
+            case "name":
+                return R.string.name;
+            case "rename_plan":
+                return R.string.rename_plan;
+            case "add_exercise":
+                return R.string.add_exercise;
+            case "choose_exercise":
+                return R.string.choose_exercise;
+            case "prescription":
+                return R.string.prescription;
+            case "adjust":
+                return R.string.adjust;
+            case "remove_exercise":
+                return R.string.remove_exercise;
+            case "start_plan":
+                return R.string.start_plan;
+            case "weight_label":
+                return R.string.weight_label;
+            case "sets_label":
+                return R.string.sets_label;
+            case "reps_label":
+                return R.string.reps_label;
+            case "active_exists":
+                return R.string.active_exists;
+            case "add_first":
+                return R.string.add_first;
+            case "workout_title":
+                return R.string.workout_title;
+            case "no_active":
+                return R.string.no_active;
+            case "choose_plan":
+                return R.string.choose_plan;
+            case "started":
+                return R.string.started;
+            case "logging_help":
+                return R.string.logging_help;
+            case "rest_timer":
+                return R.string.rest_timer;
+            case "rest60":
+                return R.string.rest60;
+            case "rest90":
+                return R.string.rest90;
+            case "stop_rest":
+                return R.string.stop_rest;
+            case "finish":
+                return R.string.finish;
+            case "one_set":
+                return R.string.one_set;
+            case "finish_confirm":
+                return R.string.finish_confirm;
+            case "discard":
+                return R.string.discard;
+            case "discard_confirm":
+                return R.string.discard_confirm;
+            case "done":
+                return R.string.done;
+            case "not_done":
+                return R.string.not_done;
+            case "log_line":
+                return R.string.log_line;
+            case "edit_set":
+                return R.string.edit_set;
+            case "record_set":
+                return R.string.record_set;
+            case "actual_weight":
+                return R.string.actual_weight;
+            case "actual_reps":
+                return R.string.actual_reps;
+            case "set_done":
+                return R.string.set_done;
+            case "set_title":
+                return R.string.set_title;
+            case "add_set":
+                return R.string.add_set;
+            case "max_sets":
+                return R.string.max_sets;
+            case "history_title":
+                return R.string.history_title;
+            case "empty_history":
+                return R.string.empty_history;
+            case "history_line":
+                return R.string.history_line;
+            case "correct_record":
+                return R.string.correct_record;
+            case "delete_record":
+                return R.string.delete_record;
+            case "delete_record_confirm":
+                return R.string.delete_record_confirm;
+            case "back_history":
+                return R.string.back_history;
+            case "session_time":
+                return R.string.session_time;
+            case "snapshot":
+                return R.string.snapshot;
+            case "cancel":
+                return R.string.cancel;
+            case "save":
+                return R.string.save;
+            case "confirm":
+                return R.string.confirm;
+            case "range_error":
+                return R.string.range_error;
+            case "integer_error":
+                return R.string.integer_error;
+            case "rest_left":
+                return R.string.rest_left;
+            case "rest_done":
+                return R.string.rest_done;
+            case "reason_first":
+                return R.string.reason_first;
+            case "reason_up":
+                return R.string.reason_up;
+            case "reason_down":
+                return R.string.reason_down;
+            case "reason_same":
+                return R.string.reason_same;
+            case "reason_recovery":
+                return R.string.reason_recovery;
+            case "reason_time":
+                return R.string.reason_time;
+            case "reason_comparable":
+                return R.string.reason_comparable;
+            case "reason_reference":
+                return R.string.reason_reference;
+            case "reason_user":
+                return R.string.reason_user;
+            case "reason_original":
+                return R.string.reason_original;
+            case "reason_before_edit":
+                return R.string.reason_before_edit;
+            case "plan_budget":
+                return R.string.plan_budget;
+            case "plan_baseline":
+                return R.string.plan_baseline;
+            case "plan_time_limit":
+                return R.string.plan_time_limit;
+            case "plan_missing_parts":
+                return R.string.plan_missing_parts;
+            case "plan_over_budget":
+                return R.string.plan_over_budget;
+            case "confirm_weight_hint":
+                return R.string.confirm_weight_hint;
+            case "confirm_weight_before_start":
+                return R.string.confirm_weight_before_start;
+            case "weekly_title":
+                return R.string.weekly_title;
+            case "this_week":
+                return R.string.this_week;
+            case "to_date":
+                return R.string.to_date;
+            case "full_week":
+                return R.string.full_week;
+            case "previous_week":
+                return R.string.previous_week;
+            case "next_week":
+                return R.string.next_week;
+            case "back_current":
+                return R.string.back_current;
+            case "sessions":
+                return R.string.sessions;
+            case "days":
+                return R.string.days;
+            case "completed_sets":
+                return R.string.completed_sets;
+            case "total_volume":
+                return R.string.total_volume;
+            case "duration":
+                return R.string.duration;
+            case "minutes_unit":
+                return R.string.minutes_unit;
+            case "volume_unit":
+                return R.string.volume_unit;
+            case "vs_previous":
+                return R.string.vs_previous;
+            case "no_comparison":
+                return R.string.no_comparison;
+            case "empty_week":
+                return R.string.empty_week;
+            case "summary":
+                return R.string.summary;
+            case "part_summary":
+                return R.string.part_summary;
+            case "daily_chart":
+                return R.string.daily_chart;
+            case "part_chart":
+                return R.string.part_chart;
+            case "eight_weeks":
+                return R.string.eight_weeks;
+            case "metric":
+                return R.string.metric;
+            case "exercise_trend":
+                return R.string.exercise_trend;
+            case "exercise_hint":
+                return R.string.exercise_hint;
+            case "no_exercise":
+                return R.string.no_exercise;
+            case "chart_point":
+                return R.string.chart_point;
+            case "chart_help":
+                return R.string.chart_help;
+            case "loading":
+                return R.string.loading;
+            case "read_error":
+                return R.string.read_error;
+            case "language":
+                return R.string.language;
+            case "language_help":
+                return R.string.language_help;
+            case "follow_system":
+                return R.string.follow_system;
+            case "apply_language":
+                return R.string.apply_language;
+            case "definitions":
+                return R.string.definitions;
+            case "definitions_text":
+                return R.string.definitions_text;
+            case "privacy":
+                return R.string.privacy;
+            case "version":
+                return R.string.version;
+            case "back_label":
+                return R.string.back_label;
+            case "ex0":
+                return R.string.ex0;
+            case "ex1":
+                return R.string.ex1;
+            case "ex2":
+                return R.string.ex2;
+            case "ex3":
+                return R.string.ex3;
+            case "ex4":
+                return R.string.ex4;
+            case "ex5":
+                return R.string.ex5;
+            case "ex6":
+                return R.string.ex6;
+            case "ex7":
+                return R.string.ex7;
+            case "ex8":
+                return R.string.ex8;
+            case "ex9":
+                return R.string.ex9;
+            case "ex10":
+                return R.string.ex10;
+            case "ex11":
+                return R.string.ex11;
+            case "ex12":
+                return R.string.ex12;
+            case "ex13":
+                return R.string.ex13;
+            case "ex14":
+                return R.string.ex14;
+            case "ex15":
+                return R.string.ex15;
+            case "demo_chest":
+                return R.string.demo_chest;
+            case "demo_pull":
+                return R.string.demo_pull;
+            case "demo_legs":
+                return R.string.demo_legs;
+            case "demo_upper":
+                return R.string.demo_upper;
+            case "demo_recovery":
+                return R.string.demo_recovery;
+            case "demo_note":
+                return R.string.demo_note;
+            case "remaining_summary":
+                return R.string.remaining_summary;
+            case "remaining_estimate_note":
+                return R.string.remaining_estimate_note;
+            case "shorten_remaining":
+                return R.string.shorten_remaining;
+            case "remaining_minutes":
+                return R.string.remaining_minutes;
+            case "preview_adjustment":
+                return R.string.preview_adjustment;
+            case "adjustment_preview":
+                return R.string.adjustment_preview;
+            case "apply_adjustment":
+                return R.string.apply_adjustment;
+            case "completed_protected":
+                return R.string.completed_protected;
+            case "time_preview_summary":
+                return R.string.time_preview_summary;
+            case "time_change_line":
+                return R.string.time_change_line;
+            case "adjust_nothing_left":
+                return R.string.adjust_nothing_left;
+            case "adjust_already_fits":
+                return R.string.adjust_already_fits;
+            case "adjust_invalid":
+                return R.string.adjust_invalid;
+            case "adjust_time_invalid":
+                return R.string.adjust_time_invalid;
+            case "adjust_no_pending":
+                return R.string.adjust_no_pending;
+            case "adjust_stale":
+                return R.string.adjust_stale;
+            case "adjust_save_error":
+                return R.string.adjust_save_error;
+            case "replace_remaining":
+                return R.string.replace_remaining;
+            case "unavailable_equipment":
+                return R.string.unavailable_equipment;
+            case "equipment_select":
+                return R.string.equipment_select;
+            case "find_replacements":
+                return R.string.find_replacements;
+            case "choose_replacement":
+                return R.string.choose_replacement;
+            case "replacement_notice":
+                return R.string.replacement_notice;
+            case "replacement_weight_notice":
+                return R.string.replacement_weight_notice;
+            case "replacement_settings":
+                return R.string.replacement_settings;
+            case "replacement_set_count":
+                return R.string.replacement_set_count;
+            case "replacement_change_line":
+                return R.string.replacement_change_line;
+            case "replace_no_candidates":
+                return R.string.replace_no_candidates;
+            case "replace_no_equipment":
+                return R.string.replace_no_equipment;
+            case "replace_equipment_required":
+                return R.string.replace_equipment_required;
+            case "replace_values_invalid":
+                return R.string.replace_values_invalid;
+            case "replacement_retired":
+                return R.string.replacement_retired;
+            case "replacement_confirmed":
+                return R.string.replacement_confirmed;
+            case "set_time_cancelled":
+                return R.string.set_time_cancelled;
+            case "set_replaced":
+                return R.string.set_replaced;
+            case "adjustment_history":
+                return R.string.adjustment_history;
+            case "adjustment_history_count":
+                return R.string.adjustment_history_count;
+            case "time_audit":
+                return R.string.time_audit;
+            case "equipment_audit":
+                return R.string.equipment_audit;
+            case "equipment_unspecified":
+                return R.string.equipment_unspecified;
+            case "equipment_none":
+                return R.string.equipment_none;
+            case "eq_barbell":
+                return R.string.eq_barbell;
+            case "eq_dumbbell":
+                return R.string.eq_dumbbell;
+            case "eq_bench":
+                return R.string.eq_bench;
+            case "eq_cable":
+                return R.string.eq_cable;
+            case "eq_pulldown":
+                return R.string.eq_pulldown;
+            case "eq_row_machine":
+                return R.string.eq_row_machine;
+            case "eq_leg_press":
+                return R.string.eq_leg_press;
+            case "eq_leg_curl":
+                return R.string.eq_leg_curl;
+            case "eq_band":
+                return R.string.eq_band;
+            case "eq_pullup_bar":
+                return R.string.eq_pullup_bar;
+            case "ex16":
+                return R.string.ex16;
+            case "ex17":
+                return R.string.ex17;
+            case "ex18":
+                return R.string.ex18;
+            case "ex19":
+                return R.string.ex19;
+            case "ex20":
+                return R.string.ex20;
+            case "ex21":
+                return R.string.ex21;
+            case "ex22":
+                return R.string.ex22;
+            case "ex23":
+                return R.string.ex23;
+            case "ex24":
+                return R.string.ex24;
+            case "ex25":
+                return R.string.ex25;
+            case "ex26":
+                return R.string.ex26;
+            case "ex27":
+                return R.string.ex27;
+            case "ex28":
+                return R.string.ex28;
+            case "ex29":
+                return R.string.ex29;
+            case "effort_label":
+                return R.string.effort_label;
+            case "effort_unknown":
+                return R.string.effort_unknown;
+            case "effort_easy":
+                return R.string.effort_easy;
+            case "effort_appropriate":
+                return R.string.effort_appropriate;
+            case "effort_hard":
+                return R.string.effort_hard;
+            case "cause_unknown":
+                return R.string.cause_unknown;
+            case "cause_none":
+                return R.string.cause_none;
+            case "cause_time":
+                return R.string.cause_time;
+            case "cause_equipment":
+                return R.string.cause_equipment;
+            case "cause_too_hard":
+                return R.string.cause_too_hard;
+            case "cause_discomfort":
+                return R.string.cause_discomfort;
+            case "cause_other":
+                return R.string.cause_other;
+            case "incomplete_reason_label":
+                return R.string.incomplete_reason_label;
+            case "feedback_target":
+                return R.string.feedback_target;
+            case "feedback_help":
+                return R.string.feedback_help;
+            case "feedback_record_line":
+                return R.string.feedback_record_line;
+            case "feedback_invalid":
+                return R.string.feedback_invalid;
+            case "feedback_cancelled":
+                return R.string.feedback_cancelled;
+            case "feedback_done_reps":
+                return R.string.feedback_done_reps;
+            case "feedback_reason_required":
+                return R.string.feedback_reason_required;
+            case "feedback_end_required":
+                return R.string.feedback_end_required;
+            case "feedback_stale":
+                return R.string.feedback_stale;
+            case "feedback_save_error":
+                return R.string.feedback_save_error;
+            case "end_reason_label":
+                return R.string.end_reason_label;
+            case "progress_title":
+                return R.string.progress_title;
+            case "progress_scope":
+                return R.string.progress_scope;
+            case "progress_no_data":
+                return R.string.progress_no_data;
+            case "progress_status_no_data":
+                return R.string.progress_status_no_data;
+            case "progress_status_discomfort":
+                return R.string.progress_status_discomfort;
+            case "progress_status_context":
+                return R.string.progress_status_context;
+            case "progress_status_incomparable":
+                return R.string.progress_status_incomparable;
+            case "progress_status_insufficient":
+                return R.string.progress_status_insufficient;
+            case "progress_status_completion_improved":
+                return R.string.progress_status_completion_improved;
+            case "progress_status_reps_improved":
+                return R.string.progress_status_reps_improved;
+            case "progress_status_easier":
+                return R.string.progress_status_easier;
+            case "progress_status_stable":
+                return R.string.progress_status_stable;
+            case "progress_status_review":
+                return R.string.progress_status_review;
+            case "progress_status_mixed":
+                return R.string.progress_status_mixed;
+            case "progress_latest":
+                return R.string.progress_latest;
+            case "progress_configuration":
+                return R.string.progress_configuration;
+            case "progress_no_load":
+                return R.string.progress_no_load;
+            case "progress_actual":
+                return R.string.progress_actual;
+            case "progress_effort":
+                return R.string.progress_effort;
+            case "progress_compare_date":
+                return R.string.progress_compare_date;
+            case "progress_compare_reps":
+                return R.string.progress_compare_reps;
+            case "progress_compare_completion":
+                return R.string.progress_compare_completion;
+            case "progress_compare_performed":
+                return R.string.progress_compare_performed;
+            case "progress_compare_effort":
+                return R.string.progress_compare_effort;
+            case "progress_sample_count":
+                return R.string.progress_sample_count;
+            case "progress_unknown_feedback":
+                return R.string.progress_unknown_feedback;
+            case "progress_next_title":
+                return R.string.progress_next_title;
+            case "progress_optional_rule":
+                return R.string.progress_optional_rule;
+            case "progress_generate_next":
+                return R.string.progress_generate_next;
+            case "progress_plan_title":
+                return R.string.progress_plan_title;
+            case "progress_plan_mismatch":
+                return R.string.progress_plan_mismatch;
+            case "progress_adopt":
+                return R.string.progress_adopt;
+            case "progress_advice_stale":
+                return R.string.progress_advice_stale;
+            case "progress_adopt_preview":
+                return R.string.progress_adopt_preview;
+            case "advice_record":
+                return R.string.advice_record;
+            case "advice_review_discomfort":
+                return R.string.advice_review_discomfort;
+            case "advice_equipment":
+                return R.string.advice_equipment;
+            case "advice_time":
+                return R.string.advice_time;
+            case "advice_adjusted":
+                return R.string.advice_adjusted;
+            case "advice_check_records":
+                return R.string.advice_check_records;
+            case "advice_optional_rep":
+                return R.string.advice_optional_rep;
+            case "advice_review_settings":
+                return R.string.advice_review_settings;
+            case "advice_repeat":
+                return R.string.advice_repeat;
+            case "advice_complete_target":
+                return R.string.advice_complete_target;
+            default:
+                throw new IllegalArgumentException("Unknown text key: " + key);
+        }
+    }
+}
