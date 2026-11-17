@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.UUID;
@@ -34,7 +35,8 @@ final class Store extends SQLiteOpenHelper {
         ContentValues row = new ContentValues();
         row.put("id", value.optString("id")); row.put("kind", kind);
         row.put("body", value.toString()); row.put("updated", System.currentTimeMillis());
-        getWritableDatabase().insertWithOnConflict("documents", null, row, SQLiteDatabase.CONFLICT_REPLACE);
+        if(getWritableDatabase().insertWithOnConflict("documents", null, row, SQLiteDatabase.CONFLICT_REPLACE)==-1)
+            throw new SQLiteException("Could not save local record");
     }
     JSONArray list(String kind) {
         JSONArray result = new JSONArray();
@@ -52,16 +54,93 @@ final class Store extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase(); db.beginTransaction();
         try { save("history", session); db.setTransactionSuccessful(); } finally { db.endTransaction(); }
     }
+    static final class StaleWorkout extends IllegalStateException { }
+    void saveSessionEdit(String kind,JSONObject expected,JSONObject updated,boolean finish){
+        if(!kind.equals("active")&&!kind.equals("history"))throw new IllegalArgumentException("Invalid session kind");
+        if(finish&&!kind.equals("active"))throw new IllegalArgumentException("Only an active session can finish");
+        saveCheckedEdit(kind,expected,updated,finish);
+    }
+    void savePlanEdit(JSONObject expected,JSONObject updated){saveCheckedEdit("plan",expected,updated,false);}
+    private void saveCheckedEdit(String kind,JSONObject expected,JSONObject updated,boolean finish){
+        if(!expected.optString("id").equals(updated.optString("id")))throw new IllegalArgumentException("Session ID changed");
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
+        try{
+            JSONObject current=null;JSONArray all=list(kind);
+            for(int i=0;i<all.length();i++)if(expected.optString("id").equals(all.optJSONObject(i).optString("id")))current=all.optJSONObject(i);
+            if(current==null||!current.toString().equals(expected.toString()))throw new StaleWorkout();
+            save(finish?"history":kind,updated);db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+    }
+    void applyAdjustment(WorkoutAdjustments.Preview preview){
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
+        try{
+            JSONObject current=null;JSONArray all=list("active");String expectedId=preview.after.optString("id");
+            for(int i=0;i<all.length();i++)if(expectedId.equals(all.optJSONObject(i).optString("id")))current=all.optJSONObject(i);
+            if(current==null||!current.toString().equals(preview.baseJson))throw new StaleWorkout();
+            if(preview.changed<1||!WorkoutAdjustments.completedUnchanged(current,preview.after)||
+                    !current.optString("planId").equals(preview.after.optString("planId"))||current.optLong("started")!=preview.after.optLong("started"))
+                throw new WorkoutAdjustments.Invalid("adjust_invalid");
+            JSONObject next=copy(preview.after);JSONArray events=next.optJSONArray("adjustments");
+            put(events.optJSONObject(events.length()-1),"at",System.currentTimeMillis());
+            save("active",next);db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+    }
+    private static boolean dailyPlan(JSONObject plan,String day){
+        if(plan.has("dailyPlanDay"))return day.equals(plan.optString("dailyPlanDay"));
+        // Generated v0.2/v0.2.1 plans have a check-in snapshot, including renamed plans.
+        JSONObject check=plan.optJSONObject("checkin");
+        return check!=null&&day.equals(check.optString("day"));
+    }
+    /** Replace only this day's generated template; active/history snapshots are independent. */
+    void saveDailyPlan(JSONObject check,JSONObject plan){
+        String day=check.optString("day");
+        if(day.trim().isEmpty()||(plan!=null&&plan.optJSONArray("rows")==null))
+            throw new IllegalArgumentException("Invalid daily plan");
+        JSONObject snapshot=plan==null?null:plan.optJSONObject("checkin");
+        if(snapshot!=null&&!day.equals(snapshot.optString("day")))
+            throw new IllegalArgumentException("Plan and check-in dates differ");
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
+        try{
+            JSONArray checks=list("checkin"),plans=list("plan");
+            JSONObject previousCheck=null,previousPlan=null;
+            for(int i=0;i<checks.length();i++)if(day.equals(checks.optJSONObject(i).optString("day"))){previousCheck=checks.optJSONObject(i);break;}
+            for(int i=0;i<plans.length();i++)if(dailyPlan(plans.optJSONObject(i),day)){previousPlan=plans.optJSONObject(i);break;}
+            // Caller-supplied IDs must never overwrite a different day or a manual plan.
+            put(check,"id",previousCheck==null?id():previousCheck.optString("id"));
+            if(previousCheck!=null&&previousCheck.has("created"))put(check,"created",previousCheck.optLong("created"));
+            save("checkin",check);
+            if(plan!=null){
+                put(plan,"id",previousPlan==null?id():previousPlan.optString("id"));
+                put(plan,"dailyPlanDay",day);put(plan,"checkin",copy(check));
+                if(previousPlan!=null){
+                    if(previousPlan.has("created"))put(plan,"created",previousPlan.optLong("created"));
+                    if(previousPlan.has("autoName")&&!previousPlan.optBoolean("autoName")){
+                        put(plan,"name",previousPlan.optString("name"));put(plan,"autoName",false);
+                    }
+                }
+                save("plan",plan);
+            }
+            // Deduplicate only the requested day. No active/history records are touched.
+            for(int i=0;i<checks.length();i++){
+                JSONObject old=checks.optJSONObject(i);
+                if(day.equals(old.optString("day"))&&!check.optString("id").equals(old.optString("id")))delete(old.optString("id"));
+            }
+            for(int i=0;i<plans.length();i++){
+                JSONObject old=plans.optJSONObject(i);
+                if(dailyPlan(old,day)&&(plan==null||!plan.optString("id").equals(old.optString("id"))))delete(old.optString("id"));
+            }
+            db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+    }
     void seed() {
-        if (first("exercise") != null) return;
-        String[][] items = {{"杠铃卧推","胸"},{"哑铃上斜卧推","胸"},{"绳索夹胸","胸"},
-            {"哑铃推举","肩"},{"哑铃侧平举","肩"},{"反向飞鸟","肩"},
-            {"高位下拉","背"},{"坐姿划船","背"},{"单臂哑铃划船","背"},
-            {"深蹲","腿"},{"腿举","腿"},{"腿弯举","腿"},
-            {"哑铃弯举","手臂"},{"绳索下压","手臂"},{"卷腹","核心"},{"死虫式","核心"}};
         SQLiteDatabase db = getWritableDatabase(); db.beginTransaction();
         try {
-            for (int i=0; i<items.length; i++) save("exercise", object("id", "builtin-"+i, "name", items[i][0], "part", items[i][1]));
+            java.util.Set<String> existing=new java.util.HashSet<>();JSONArray all=list("exercise");
+            for(int i=0;i<all.length();i++)existing.add(all.optJSONObject(i).optString("id"));
+            for (int i=0; i<Catalog.EXERCISES.length; i++)if(!existing.contains("builtin-"+i)){
+                String[] item=Catalog.EXERCISES[i];
+                save("exercise",object("id","builtin-"+i,"name",item[0],"part",item[1],"replacementOnly",i>=16));
+            }
             db.setTransactionSuccessful();
         } finally { db.endTransaction(); }
     }

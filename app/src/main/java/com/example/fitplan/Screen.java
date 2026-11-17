@@ -34,8 +34,11 @@ abstract class Screen {
     double number(EditText edit,double min,double max){try{double n=Double.parseDouble(edit.getText().toString());if(Double.isFinite(n)&&n>=min&&n<=max)return n;}catch(NumberFormatException ignored){}throw new IllegalArgumentException(s("range_error",num(min),num(max)));}
     int integer(EditText edit,int min,int max){double n=number(edit,min,max);if(n!=Math.floor(n))throw new IllegalArgumentException(s("integer_error"));return (int)n;}
     void dialog(String title,LinearLayout form,Runnable save){
+        dialog(title,form,s("save"),save);
+    }
+    void dialog(String title,LinearLayout form,String positive,Runnable save){
         ScrollView scroll=new ScrollView(a);scroll.addView(form);
-        AlertDialog d=new AlertDialog.Builder(a).setTitle(title).setView(scroll).setNegativeButton(s("cancel"),null).setPositiveButton(s("save"),null).create();
+        AlertDialog d=new AlertDialog.Builder(a).setTitle(title).setView(scroll).setNegativeButton(s("cancel"),null).setPositiveButton(positive,null).create();
         a.activeDialog=d;d.setOnShowListener(v->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(w->{try{save.run();d.dismiss();}catch(IllegalArgumentException e){toast(e.getMessage());}}));d.show();
     }
     void confirm(String message,Runnable action){a.activeDialog=new AlertDialog.Builder(a).setMessage(message).setNegativeButton(s("cancel"),null).setPositiveButton(s("confirm"),(d,w)->action.run()).show();}
@@ -44,23 +47,46 @@ abstract class Screen {
         void renderLogs(JSONObject session,boolean active) {
         JSONArray rows=session.optJSONArray("rows");
         for(int i=0;i<rows.length();i++) {
+            final int rowIndex=i;
             JSONObject row=rows.optJSONObject(i); LinearLayout c=card(content); text(c,a.exerciseName(row),20);
+            text(c,s("feedback_target",row.optInt("reps")),14);
+            if(row.optBoolean("retired"))text(c,s("replacement_retired"),14);
+            if(row.has("replacementOf"))text(c,s("replacement_confirmed"),14);
             JSONArray logs=row.optJSONArray("logs");
+            boolean skipped=false;
             for(int j=0;j<logs.length();j++) {
                 final int index=j; JSONObject log=logs.optJSONObject(j);
+                if(log.optBoolean("skipped")&&!log.optBoolean("done")){
+                    text(c,s("equipment".equals(log.optString("skipReason"))?"set_replaced":"set_time_cancelled",j+1),14);skipped=true;continue;
+                }
                 text(c,s("log_line",j+1,log.optBoolean("done")?s("done"):s("not_done"),num(log.optDouble("weight")),log.optInt("reps")),16);
-                button(c,s(log.optBoolean("done")?"edit_set":"record_set",j+1),()->{
-                    LinearLayout form=column(); EditText weight=input(form,s("actual_weight"),num(log.optDouble("weight")),true), reps=input(form,s("actual_reps"),log.optString("reps"),true);
-                    CheckBox done=new CheckBox(a);done.setText(s("set_done"));done.setChecked(true);form.addView(done);
+                if(log.optBoolean("done")||log.optBoolean("resolved")||!active)text(c,s("feedback_record_line",s("effort_"+validEffort(log.optString("effort","unknown"))),s("cause_"+TrainingFeedback.reason(log,session))),14);
+                button(c,s(log.optBoolean("done")||log.optBoolean("resolved")?"edit_set":"record_set",j+1),()->{
+                    LinearLayout form=column();text(form,s("feedback_help",row.optInt("reps")),14);
+                    String initialReps=!active&&!log.optBoolean("done")&&!log.has("feedbackVersion")?"0":log.optString("reps");
+                    EditText weight=input(form,s("actual_weight"),num(log.optDouble("weight")),true), reps=input(form,s("actual_reps"),initialReps,true);
+                    CheckBox done=new CheckBox(a);done.setText(s("set_done"));done.setChecked(active&&!log.has("feedbackVersion")||log.optBoolean("done"));form.addView(done);
+                    String[] efforts=new String[TrainingFeedback.EFFORTS.length],reasons=new String[TrainingFeedback.REASONS.length];
+                    for(int e=0;e<efforts.length;e++)efforts[e]=s("effort_"+TrainingFeedback.EFFORTS[e]);
+                    for(int r=0;r<reasons.length;r++)reasons[r]=s("cause_"+TrainingFeedback.REASONS[r]);
+                    Spinner effort=select(form,s("effort_label"),efforts,java.util.Arrays.asList(TrainingFeedback.EFFORTS).indexOf(log.optString("effort","unknown")));
+                    Spinner reason=select(form,s("incomplete_reason_label"),reasons,java.util.Arrays.asList(TrainingFeedback.REASONS).indexOf(TrainingFeedback.reason(log,session)));
                     dialog(s("set_title",a.exerciseName(row),index+1),form,()->{
-                        double w=number(weight,0,1000);int r=integer(reps,1,100);
-                        put(log,"weight",w);put(log,"reps",r);put(log,"done",done.isChecked());
-                        if(active && done.isChecked()) put(session,"restUntil",System.currentTimeMillis()+60000);
-                        store.save(active?"active":"history",session); if(active)show("workout");else a.openHistory(session);
+                        double w=number(weight,0,1000);int r=integer(reps,0,100);
+                        try{
+                            JSONObject updated=TrainingFeedback.record(session,rowIndex,index,w,r,done.isChecked(),TrainingFeedback.EFFORTS[effort.getSelectedItemPosition()],TrainingFeedback.REASONS[reason.getSelectedItemPosition()],System.currentTimeMillis());
+                            if(active&&done.isChecked())put(updated,"restUntil",System.currentTimeMillis()+60000);
+                            store.saveSessionEdit(active?"active":"history",session,updated,false);
+                            if(active)show("workout");else a.openHistory(updated);
+                        }catch(TrainingFeedback.Invalid e){throw new IllegalArgumentException(s(e.key));}
+                        catch(Store.StaleWorkout e){a.activeDialog.dismiss();toast(s("feedback_stale"));if(active)show("workout");else{JSONObject current=a.find("history",session.optString("id"));if(current==null)show("history");else a.openHistory(current);}}
+                        catch(android.database.sqlite.SQLiteException e){throw new IllegalArgumentException(s("feedback_save_error"));}
                     });
                 });
             }
-            if(active) button(c,s("add_set"),()->{ if(logs.length()>=20){toast(s("max_sets"));return;} logs.put(object("weight",row.optDouble("weight"),"reps",row.optInt("reps"),"done",false));store.save("active",session);show("workout"); });
+            if(active&&WorkoutAdjustments.pendingRow(row)>0)button(c,s("replace_remaining"),()->new TrainingScreen(a).replaceRemaining(session,rowIndex));
+            if(active&&!row.optBoolean("retired")&&(!skipped||WorkoutAdjustments.pendingRow(row)>0)) button(c,s("add_set"),()->{ if(logs.length()>=20){toast(s("max_sets"));return;} logs.put(object("weight",row.optDouble("weight"),"reps",row.optInt("reps"),"done",false));store.save("active",session);show("workout"); });
         }
     }
+    private String validEffort(String value){return java.util.Arrays.asList(TrainingFeedback.EFFORTS).contains(value)?value:"unknown";}
 }

@@ -55,51 +55,72 @@ final class HomeScreen extends Screen {
                 int time=integer(minutes,10,180);
                 JSONObject saved=object("day",day(),"created",System.currentTimeMillis(),"parts",targets,"minutes",time,
                     "volume",volume.getSelectedItemPosition(),"sleep",sleep.getSelectedItemPosition(),"food",food.getSelectedItemPosition(),"soreness",soreness.getSelectedItemPosition(),"notes",notes.getText().toString());
-                store.save("checkin",saved);
-                if(soreness.getSelectedItemPosition()==2) { toast(s("rest_only")); return; }
-                JSONObject plan=generate(saved); store.save("plan",plan); show("plans");
+                JSONObject plan=submitCheckin(saved);
+                if(plan==null) { toast(s("rest_only")); return; }
+                show("plans");
             } catch(IllegalArgumentException e) { toast(e.getMessage()); }
+            catch(android.database.sqlite.SQLiteException e) { toast(s("daily_save_error")); }
         });
         if(store.first("active")!=null) button(content,s("continue_workout"),()->show("workout"));
     }
+    JSONObject submitCheckin(JSONObject check){
+        JSONObject plan=check.optInt("soreness")==2?null:generate(check);
+        store.saveDailyPlan(check,plan);
+        return plan;
+    }
     JSONObject generate(JSONObject check) {
-        JSONArray rows=new JSONArray(), catalogue=store.list("exercise"), targets=check.optJSONArray("parts");
+        JSONArray rows=new JSONArray(), candidates=new JSONArray(), catalogue=store.list("exercise"), targets=check.optJSONArray("parts");
         boolean reduced=check.optInt("sleep")==2 || check.optInt("food")>0 || check.optInt("soreness")==1;
         int baseSets=check.optInt("volume")+2;
-        int sets=reduced?Math.max(1,baseSets-1):baseSets;
-        sets=Math.min(sets,Math.max(1,(check.optInt("minutes")-5)/3));
-        // Budget includes a 5-minute warm-up and 3 minutes per set, including rest.
-        int capacity=Math.max(1,(check.optInt("minutes")-5)/(sets*3));
-        // Round robin prevents the first selected body part from consuming the entire budget.
-        for(int round=0; round<3 && rows.length()<capacity; round++) {
-            for(int p=0;p<targets.length() && rows.length()<capacity;p++) {
+        // Round robin fixes a baseline order, shared by normal and reduced plans.
+        for(int round=0; round<3; round++) {
+            for(int p=0;p<targets.length();p++) {
                 int found=0;
                 for(int i=0;i<catalogue.length();i++) {
                     JSONObject ex=catalogue.optJSONObject(i);
+                    if(ex.optBoolean("replacementOnly"))continue;
                     if(!targets.optString(p).equals(Catalog.partCode(ex.optString("part")))) continue;
                     if(found++!=round) continue;
-                    double[] weights=recentWeights(ex.optString("id"));
-                    Recommendation.Result result=Recommendation.suggest(0,weights[1],weights[0],baseSets,reduced);
-                    rows.put(object("exerciseId",ex.optString("id"),"name",a.exerciseName(ex),"part",Catalog.partCode(ex.optString("part")),"weight",result.weight,"sets",sets,"reps",10,"reasonCode",result.code,"reduced",reduced,"timeLimited",sets<result.sets)); break;
+                    candidates.put(ex);break;
                 }
             }
         }
-        return object("name",s("daily_plan",a.displayDay()),"autoName",true,"created",System.currentTimeMillis(),"checkin",copy(check),"rows",rows,"minutes",check.optInt("minutes"),"noteCode","plan_note");
+        Recommendation.Budget budget=Recommendation.budget(check.optInt("minutes"),baseSets,candidates.length(),reduced);
+        for(int i=0;i<budget.exercises;i++){
+            JSONObject ex=candidates.optJSONObject(i),reference=recentReference(ex.optString("id"),10,budget.sets);
+            JSONObject row=object("exerciseId",ex.optString("id"),"name",a.exerciseName(ex),"part",Catalog.partCode(ex.optString("part")),
+                    "weight",reference==null?0:reference.optDouble("weight"),"sets",budget.sets,"reps",10,
+                    "reasonCode",reference==null?"first":"comparable","needsWeightConfirmation",reference==null,
+                    "referencePolicyVersion",2,"reduced",budget.reduced,"timeLimited",budget.timeLimited,
+                    "reference",reference==null?JSONObject.NULL:reference);
+            ProgressEngine.Assessment analysis=ProgressReader.assess(store.list("history"),ex.optString("id"));
+            if(analysis.latest!=null){JSONObject advice=ProgressReader.snapshot(analysis);put(advice,"stateAllowsProgression",!reduced);put(row,"progressAdvice",advice);}
+            rows.put(row);
+        }
+        return object("name",s("daily_plan",a.displayDay()),"autoName",true,"created",System.currentTimeMillis(),
+                "checkin",copy(check),"rows",rows,"minutes",check.optInt("minutes"),"noteCode","plan_note",
+                "ruleVersion",2,"baselineTotalSets",budget.baselineTotalSets(),"timeLimited",budget.timeLimited);
     }
-    double[] recentWeights(String exerciseId) {
+    JSONObject recentReference(String exerciseId,int targetReps,int targetSets) {
         ArrayList<JSONObject> sessions=new ArrayList<>(); JSONArray history=store.list("history");
         for(int i=0;i<history.length();i++) sessions.add(history.optJSONObject(i));
         sessions.sort((a,b)->Long.compare(b.optLong("finished"),a.optLong("finished")));
-        double[] result={-1,-1}; int count=0;
         for(JSONObject session:sessions) {
-            JSONArray rows=session.optJSONArray("rows"); double max=-1;
+            if(session.optLong("finished")<=0)continue;
+            JSONArray rows=session.optJSONArray("rows");if(rows==null)continue;
+            double minimum=Double.POSITIVE_INFINITY;int completedSets=0;
             for(int r=0;r<rows.length();r++) {
                 JSONObject row=rows.optJSONObject(r); if(!exerciseId.equals(row.optString("exerciseId"))) continue;
-                JSONArray logs=row.optJSONArray("logs");
-                for(int s=0;s<logs.length();s++) { JSONObject log=logs.optJSONObject(s); if(log.optBoolean("done")) max=Math.max(max,log.optDouble("weight")); }
+                JSONArray logs=row.optJSONArray("logs");if(logs==null)continue;
+                List<Recommendation.ActualSet> actual=new ArrayList<>();
+                for(int i=0;i<logs.length();i++){JSONObject log=logs.optJSONObject(i);if(log==null)continue;
+                    actual.add(new Recommendation.ActualSet(log.optDouble("weight",-1),log.optInt("reps"),log.optBoolean("done")));}
+                double weight=Recommendation.comparableWeight(actual,row.optInt("reps"),row.optInt("sets"),targetReps,targetSets);
+                if(weight>=0){minimum=Math.min(minimum,weight);completedSets+=actual.size();}
             }
-            if(max>=0) { result[count++]=max; if(count==2) break; }
+            if(Double.isFinite(minimum))return object("sessionId",session.optString("id"),"finished",session.optLong("finished"),
+                    "weight",minimum,"reps",targetReps,"sets",completedSets);
         }
-        return result;
+        return null;
     }
 }

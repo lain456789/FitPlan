@@ -49,6 +49,7 @@ final class WeeklyScreen extends Screen {
         };
         metric.setOnItemSelectedListener(listener(render));render.run();
         LinearLayout exercises=card(content);text(exercises,s("exercise_trend"),20);text(exercises,s("exercise_hint"),14);
+        button(exercises,s("progress_title"),()->show("progress"));
         if(report.exercises.isEmpty())text(exercises,s("no_exercise"),16);
         else {
             List<ReportEngine.ExerciseTrend> all=new ArrayList<>(report.exercises.values());String[] labels=new String[all.size()];int selected=0;

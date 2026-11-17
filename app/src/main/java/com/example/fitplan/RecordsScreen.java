@@ -30,6 +30,7 @@ final class RecordsScreen extends Screen {
     void history() {
         a.recordTabs();
         title(s("history_title")); JSONArray sessions=store.list("history");
+        button(content,s("progress_title"),()->show("progress"));
         if(sessions.length()==0)text(content,s("empty_history"),16);
         for(int i=0;i<sessions.length();i++) {JSONObject session=sessions.optJSONObject(i);LinearLayout c=card(content);
             text(c,a.planName(session),20);text(c,s("history_line",date(session.optLong("finished")),completed(session),num(volume(session))),14);
@@ -40,8 +41,10 @@ final class RecordsScreen extends Screen {
     void historyDetail(JSONObject session) {
         content.removeAllViews();title(a.planName(session));button(content,s("back_history"),()->show("history"));
         text(content,s("session_time",date(session.optLong("started")),date(session.optLong("finished"))),14);
+        button(content,s("progress_title"),()->{JSONArray rows=session.optJSONArray("rows");if(rows!=null&&rows.length()>0)a.exerciseId=rows.optJSONObject(0).optString("exerciseId");show("progress");});
         JSONObject check=session.optJSONObject("checkin");
         if(check!=null)text(content,s("snapshot",check.optString("day"),check.optString("minutes"),new String[]{s("good"),s("fair"),s("poor")}[check.optInt("sleep")],new String[]{s("adequate"),s("insufficient"),s("poor")}[check.optInt("food")],a.sessionNotes(session,check)),14);
+        new TrainingScreen(a).adjustmentHistory(session);
         renderLogs(session,false);
     }
 }

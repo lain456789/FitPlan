@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
         if(state!=null){page=state.getString("page","home");detailId=state.getString("detail","");selectedWeek=state.getLong("week",selectedWeek);metric=state.getString("metric","sessions");exerciseId=state.getString("exercise","");try{String draft=state.getString("draft");if(draft!=null)homeDraft=new JSONObject(draft);}catch(JSONException ignored){}}
         getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){public void handleOnBackPressed(){
             if(page.equals("planDetail")||page.equals("workout")||page.equals("library"))show("plans");
-            else if(page.equals("historyDetail")||page.equals("weekly"))show("history");
+            else if(page.equals("historyDetail")||page.equals("weekly")||page.equals("progress"))show("history");
             else if(!page.equals("home"))show("home");else finish();
         }});
         show(page);
@@ -82,10 +82,20 @@ public class MainActivity extends AppCompatActivity {
         return "eightweeks-v1".equals(session.optString("demoDataset")) && DemoLabels.NOTE.equals(notes) ? s("demo_note") : notes;
     }
     String reason(JSONObject row){
+        if(row.optBoolean("userConfirmed")){
+            String current=s("reason_user",num(row.optDouble("weight")),row.optInt("sets"),row.optInt("reps"));
+            JSONObject original=row.optJSONObject("originalPrescription");
+            if(original!=null&&(Double.compare(original.optDouble("weight"),row.optDouble("weight"))!=0||original.optInt("sets")!=row.optInt("sets")||original.optInt("reps")!=row.optInt("reps")))
+                current+="\n"+s("generated".equals(row.optString("originalPrescriptionSource"))?"reason_original":"reason_before_edit",num(original.optDouble("weight")),original.optInt("sets"),original.optInt("reps"));
+            return current;
+        }
         String code=row.optString("reasonCode");String legacy=row.optString("reason");
         if(code.isEmpty())code=legacy.startsWith("暂无历史")?"first":legacy.startsWith("采用")?"up":legacy.startsWith("跟随")?"down":"same";
-        if(!Arrays.asList("first","up","down","same").contains(code))code="same";
-        return s("reason_"+code)+((row.optBoolean("reduced")||legacy.contains("恢复状态"))?s("reason_recovery"):"")+((row.optBoolean("timeLimited")||legacy.contains("可用时间"))?s("reason_time"):"");
+        if(!Arrays.asList("first","up","down","same","comparable").contains(code))code="same";
+        String result=s("reason_"+code);
+        JSONObject reference=row.optJSONObject("reference");
+        if(code.equals("comparable")&&reference!=null)result+="\n"+s("reason_reference",date(reference.optLong("finished")),num(reference.optDouble("weight")),reference.optInt("sets"),reference.optInt("reps"));
+        return result+((row.optBoolean("reduced")||legacy.contains("恢复状态"))?s("reason_recovery"):"")+((row.optBoolean("timeLimited")||legacy.contains("可用时间"))?s("reason_time"):"");
     }
     int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
     GradientDrawable shape(int color,int radius){GradientDrawable bg=new GradientDrawable();bg.setColor(color);bg.setCornerRadius(dp(radius));return bg;}
@@ -108,13 +118,14 @@ public class MainActivity extends AppCompatActivity {
             case "history":new RecordsScreen(this).history();break;
             case "historyDetail":{JSONObject h=find("history",detailId);if(h==null)show("history");else new RecordsScreen(this).historyDetail(h);break;}
             case "weekly":new WeeklyScreen(this).render();break;
+            case "progress":new ProgressScreen(this).render();break;
             case "profile":new ProfileScreen(this).render();break;
             default:page="home";new HomeScreen(this).today();
         }
     }
     private void renderNavigation(){
         LinearLayout nav=findViewById(R.id.navigation);nav.removeAllViews();nav.setBackground(shape(Color.rgb(36,40,46),32));
-        String group=page.equals("home")?"home":page.equals("profile")?"profile":page.equals("history")||page.equals("historyDetail")||page.equals("weekly")?"records":"training";
+        String group=page.equals("home")?"home":page.equals("profile")?"profile":page.equals("history")||page.equals("historyDetail")||page.equals("weekly")||page.equals("progress")?"records":"training";
         String[] routes={"home","plans","history","profile"},labels={"home","training","records","profile"};
         for(int i=0;i<4;i++){
             final String route=routes[i];boolean selected=group.equals(labels[i]);
