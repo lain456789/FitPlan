@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.fitplan"
         minSdk = 24
         targetSdk = 37
-        versionCode = 7
-        versionName = "0.4.0"
+        versionCode = 9
+        versionName = "0.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

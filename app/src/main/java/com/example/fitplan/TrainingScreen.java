@@ -8,9 +8,13 @@ import static com.example.fitplan.Store.put;
 import android.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 
@@ -23,6 +27,39 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 final class TrainingScreen extends Screen {
+    private static final int[] EXERCISE_IMAGES = {
+        R.drawable.builtin_0,
+        R.drawable.builtin_1,
+        R.drawable.builtin_2,
+        R.drawable.builtin_3,
+        R.drawable.builtin_4,
+        R.drawable.builtin_5,
+        R.drawable.builtin_6,
+        R.drawable.builtin_7,
+        R.drawable.builtin_8,
+        R.drawable.builtin_9,
+        R.drawable.builtin_10,
+        R.drawable.builtin_11,
+        R.drawable.builtin_12,
+        R.drawable.builtin_13,
+        R.drawable.builtin_14,
+        R.drawable.builtin_15,
+        R.drawable.builtin_16,
+        R.drawable.builtin_17,
+        R.drawable.builtin_18,
+        R.drawable.builtin_19,
+        R.drawable.builtin_20,
+        R.drawable.builtin_21,
+        R.drawable.builtin_22,
+        R.drawable.builtin_23,
+        R.drawable.builtin_24,
+        R.drawable.builtin_25,
+        R.drawable.builtin_26,
+        R.drawable.builtin_27,
+        R.drawable.builtin_28,
+        R.drawable.builtin_29
+    };
+
     TrainingScreen(MainActivity activity) {
         super(activity);
     }
@@ -30,11 +67,128 @@ final class TrainingScreen extends Screen {
     void exercises() {
         activity.trainingTabs();
         title(s("library"));
-        text(content, s("library_intro"), 14);
-        EditText search = input(content, s("search"), "", false);
+        RadioGroup modes = new RadioGroup(activity);
+        modes.setOrientation(LinearLayout.HORIZONTAL);
+        content.addView(modes);
+        RadioButton names = mode(modes, s("browse_name"));
+        RadioButton muscles = mode(modes, s("browse_muscle"));
+        names.setChecked(true);
+        LinearLayout namePane = pane(content);
+        LinearLayout musclePane = pane(content);
+        musclePane.setVisibility(View.GONE);
+        nameLibrary(namePane);
+        modes.setOnCheckedChangeListener((group, checked) -> {
+            boolean byMuscle = checked == muscles.getId();
+            if (byMuscle && musclePane.getChildCount() == 0) muscleLibrary(musclePane);
+            namePane.setVisibility(byMuscle ? View.GONE : View.VISIBLE);
+            musclePane.setVisibility(byMuscle ? View.VISIBLE : View.GONE);
+        });
+    }
+
+    private RadioButton mode(RadioGroup parent, String label) {
+        RadioButton option = new RadioButton(activity);
+        option.setId(View.generateViewId());
+        option.setText(label);
+        option.setMinHeight(activity.dp(48));
+        parent.addView(option, new RadioGroup.LayoutParams(0, -2, 1));
+        return option;
+    }
+
+    private LinearLayout pane(LinearLayout parent) {
+        LinearLayout pane = new LinearLayout(activity);
+        pane.setOrientation(LinearLayout.VERTICAL);
+        parent.addView(pane);
+        return pane;
+    }
+
+    private void muscleLibrary(LinearLayout pane) {
+        MuscleCatalog[] groups = MuscleCatalog.values();
+        String[] options = new String[groups.length + 1];
+        options[0] = s("map_all");
+        for (int i = 0; i < groups.length; i++) options[i + 1] = s("muscle_" + groups[i].key);
+        LinearLayout diagram = card(pane);
+        LinearLayout controls = pane(pane);
+        Spinner picker = select(controls, s("map_pick"), options, 0);
+        MuscleMapView map =
+                new MuscleMapView(
+                        activity,
+                        key -> {
+                            for (int i = 0; i < groups.length; i++) {
+                                if (groups[i].key.equals(key)) {
+                                    picker.setSelection(
+                                            picker.getSelectedItemPosition() == i + 1 ? 0 : i + 1);
+                                    break;
+                                }
+                            }
+                        });
+        diagram.addView(map, new LinearLayout.LayoutParams(-1, activity.dp(224)));
+        text(diagram, s("map_faces"), 14).setGravity(Gravity.CENTER);
+        View clear = button(controls, s("map_clear"), () -> picker.setSelection(0));
+        LinearLayout results = pane(pane);
+        JSONObject[] builtIns = new JSONObject[Catalog.EXERCISES.length];
+        JSONArray entries = store.list("exercise");
+        for (int i = 0; i < entries.length(); i++) {
+            JSONObject ex = entries.optJSONObject(i);
+            int index = Catalog.builtIn(ex.optString("id"));
+            if (index >= 0) builtIns[index] = ex;
+        }
+        picker.setOnItemSelectedListener(
+                new android.widget.AdapterView.OnItemSelectedListener() {
+                    public void onItemSelected(
+                            android.widget.AdapterView<?> parent, View view, int pos, long id) {
+                        results.removeAllViews();
+                        clear.setVisibility(pos == 0 ? View.GONE : View.VISIBLE);
+                        map.highlight(pos == 0 ? "" : groups[pos - 1].key);
+                        if (pos == 0) {
+                            for (JSONObject ex : builtIns)
+                                if (ex != null) exerciseCard(results, ex);
+                            return;
+                        }
+                        MuscleCatalog group = groups[pos - 1];
+                        text(
+                                results,
+                                group.primary.length == 0
+                                        ? s("map_empty")
+                                        : s("map_primary", group.primary.length),
+                                16);
+                        for (int index : group.primary) {
+                            if (builtIns[index] == null) continue;
+                            if (index == 14 || index == 15)
+                                text(results, s(index == 14 ? "map_crunch" : "map_stability"), 14);
+                            exerciseCard(results, builtIns[index]);
+                        }
+                        if (group.assisting.length > 0) {
+                            LinearLayout extra = new LinearLayout(activity);
+                            extra.setOrientation(LinearLayout.VERTICAL);
+                            extra.setVisibility(View.GONE);
+                            button(
+                                    results,
+                                    s("map_secondary", group.assisting.length),
+                                    () -> {
+                                        if (extra.getChildCount() == 0) {
+                                            for (int index : group.assisting)
+                                                if (builtIns[index] != null)
+                                                    exerciseCard(extra, builtIns[index]);
+                                        }
+                                        extra.setVisibility(
+                                                extra.getVisibility() == View.VISIBLE
+                                                        ? View.GONE
+                                                        : View.VISIBLE);
+                                    });
+                            results.addView(extra);
+                        }
+                    }
+
+                    public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+                });
+    }
+
+    private void nameLibrary(LinearLayout pane) {
+        text(pane, s("library_intro"), 14);
+        EditText search = input(pane, s("search"), "", false);
         Spinner filter =
                 select(
-                        content,
+                        pane,
                         s("part_filter"),
                         new String[] {
                             s("all"),
@@ -47,7 +201,7 @@ final class TrainingScreen extends Screen {
                         },
                         0);
         button(
-                content,
+                pane,
                 s("add_custom"),
                 () -> {
                     LinearLayout form = column();
@@ -71,7 +225,7 @@ final class TrainingScreen extends Screen {
                             });
                 });
         LinearLayout results = column();
-        content.addView(results);
+        pane.addView(results);
         Runnable render =
                 () -> {
                     results.removeAllViews();
@@ -90,10 +244,7 @@ final class TrainingScreen extends Screen {
                                 && !PARTS[filter.getSelectedItemPosition() - 1].equals(
                                         Catalog.partCode(ex.optString("part")))) continue;
                         count++;
-                        LinearLayout item = card(results);
-                        text(item, activity.exerciseName(ex), 18);
-                        text(item, activity.partName(ex.optString("part")), 14);
-                        text(item, equipmentText(ex.optString("id")), 14);
+                        exerciseCard(results, ex);
                     }
                     if (count == 0) text(results, s("no_matches"), 16);
                 };
@@ -117,6 +268,32 @@ final class TrainingScreen extends Screen {
                     public void onNothingSelected(android.widget.AdapterView<?> p) {}
                 });
         render.run();
+    }
+
+    private void exerciseCard(LinearLayout results, JSONObject exercise) {
+        String id = exercise.optString("id");
+        int index = Catalog.builtIn(id);
+        LinearLayout item = card(results);
+        LinearLayout labels = item;
+        if (index >= 0 && index < EXERCISE_IMAGES.length) {
+            item.setOrientation(LinearLayout.HORIZONTAL);
+            item.setGravity(Gravity.CENTER_VERTICAL);
+            labels = new LinearLayout(activity);
+            labels.setOrientation(LinearLayout.VERTICAL);
+            item.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+
+            ImageView image = new ImageView(activity);
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            image.setImageResource(EXERCISE_IMAGES[index]);
+            image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            int size = activity.dp(96);
+            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(size, size);
+            layout.setMarginStart(activity.dp(8));
+            item.addView(image, layout);
+        }
+        text(labels, activity.exerciseName(exercise), 18);
+        text(labels, activity.partName(exercise.optString("part")), 14);
+        text(labels, equipmentText(id), 14);
     }
 
     void plans() {

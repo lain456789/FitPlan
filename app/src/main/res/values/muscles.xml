@@ -1,0 +1,33 @@
+<resources>
+    <string name="browse_name">按名称</string>
+    <string name="browse_muscle">按肌群</string>
+    <string name="map_faces">正面　　　　　背面</string>
+    <string name="map_pick">点击人体图或选择肌群</string>
+    <string name="map_all">全部内置动作</string>
+    <string name="map_primary">主要训练 · %1$d 个动作</string>
+    <string name="map_secondary">协同参与 · %1$d 个动作</string>
+    <string name="map_empty">暂无以此肌群为主要目标的内置动作</string>
+    <string name="map_clear">清除选择</string>
+    <string name="map_crunch">躯干屈曲</string>
+    <string name="map_stability">核心稳定</string>
+    <string name="muscle_chest">胸大肌</string>
+    <string name="muscle_front_delt">三角肌前束（前肩）</string>
+    <string name="muscle_side_delt">三角肌中束（侧肩）</string>
+    <string name="muscle_rear_delt">三角肌后束（后肩）</string>
+    <string name="muscle_lats">背阔肌</string>
+    <string name="muscle_midback">中背（肩胛之间）</string>
+    <string name="muscle_biceps">肱二头肌</string>
+    <string name="muscle_triceps">肱三头肌</string>
+    <string name="muscle_core">腹部核心</string>
+    <string name="muscle_quadriceps">股四头肌</string>
+    <string name="muscle_glutes">臀大肌</string>
+    <string name="muscle_hamstring">腘绳肌（大腿后侧）</string>
+    <string name="muscle_traps">斜方肌</string>
+    <string name="muscle_calves">小腿后侧</string>
+    <string name="muscle_adductors">大腿内收肌</string>
+    <string name="muscle_forearm">前臂</string>
+    <string name="muscle_tibialis">胫骨前肌</string>
+    <string name="muscle_serratus">前锯肌</string>
+    <string name="muscle_hip">髋屈肌</string>
+    <string name="muscle_lower_back">下背</string>
+</resources>

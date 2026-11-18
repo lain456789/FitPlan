@@ -3,6 +3,69 @@ package com.example.fitplan;
 final class TextResources {
     static int id(String key) {
         switch (key) {
+            case "browse_name":
+                return R.string.browse_name;
+            case "browse_muscle":
+                return R.string.browse_muscle;
+            case "map_faces":
+                return R.string.map_faces;
+            case "map_pick":
+                return R.string.map_pick;
+            case "map_all":
+                return R.string.map_all;
+            case "map_primary":
+                return R.string.map_primary;
+            case "map_secondary":
+                return R.string.map_secondary;
+            case "map_empty":
+                return R.string.map_empty;
+            case "map_clear":
+                return R.string.map_clear;
+            case "map_crunch":
+                return R.string.map_crunch;
+            case "map_stability":
+                return R.string.map_stability;
+            case "muscle_chest":
+                return R.string.muscle_chest;
+            case "muscle_front_delt":
+                return R.string.muscle_front_delt;
+            case "muscle_side_delt":
+                return R.string.muscle_side_delt;
+            case "muscle_rear_delt":
+                return R.string.muscle_rear_delt;
+            case "muscle_lats":
+                return R.string.muscle_lats;
+            case "muscle_midback":
+                return R.string.muscle_midback;
+            case "muscle_biceps":
+                return R.string.muscle_biceps;
+            case "muscle_triceps":
+                return R.string.muscle_triceps;
+            case "muscle_core":
+                return R.string.muscle_core;
+            case "muscle_quadriceps":
+                return R.string.muscle_quadriceps;
+            case "muscle_glutes":
+                return R.string.muscle_glutes;
+            case "muscle_hamstring":
+                return R.string.muscle_hamstring;
+            case "muscle_traps":
+                return R.string.muscle_traps;
+            case "muscle_calves":
+                return R.string.muscle_calves;
+            case "muscle_adductors":
+                return R.string.muscle_adductors;
+            case "muscle_forearm":
+                return R.string.muscle_forearm;
+            case "muscle_tibialis":
+                return R.string.muscle_tibialis;
+            case "muscle_serratus":
+                return R.string.muscle_serratus;
+            case "muscle_hip":
+                return R.string.muscle_hip;
+            case "muscle_lower_back":
+                return R.string.muscle_lower_back;
+
             case "home_week_summary":
                 return R.string.home_week_summary;
             case "reuse_previous_set":
