@@ -266,10 +266,10 @@
     <string name="ex27">Bodyweight squat</string>
     <string name="ex28">Dumbbell fly</string>
     <string name="ex29">Incline barbell bench press</string>
-    <string name="effort_label">Set difficulty (your perception)</string>
+    <string name="effort_label">Set difficulty (optional)</string>
     <string name="effort_unknown">Not recorded</string>
     <string name="effort_easy">Easy</string>
-    <string name="effort_appropriate">Appropriate</string>
+    <string name="effort_appropriate">Just right</string>
     <string name="effort_hard">Hard</string>
     <string name="cause_unknown">Not recorded</string>
     <string name="cause_none">Target met</string>
@@ -317,7 +317,7 @@
     <string name="progress_sample_count">Recent comparable records: %1$d (up to 7)</string>
     <string name="progress_unknown_feedback">Difficulty data is incomplete. Missing values are not inferred or used to propose progression.</string>
     <string name="progress_next_title">Next-workout advice</string>
-    <string name="progress_optional_rule">Basis: the latest 3 consecutive comparable workouts fully meet the target, with every set rated easy or appropriate. Consider how you feel before adopting it.</string>
+    <string name="progress_optional_rule">Basis: the latest 3 consecutive comparable workouts fully meet the target, with every set rated easy or just right. Consider how you feel before adopting it.</string>
     <string name="progress_generate_next">Prepare the next plan from Home</string>
     <string name="progress_plan_title">Recorded-performance reference</string>
     <string name="progress_plan_mismatch">Historical targets, weight or current conditions differ. Keep the current settings; rep advice is not applied automatically.</string>
@@ -334,4 +334,8 @@
     <string name="advice_review_settings">Review difficulty, incomplete reasons and target settings. Keep the weight; no automatic progression.</string>
     <string name="advice_repeat">Keep the weight, sets and rep target while recording completion and perceived difficulty.</string>
     <string name="advice_complete_target">Keep the weight and work toward the original %1$d-rep target in the remaining below-target sets; no weight increase.</string>
+    <string name="home_week_summary">This week: %1$d workouts · %2$d sets</string>
+    <string name="reuse_previous_set">Reuse previous weight and reps</string>
+    <string name="add_set_reason">Add a reason</string>
+    <string name="hide_set_reason">Hide reason</string>
 </resources>

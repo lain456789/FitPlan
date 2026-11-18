@@ -3,6 +3,15 @@ package com.example.fitplan;
 final class TextResources {
     static int id(String key) {
         switch (key) {
+            case "home_week_summary":
+                return R.string.home_week_summary;
+            case "reuse_previous_set":
+                return R.string.reuse_previous_set;
+            case "add_set_reason":
+                return R.string.add_set_reason;
+            case "hide_set_reason":
+                return R.string.hide_set_reason;
+
             case "app_name":
                 return R.string.app_name;
             case "home":

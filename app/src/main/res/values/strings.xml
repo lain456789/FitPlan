@@ -266,7 +266,7 @@
     <string name="ex27">徒手深蹲</string>
     <string name="ex28">哑铃飞鸟</string>
     <string name="ex29">杠铃上斜卧推</string>
-    <string name="effort_label">本组训练难度（主观感受）</string>
+    <string name="effort_label">本组训练难度（可选）</string>
     <string name="effort_unknown">未填写</string>
     <string name="effort_easy">轻松</string>
     <string name="effort_appropriate">合适</string>
@@ -334,4 +334,8 @@
     <string name="advice_review_settings">先核对难度、未完成原因与目标设置；保持重量，不自动加量。</string>
     <string name="advice_repeat">先保持重量与目标组次，继续记录完成情况和主观难度。</string>
     <string name="advice_complete_target">先保持重量，优先补齐尚未达标组的原目标 %1$d 次，暂不增加重量。</string>
+    <string name="home_week_summary">本周 %1$d 次 · %2$d 组</string>
+    <string name="reuse_previous_set">沿用上一组重量和次数</string>
+    <string name="add_set_reason">补充原因</string>
+    <string name="hide_set_reason">收起原因</string>
 </resources>

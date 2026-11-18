@@ -255,7 +255,8 @@ final class TrainingScreen extends Screen {
                                     })
                             .show();
                 });
-        JSONArray rows = plan.optJSONArray("rows");
+        JSONArray rows = plan.optJSONArray("rows"), history = store.list("history");
+        ProgressScreen progress = new ProgressScreen(activity);
         for (int i = 0; i < rows.length(); i++) {
             final int index = i;
             JSONObject row = rows.optJSONObject(i);
@@ -271,7 +272,7 @@ final class TrainingScreen extends Screen {
                     16);
             if (row.has("reason") || row.has("reasonCode") || row.optBoolean("userConfirmed"))
                 text(c, activity.reason(row), 14);
-            new ProgressScreen(activity).planAdvice(plan, i, c);
+            progress.planAdvice(plan, i, c, history);
             if (PlanEdits.needsConfirmation(plan, row)) text(c, s("confirm_weight_hint"), 14);
             button(
                     c,

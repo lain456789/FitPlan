@@ -1,14 +1,12 @@
 package com.example.fitplan;
 
 import static com.example.fitplan.Store.object;
-import static com.example.fitplan.Store.put;
 
 import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.text.InputType;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -235,103 +233,7 @@ abstract class Screen {
                                         ? "edit_set"
                                         : "record_set",
                                 j + 1),
-                        () -> {
-                            LinearLayout form = column();
-                            text(form, s("feedback_help", row.optInt("reps")), 14);
-                            String initialReps =
-                                    !active
-                                                    && !log.optBoolean("done")
-                                                    && !log.has("feedbackVersion")
-                                            ? "0"
-                                            : log.optString("reps");
-                            EditText
-                                    weight =
-                                            input(
-                                                    form,
-                                                    s("actual_weight"),
-                                                    num(log.optDouble("weight")),
-                                                    true),
-                                    reps = input(form, s("actual_reps"), initialReps, true);
-                            CheckBox done = new CheckBox(activity);
-                            done.setText(s("set_done"));
-                            done.setChecked(
-                                    active && !log.has("feedbackVersion")
-                                            || log.optBoolean("done"));
-                            form.addView(done);
-                            String[] efforts = new String[TrainingFeedback.EFFORTS.length],
-                                    reasons = new String[TrainingFeedback.REASONS.length];
-                            for (int e = 0; e < efforts.length; e++)
-                                efforts[e] = s("effort_" + TrainingFeedback.EFFORTS[e]);
-                            for (int r = 0; r < reasons.length; r++)
-                                reasons[r] = s("cause_" + TrainingFeedback.REASONS[r]);
-                            Spinner effort =
-                                    select(
-                                            form,
-                                            s("effort_label"),
-                                            efforts,
-                                            java.util.Arrays.asList(TrainingFeedback.EFFORTS)
-                                                    .indexOf(log.optString("effort", "unknown")));
-                            Spinner reason =
-                                    select(
-                                            form,
-                                            s("incomplete_reason_label"),
-                                            reasons,
-                                            java.util.Arrays.asList(TrainingFeedback.REASONS)
-                                                    .indexOf(
-                                                            TrainingFeedback.reason(log, session)));
-                            dialog(
-                                    s("set_title", activity.exerciseName(row), index + 1),
-                                    form,
-                                    () -> {
-                                        double actualWeight = number(weight, 0, 1000);
-                                        int actualReps = integer(reps, 0, 100);
-                                        try {
-                                            JSONObject updated =
-                                                    TrainingFeedback.record(
-                                                            session,
-                                                            rowIndex,
-                                                            index,
-                                                            actualWeight,
-                                                            actualReps,
-                                                            done.isChecked(),
-                                                            TrainingFeedback.EFFORTS[
-                                                                    effort
-                                                                            .getSelectedItemPosition()],
-                                                            TrainingFeedback.REASONS[
-                                                                    reason
-                                                                            .getSelectedItemPosition()],
-                                                            System.currentTimeMillis());
-                                            if (active && done.isChecked())
-                                                put(
-                                                        updated,
-                                                        "restUntil",
-                                                        System.currentTimeMillis() + 60000);
-                                            store.saveSessionEdit(
-                                                    active ? "active" : "history",
-                                                    session,
-                                                    updated,
-                                                    false);
-                                            if (active) show("workout");
-                                            else activity.openHistory(updated);
-                                        } catch (TrainingFeedback.Invalid e) {
-                                            throw new IllegalArgumentException(s(e.key));
-                                        } catch (Store.StaleWorkout e) {
-                                            activity.activeDialog.dismiss();
-                                            toast(s("feedback_stale"));
-                                            if (active) show("workout");
-                                            else {
-                                                JSONObject current =
-                                                        activity.find(
-                                                                "history", session.optString("id"));
-                                                if (current == null) show("history");
-                                                else activity.openHistory(current);
-                                            }
-                                        } catch (android.database.sqlite.SQLiteException e) {
-                                            throw new IllegalArgumentException(
-                                                    s("feedback_save_error"));
-                                        }
-                                    });
-                        });
+                        () -> new SetEntryDialog(activity).edit(session, rowIndex, index, active));
             }
             if (active && WorkoutAdjustments.pendingRow(row) > 0)
                 button(

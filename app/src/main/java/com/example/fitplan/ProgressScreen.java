@@ -166,39 +166,19 @@ final class ProgressScreen extends Screen {
         return true;
     }
 
-    private boolean matches(JSONObject advice, JSONObject row) {
-        JSONObject latest = advice.optJSONObject("latest");
-        return latest != null
-                && latest.optInt("sets") == row.optInt("sets")
-                && latest.optInt("targetReps") == row.optInt("reps")
-                && latest.optDouble("weight", -1) >= 0
-                && Math.abs(latest.optDouble("weight") - row.optDouble("weight", -2))
-                        < ProgressEngine.WEIGHT_TOLERANCE_KG;
-    }
-
-    void planAdvice(JSONObject plan, int index, LinearLayout parent) {
-        JSONObject row = plan.optJSONArray("rows").optJSONObject(index),
-                snapshot = row.optJSONObject("progressAdvice");
-        if (snapshot == null) {
-            ProgressEngine.Assessment result =
-                    ProgressReader.assess(store.list("history"), row.optString("exerciseId"));
-            if (result.latest == null) return;
-            snapshot = ProgressReader.snapshot(result);
-        }
+    void planAdvice(JSONObject plan, int index, LinearLayout parent, JSONArray history) {
+        JSONObject row = plan.optJSONArray("rows").optJSONObject(index);
+        ProgressEngine.Assessment result =
+                ProgressReader.assess(history, row.optString("exerciseId"));
+        if (result.latest == null && !row.has("progressAdvice")) return;
         text(parent, s("progress_plan_title"), 16);
-        text(parent, s("progress_status_" + snapshot.optString("status", "insufficient")), 14);
-        JSONObject latest = snapshot.optJSONObject("latest");
-        boolean applicable = matches(snapshot, row) && stateAllows(plan);
+        text(parent, s("progress_status_" + result.status), 14);
+        if (result.latest == null) return;
+        boolean applicable = ProgressReader.applies(result, row) && stateAllows(plan);
         if (applicable)
-            text(
-                    parent,
-                    advice(
-                            snapshot.optString("action", "repeat"),
-                            snapshot.optInt("suggestedReps"),
-                            latest == null ? row.optInt("reps") : latest.optInt("targetReps")),
-                    14);
+            text(parent, advice(result.action, result.suggestedReps, result.latest.targetReps), 14);
         else text(parent, s("progress_plan_mismatch"), 14);
-        if (snapshot.optBoolean("canIncrease") && applicable)
+        if (result.canIncrease && applicable)
             button(parent, s("progress_adopt"), () -> offerAdvice(plan, index));
     }
 
@@ -208,6 +188,7 @@ final class ProgressScreen extends Screen {
                 ProgressReader.assess(store.list("history"), row.optString("exerciseId"));
         if (!result.canIncrease || !ProgressReader.applies(result, row) || !stateAllows(plan)) {
             toast(s("progress_advice_stale"));
+            refreshPlan(plan);
             return;
         }
         confirm(
@@ -222,13 +203,17 @@ final class ProgressScreen extends Screen {
                         applyAdvice(plan, index);
                     } catch (Store.StaleWorkout e) {
                         toast(s("progress_advice_stale"));
-                        JSONObject current = activity.find("plan", plan.optString("id"));
-                        if (current == null) show("plans");
-                        else activity.openPlan(current);
+                        refreshPlan(plan);
                     } catch (android.database.sqlite.SQLiteException e) {
                         toast(s("feedback_save_error"));
                     }
                 });
+    }
+
+    private void refreshPlan(JSONObject plan) {
+        JSONObject current = activity.find("plan", plan.optString("id"));
+        if (current == null) show("plans");
+        else activity.openPlan(current);
     }
 
     void applyAdvice(JSONObject expected, int index) {

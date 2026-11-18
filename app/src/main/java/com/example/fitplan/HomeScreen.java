@@ -4,6 +4,9 @@ import static com.example.fitplan.Store.copy;
 import static com.example.fitplan.Store.object;
 import static com.example.fitplan.Store.put;
 
+import android.content.res.ColorStateList;
+import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -35,35 +38,43 @@ final class HomeScreen extends Screen {
         JSONObject check = activity.homeDraft;
         if (check == null || !day().equals(check.optString("day"))) check = todayCheck();
         if (check == null) check = object();
-        activity.loadHomeSummary(content);
+        if (store.first("active") != null)
+            button(content, s("continue_workout"), () -> show("workout"));
         LinearLayout c = card(content);
         text(c, s("parts_question"), 18);
         List<CheckBox> parts = new ArrayList<>();
         JSONArray selected = check.optJSONArray("parts");
-        for (String part : PARTS) {
+        LinearLayout[] partColumns = null;
+        for (int i = 0; i < PARTS.length; i++) {
+            String part = PARTS[i];
+            if (i % 2 == 0) partColumns = pair(c);
             CheckBox box = new CheckBox(activity);
             box.setText(activity.partName(part));
             box.setTag(part);
             box.setChecked(selected != null && activity.containsPart(selected, part));
-            c.addView(box);
+            box.setMinHeight(activity.dp(48));
+            partColumns[i % 2].addView(box);
             parts.add(box);
         }
-        EditText minutes = input(c, s("minutes_label"), check.optString("minutes", "45"), true);
+        LinearLayout[] budget = pair(c);
+        EditText minutes =
+                input(budget[0], s("minutes_label"), check.optString("minutes", "45"), true);
         Spinner volume =
                 select(
-                        c,
+                        budget[1],
                         s("volume_label"),
                         new String[] {s("light"), s("normal"), s("high")},
                         check.optInt("volume", 1));
+        LinearLayout[] recovery = pair(c);
         Spinner sleep =
                 select(
-                        c,
+                        recovery[0],
                         s("sleep_label"),
                         new String[] {s("good"), s("fair"), s("poor")},
                         check.optInt("sleep"));
         Spinner food =
                 select(
-                        c,
+                        recovery[1],
                         s("food_label"),
                         new String[] {s("adequate"), s("insufficient"), s("poor")},
                         check.optInt("food"));
@@ -99,53 +110,70 @@ final class HomeScreen extends Screen {
                                     "notes",
                                     notes.getText().toString());
                 };
-        button(
-                c,
-                s("generate"),
-                () -> {
-                    try {
-                        JSONArray targets = new JSONArray();
-                        for (CheckBox box : parts)
-                            if (box.isChecked()) targets.put(box.getTag().toString());
-                        if (targets.length() == 0) {
-                            toast(s("choose_part"));
-                            return;
-                        }
-                        int time = integer(minutes, 10, 180);
-                        JSONObject saved =
-                                object(
-                                        "day",
-                                        day(),
-                                        "created",
-                                        System.currentTimeMillis(),
-                                        "parts",
-                                        targets,
-                                        "minutes",
-                                        time,
-                                        "volume",
-                                        volume.getSelectedItemPosition(),
-                                        "sleep",
-                                        sleep.getSelectedItemPosition(),
-                                        "food",
-                                        food.getSelectedItemPosition(),
-                                        "soreness",
-                                        soreness.getSelectedItemPosition(),
-                                        "notes",
-                                        notes.getText().toString());
-                        JSONObject plan = submitCheckin(saved);
-                        if (plan == null) {
-                            toast(s("rest_only"));
-                            return;
-                        }
-                        show("plans");
-                    } catch (IllegalArgumentException e) {
-                        toast(e.getMessage());
-                    } catch (android.database.sqlite.SQLiteException e) {
-                        toast(s("daily_save_error"));
-                    }
-                });
-        if (store.first("active") != null)
-            button(content, s("continue_workout"), () -> show("workout"));
+        LinearLayout actions = activity.findViewById(R.id.home_actions);
+        actions.setVisibility(View.VISIBLE);
+        Button generate =
+                button(
+                        actions,
+                        s("generate"),
+                        () -> {
+                            try {
+                                JSONArray targets = new JSONArray();
+                                for (CheckBox box : parts)
+                                    if (box.isChecked()) targets.put(box.getTag().toString());
+                                if (targets.length() == 0) {
+                                    toast(s("choose_part"));
+                                    return;
+                                }
+                                int time = integer(minutes, 10, 180);
+                                JSONObject saved =
+                                        object(
+                                                "day",
+                                                day(),
+                                                "created",
+                                                System.currentTimeMillis(),
+                                                "parts",
+                                                targets,
+                                                "minutes",
+                                                time,
+                                                "volume",
+                                                volume.getSelectedItemPosition(),
+                                                "sleep",
+                                                sleep.getSelectedItemPosition(),
+                                                "food",
+                                                food.getSelectedItemPosition(),
+                                                "soreness",
+                                                soreness.getSelectedItemPosition(),
+                                                "notes",
+                                                notes.getText().toString());
+                                JSONObject plan = submitCheckin(saved);
+                                if (plan == null) {
+                                    toast(s("rest_only"));
+                                    return;
+                                }
+                                show("plans");
+                            } catch (IllegalArgumentException e) {
+                                toast(e.getMessage());
+                            } catch (android.database.sqlite.SQLiteException e) {
+                                toast(s("daily_save_error"));
+                            }
+                        });
+        generate.setTextColor(MainActivity.BG);
+        generate.setBackgroundTintList(ColorStateList.valueOf(MainActivity.ACCENT));
+        activity.loadHomeSummary(content);
+    }
+
+    private LinearLayout[] pair(LinearLayout parent) {
+        LinearLayout row = new LinearLayout(activity);
+        row.setBaselineAligned(false);
+        parent.addView(row);
+        LinearLayout[] columns = {new LinearLayout(activity), new LinearLayout(activity)};
+        for (int i = 0; i < columns.length; i++) {
+            columns[i].setOrientation(LinearLayout.VERTICAL);
+            columns[i].setPadding(i == 0 ? 0 : activity.dp(4), 0, i == 0 ? activity.dp(4) : 0, 0);
+            row.addView(columns[i], new LinearLayout.LayoutParams(0, -2, 1));
+        }
+        return columns;
     }
 
     JSONObject submitCheckin(JSONObject check) {

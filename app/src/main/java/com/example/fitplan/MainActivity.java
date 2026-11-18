@@ -420,6 +420,9 @@ public class MainActivity extends AppCompatActivity {
         generation++;
         page = route;
         content.removeAllViews();
+        LinearLayout homeActions = findViewById(R.id.home_actions);
+        homeActions.removeAllViews();
+        homeActions.setVisibility(View.GONE);
         ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
                 .hideSoftInputFromWindow(content.getWindowToken(), 0);
         ((ScrollView) findViewById(R.id.scroller)).scrollTo(0, 0);
@@ -557,22 +560,17 @@ public class MainActivity extends AppCompatActivity {
 
     void loadHomeSummary(LinearLayout parent) {
         LinearLayout c = card(parent);
-        text(c, s("this_week"), 18);
+        c.setOrientation(LinearLayout.HORIZONTAL);
+        c.setGravity(Gravity.CENTER_VERTICAL);
         TextView status = text(c, s("loading"), 14);
+        status.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button weekly = button(c, s("weekly"), () -> show("weekly"));
+        weekly.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
         loadReport(
                 ReportEngine.weekStart(System.currentTimeMillis(), TimeZone.getDefault()),
                 r -> {
-                    TextView value =
-                            text(
-                                    c,
-                                    s(
-                                            "summary",
-                                            r.current.sessions,
-                                            r.current.days,
-                                            r.current.sets),
-                                    20);
-                    value.setTextColor(ACCENT);
-                    button(c, s("weekly"), () -> show("weekly"));
+                    status.setText(s("home_week_summary", r.current.sessions, r.current.sets));
+                    status.setVisibility(View.VISIBLE);
                 },
                 status);
     }

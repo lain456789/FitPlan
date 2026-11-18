@@ -1,6 +1,7 @@
 package com.example.fitplan;
 
 import static com.example.fitplan.Store.copy;
+import static com.example.fitplan.Store.object;
 import static com.example.fitplan.Store.put;
 
 import org.json.JSONArray;
@@ -24,6 +25,21 @@ final class TrainingFeedback {
     }
 
     private TrainingFeedback() {}
+
+    static JSONObject previousValues(JSONObject row, int logIndex) {
+        JSONArray logs = row.optJSONArray("logs");
+        if (logs == null || logIndex < 1 || logIndex >= logs.length()) return null;
+        for (int i = logIndex - 1; i >= 0; i--) {
+            JSONObject previous = logs.optJSONObject(i);
+            if (previous == null || !previous.optBoolean("done") || previous.optBoolean("skipped"))
+                continue;
+            double weight = previous.optDouble("weight", -1);
+            int reps = previous.optInt("reps");
+            if (Double.isFinite(weight) && weight >= 0 && weight <= 1000 && reps > 0 && reps <= 100)
+                return object("weight", weight, "reps", reps);
+        }
+        return null;
+    }
 
     static String reason(JSONObject log, JSONObject session) {
         if (log.optBoolean("skipped"))

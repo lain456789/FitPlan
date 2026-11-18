@@ -499,7 +499,7 @@ public class ProgressFeedbackTest {
             scenario.onActivity(a -> {
                 View root = a.activeDialog.getWindow().getDecorView();
                 collect(root, EditText.class).get(1).setText("8");
-                collect(root, Spinner.class).get(0).setSelection(3);
+                click(a, a.s("effort_hard"));
                 click(a, a.s("save"));
                 assertTrue(a.activeDialog.isShowing());
             });
@@ -507,7 +507,7 @@ public class ProgressFeedbackTest {
             assertEquals(session.toString(), find("active", session.optString("id")).toString());
             scenario.onActivity(a ->
                     collect(a.activeDialog.getWindow().getDecorView(), Spinner.class)
-                            .get(1)
+                            .get(0)
                             .setSelection(3));
             idle();
             screenshot("progress-set-feedback");
