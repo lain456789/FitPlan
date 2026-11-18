@@ -1,0 +1,33 @@
+<resources>
+    <string name="browse_name">By name</string>
+    <string name="browse_muscle">By muscle</string>
+    <string name="map_faces">Front　　　　　Back</string>
+    <string name="map_pick">Tap the diagram or select a muscle</string>
+    <string name="map_all">All built-in exercises</string>
+    <string name="map_primary">Primary exercises · %1$d</string>
+    <string name="map_secondary">Assisting exercises · %1$d</string>
+    <string name="map_empty">No built-in exercises primarily target this muscle</string>
+    <string name="map_clear">Clear selection</string>
+    <string name="map_crunch">Trunk flexion</string>
+    <string name="map_stability">Core stability</string>
+    <string name="muscle_chest">Chest</string>
+    <string name="muscle_front_delt">Front delts</string>
+    <string name="muscle_side_delt">Side delts</string>
+    <string name="muscle_rear_delt">Rear delts</string>
+    <string name="muscle_lats">Lats</string>
+    <string name="muscle_midback">Mid-back</string>
+    <string name="muscle_biceps">Biceps</string>
+    <string name="muscle_triceps">Triceps</string>
+    <string name="muscle_core">Abdominal core</string>
+    <string name="muscle_quadriceps">Quads</string>
+    <string name="muscle_glutes">Glutes</string>
+    <string name="muscle_hamstring">Hamstrings</string>
+    <string name="muscle_traps">Trapezius</string>
+    <string name="muscle_calves">Calves</string>
+    <string name="muscle_adductors">Adductors</string>
+    <string name="muscle_forearm">Forearms</string>
+    <string name="muscle_tibialis">Tibialis anterior</string>
+    <string name="muscle_serratus">Serratus anterior</string>
+    <string name="muscle_hip">Hip flexors</string>
+    <string name="muscle_lower_back">Lower back</string>
+</resources>
