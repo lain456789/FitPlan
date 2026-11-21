@@ -37,8 +37,10 @@ import java.text.DateFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
@@ -59,9 +61,16 @@ public class MainActivity extends AppCompatActivity {
     JSONObject homeDraft;
     Runnable captureHome;
     TextView timerLabel;
+    final List<CoachModels.ChatMessage> coachMessages = new ArrayList<>();
+    boolean coachProfileExpanded = false;
+    boolean coachSending = false;
+    int coachEpoch = 0;
+    String coachLastPrompt = "";
+    private String cachedCoachSkill;
     private Context localized;
     private int generation;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final ExecutorService coachWorker = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable ticker =
             new Runnable() {
@@ -172,10 +181,30 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         generation++;
+        clearCoachSession();
         worker.shutdownNow();
+        coachWorker.shutdownNow();
         handler.removeCallbacksAndMessages(null);
         store.close();
         super.onDestroy();
+    }
+
+    void clearCoachSession() {
+        coachEpoch++;
+        coachSending = false;
+        coachLastPrompt = "";
+        coachMessages.clear();
+    }
+
+    void runCoachTask(Runnable task) {
+        coachWorker.execute(task);
+    }
+
+    String coachSkillMarkdown() {
+        if (cachedCoachSkill == null) {
+            cachedCoachSkill = GlmClient.loadSkillMarkdown(this);
+        }
+        return cachedCoachSkill;
     }
 
     private void captureDraft() {
@@ -417,6 +446,7 @@ public class MainActivity extends AppCompatActivity {
         captureDraft();
         captureHome = null;
         timerLabel = null;
+        if (!route.equals("coach")) clearCoachSession();
         generation++;
         page = route;
         content.removeAllViews();
@@ -460,6 +490,9 @@ public class MainActivity extends AppCompatActivity {
             case "progress":
                 new ProgressScreen(this).render();
                 break;
+            case "coach":
+                new CoachScreen(this).render();
+                break;
             case "profile":
                 new ProfileScreen(this).render();
                 break;
@@ -476,29 +509,32 @@ public class MainActivity extends AppCompatActivity {
         String group =
                 page.equals("home")
                         ? "home"
-                        : page.equals("profile")
-                                ? "profile"
-                                : page.equals("history")
-                                                || page.equals("historyDetail")
-                                                || page.equals("weekly")
-                                                || page.equals("progress")
-                                        ? "records"
-                                        : "training";
-        String[] routes = {"home", "plans", "history", "profile"},
-                labels = {"home", "training", "records", "profile"};
-        for (int i = 0; i < 4; i++) {
+                        : page.equals("coach")
+                                ? "coach"
+                                : page.equals("profile")
+                                        ? "profile"
+                                        : page.equals("history")
+                                                        || page.equals("historyDetail")
+                                                        || page.equals("weekly")
+                                                        || page.equals("progress")
+                                                ? "records"
+                                                : "training";
+        String[] routes = {"home", "plans", "history", "coach", "profile"},
+                labels = {"home", "training", "records", "coach", "profile"};
+        for (int i = 0; i < routes.length; i++) {
             final String route = routes[i];
             boolean selected = group.equals(labels[i]);
             LinearLayout tab = new LinearLayout(this);
             tab.setOrientation(LinearLayout.VERTICAL);
             tab.setGravity(Gravity.CENTER);
-            tab.setPadding(dp(4), dp(8), dp(4), dp(8));
+            tab.setPadding(dp(2), dp(8), dp(2), dp(8));
             tab.setBackground(shape(selected ? Color.rgb(58, 67, 43) : Color.TRANSPARENT, 26));
             NavIcon icon = new NavIcon(this, i, selected ? ACCENT : MUTED);
-            tab.addView(icon, new LinearLayout.LayoutParams(dp(24), dp(24)));
+            tab.addView(icon, new LinearLayout.LayoutParams(dp(22), dp(22)));
             TextView label = new TextView(this);
             label.setText(s(labels[i]));
-            label.setTextSize(12);
+            label.setTextSize(11);
+            label.setSingleLine(true);
             label.setTextColor(selected ? ACCENT : MUTED);
             label.setGravity(Gravity.CENTER);
             tab.addView(label);
@@ -618,6 +654,19 @@ public class MainActivity extends AppCompatActivity {
                 c.drawLine(6, 17, 6, 12, paint);
                 c.drawLine(12, 17, 12, 7, paint);
                 c.drawLine(18, 17, 18, 3, paint);
+            } else if (type == 3) {
+                Path bubble = new Path();
+                bubble.moveTo(4, 6);
+                bubble.lineTo(20, 6);
+                bubble.lineTo(20, 17);
+                bubble.lineTo(11, 17);
+                bubble.lineTo(6, 21);
+                bubble.lineTo(6, 17);
+                bubble.lineTo(4, 17);
+                bubble.close();
+                c.drawPath(bubble, paint);
+                c.drawLine(12, 8.5f, 12, 14.5f, paint);
+                c.drawLine(9, 11.5f, 15, 11.5f, paint);
             } else {
                 c.drawCircle(12, 7, 4, paint);
                 c.drawArc(4, 13, 20, 27, 180, 180, false, paint);
