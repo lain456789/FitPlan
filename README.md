@@ -2,6 +2,14 @@
 
 Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周报完全离线运行，并内置可选联网的 AI 健身教练，支持每日状态填写、训练计划、逐组记录、休息计时、历史修正、中英双语周报与基于本地训练数据的 AI 建议。
 
+## v0.6.4 今日训练圆环
+
+首页新增三个原生圆环：绿色展示组数，青色展示训练量，紫色展示已知训练时长。目标随当天最新保存的自动计划更新，同时保留实际数值、目标和比例。点击圆环可查看统计说明，点击目标来源可进入今日计划。
+
+没有今日计划时显示“尚无目标”；重量未确认时不计算训练量比例，自重计划不虚构负重目标。时长是计划时间参考，包含休息与离开应用时间；超过目标仍显示真实数值，不作为训练效果评价。支持中英双语与大字体上下排版。
+
+下载 [v0.6.4 调试 APK](downloads/FitPlan-v0.6.4-debug.apk)，详细口径与截图见 [圆环使用说明](docs/DAILY_RINGS.md)。本次 Windows 签名包可覆盖本机 v0.6.3，保留原有数据；未配置 GLM API Key。
+
 ## v0.6.3 首页数据看板与训练入口
 
 - **首页**直接展示今日次数、已训练组数、训练量、已知时长及完整周报，可切换历史周和趋势指标。切换历史周不改变顶部今日数据。
@@ -81,7 +89,7 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 
 ## 功能
 
-- **首页**：今日训练摘要、完整周报、历史周切换与趋势图。
+- **首页**：今日训练圆环与目标参照、完整周报、历史周切换与趋势图。
 - **训练**：今日状态和计划生成、我的计划、动作库，以及补录入口；30 个内置动作，支持搜索、筛选与自定义动作，其中新增 14 个用于补充器械替换候选。
 - **记录**：查看与修正历史、删除记录及表现分析。历史与计划独立保存，周报离线计算。
 - **周报**：每日已训练组、部位分布、近八周训练次数/组数/训练量，以及单动作最高实际重量走势。
@@ -92,7 +100,7 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 
 ## 安装体验
 
-[下载 v0.6.3 调试 APK](downloads/FitPlan-v0.6.3-debug.apk)；[v0.6.2](downloads/FitPlan-v0.6.2-debug.apk)（本包未配置 GLM API Key）。[v0.6.1](downloads/FitPlan-v0.6.1-debug.apk)、[v0.6.0](downloads/FitPlan-v0.6.0-debug.apk)、[v0.5.1](downloads/FitPlan-v0.5.1-debug.apk)、[v0.5.0](downloads/FitPlan-v0.5.0-debug.apk)、[v0.4.0](downloads/FitPlan-v0.4.0-debug.apk)、[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
+[下载 v0.6.4 调试 APK](downloads/FitPlan-v0.6.4-debug.apk)；[v0.6.3](downloads/FitPlan-v0.6.3-debug.apk)；[v0.6.2](downloads/FitPlan-v0.6.2-debug.apk)（本包未配置 GLM API Key）。[v0.6.1](downloads/FitPlan-v0.6.1-debug.apk)、[v0.6.0](downloads/FitPlan-v0.6.0-debug.apk)、[v0.5.1](downloads/FitPlan-v0.5.1-debug.apk)、[v0.5.0](downloads/FitPlan-v0.5.0-debug.apk)、[v0.4.0](downloads/FitPlan-v0.4.0-debug.apk)、[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
 
 v0.5.0 至 v0.6.1 的安装包均使用同一 Windows 调试密钥签名，可从这些旧版覆盖更新至 v0.6.1。仓库中的 v0.4.0 APK 使用另一把密钥，Android 会拒绝用此包直接覆盖安装。需要保留旧版训练记录时，可用另一台设备或模拟器体验新版。
 

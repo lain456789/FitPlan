@@ -614,6 +614,7 @@ public class MainActivity extends AppCompatActivity {
                 ReportEngine.Report report =
                         ReportEngine.build(
                                 HistoryReader.read(database.list("history")), week, now, zone);
+                report.targets = DailyTargetReader.read(database.list("plan"), now, zone);
                 handler.post(() -> {
                     if (!isDestroyed() && token == generation) {
                         status.setVisibility(View.GONE);

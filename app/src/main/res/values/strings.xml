@@ -443,4 +443,15 @@
     <string name="progress_tab">表现分析</string>
     <string name="back_training">返回训练</string>
     <string name="back_dashboard">返回首页</string>
+    <string name="ring_sets_unit">组</string>
+    <string name="ring_today">今日</string>
+    <string name="ring_no_target">尚无目标</string>
+    <string name="ring_weight_pending">目标重量待确认</string>
+    <string name="ring_bodyweight">自重计划 · 不计算负重比例</string>
+    <string name="ring_goal">目标 %1$s %2$s · %3$s%%</string>
+    <string name="ring_time_target">参考 %1$s %2$s · %3$s%%</string>
+    <string name="ring_explanation">圆环对照今日累计与最新计划，不代表达标评价。时长含休息与离开应用时间，未填写不推算。</string>
+    <string name="ring_plan_source">目标来自今日计划 · 查看或调整 ›</string>
+    <string name="ring_make_plan">制定今日计划，开启目标圆环 ›</string>
+    <string name="ring_short_help">对照今日计划；时长含休息。点圆环查看说明。</string>
 </resources>

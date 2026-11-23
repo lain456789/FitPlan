@@ -72,7 +72,14 @@ public final class ReportEngine {
         }
     }
 
+    public static final class Targets {
+        public String planId = "";
+        public double sets, volume, minutes;
+        public boolean hasPlan, volumePending;
+    }
+
     public static final class Report {
+        public Targets targets = new Targets();
         public Summary today, current, previous;
         public boolean partial;
         public final List<Summary> weeks = new ArrayList<>();

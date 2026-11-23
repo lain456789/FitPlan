@@ -443,4 +443,15 @@
     <string name="progress_tab">Progress</string>
     <string name="back_training">Back to training</string>
     <string name="back_dashboard">Back to home</string>
+    <string name="ring_sets_unit">sets</string>
+    <string name="ring_today">Today</string>
+    <string name="ring_no_target">No target yet</string>
+    <string name="ring_weight_pending">Confirm target weights</string>
+    <string name="ring_bodyweight">Bodyweight plan · no volume ratio</string>
+    <string name="ring_goal">Target %1$s %2$s · %3$s%%</string>
+    <string name="ring_time_target">Budget %1$s %2$s · %3$s%%</string>
+    <string name="ring_explanation">Rings compare today’s totals with the latest plan, not performance ratings. Time includes rest and time away; missing duration is not estimated.</string>
+    <string name="ring_plan_source">Targets from today’s plan · View or edit ›</string>
+    <string name="ring_make_plan">Create today’s plan to set ring targets ›</string>
+    <string name="ring_short_help">Based on today’s plan. Time includes rest. Tap rings for details.</string>
 </resources>
