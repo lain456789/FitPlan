@@ -121,7 +121,7 @@
     <string name="range_error">Enter a value between %1$s and %2$s</string>
     <string name="integer_error">Sets, reps and minutes must be whole numbers</string>
     <string name="rest_left">Rest · %1$s</string>
-    <string name="rest_done">Rest finished · Continue at your own pace</string>
+    <string name="rest_done">Rest finished</string>
     <string name="reason_first">No comparable complete record: set and confirm a weight (confirm 0 for bodyweight)</string>
     <string name="reason_up">Use the latest higher actual weight, without an extra increase</string>
     <string name="reason_down">Follow the latest lower actual weight</string>

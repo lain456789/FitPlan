@@ -418,7 +418,7 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout c = column();
         c.setBackground(shape(CARD, 24));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.setMargins(0, dp(8), 0, dp(8));
+        lp.setMargins(0, dp(4), 0, dp(4));
         parent.addView(c, lp);
         return c;
     }
@@ -440,7 +440,7 @@ public class MainActivity extends AppCompatActivity {
         b.setTextSize(14);
         b.setTextColor(ACCENT);
         b.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(43, 52, 39)));
-        b.setMinHeight(dp(48));
+        b.setMinHeight(dp(40));
         parent.addView(b, new LinearLayout.LayoutParams(-1, -2));
         b.setOnClickListener(v -> action.run());
         return b;

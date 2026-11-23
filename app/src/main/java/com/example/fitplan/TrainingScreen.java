@@ -6,6 +6,7 @@ import static com.example.fitplan.Store.object;
 import static com.example.fitplan.Store.put;
 
 import android.app.AlertDialog;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -848,7 +849,10 @@ final class TrainingScreen extends Screen {
     }
 
     void workout() {
-        title(s("workout_title"));
+        TextView workoutTitle = text(content, s("workout_title"), 16);
+        workoutTitle.setTypeface(null, Typeface.BOLD);
+        workoutTitle.setGravity(Gravity.END);
+        workoutTitle.setPadding(0, activity.dp(2), 0, activity.dp(4));
         JSONObject session = store.first("active");
         if (session == null) {
             text(content, s("no_active"), 16);
@@ -860,6 +864,9 @@ final class TrainingScreen extends Screen {
         content.addView(cardsArea, new LinearLayout.LayoutParams(-1, 0, 1));
         workoutCards(session, cardsArea);
         LinearLayout timer = card(content);
+        LinearLayout.LayoutParams timerLp = (LinearLayout.LayoutParams) timer.getLayoutParams();
+        timerLp.height = 0;
+        timerLp.weight = 1;
         LinearLayout times = new LinearLayout(activity);
         times.setOrientation(LinearLayout.HORIZONTAL);
         timer.addView(times, new LinearLayout.LayoutParams(-1, -2));
@@ -867,14 +874,14 @@ final class TrainingScreen extends Screen {
         elapsedBox.setOrientation(LinearLayout.VERTICAL);
         elapsedBox.setGravity(Gravity.CENTER);
         times.addView(elapsedBox, new LinearLayout.LayoutParams(0, -2, 1));
-        text(elapsedBox, s("workout_elapsed_label"), 13);
-        activity.elapsedLabel = text(elapsedBox, s("workout_elapsed", "0:00"), 26);
+        text(elapsedBox, s("workout_elapsed_label"), 12);
+        activity.elapsedLabel = text(elapsedBox, s("workout_elapsed", "0:00"), 18);
         LinearLayout restBox = new LinearLayout(activity);
         restBox.setOrientation(LinearLayout.VERTICAL);
         restBox.setGravity(Gravity.CENTER);
         times.addView(restBox, new LinearLayout.LayoutParams(0, -2, 1));
-        text(restBox, s("rest_timer"), 13);
-        activity.timerLabel = text(restBox, s("rest_done"), 26);
+        text(restBox, s("rest_timer"), 12);
+        activity.timerLabel = text(restBox, "0:00", 18);
         LinearLayout restButtons = new LinearLayout(activity);
         restButtons.setOrientation(LinearLayout.HORIZONTAL);
         timer.addView(restButtons, new LinearLayout.LayoutParams(-1, -2));
@@ -907,9 +914,9 @@ final class TrainingScreen extends Screen {
         bStop.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         LinearLayout bottom = new LinearLayout(activity);
         bottom.setOrientation(LinearLayout.VERTICAL);
-        content.addView(bottom, new LinearLayout.LayoutParams(-1, -2));
+        content.addView(bottom, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout adjustment = card(bottom);
-        TextView summary = text(adjustment, "", 16);
+        TextView summary = text(adjustment, "", 13);
         Button shorten =
                 button(adjustment, s("shorten_remaining"), () -> shortenRemaining(session));
         TextView none = text(adjustment, s("adjust_nothing_left"), 14);

@@ -121,7 +121,7 @@
     <string name="range_error">请填写 %1$s–%2$s 范围内的数值</string>
     <string name="integer_error">组数、次数和分钟数请填写整数</string>
     <string name="rest_left">休息中 %1$s</string>
-    <string name="rest_done">休息完成 · 按自己的节奏继续</string>
+    <string name="rest_done">休息完成</string>
     <string name="reason_first">暂无可比的完整记录：请设置并确认重量（自重可确认为 0）</string>
     <string name="reason_up">采用最近实际完成的较高重量，不额外加重</string>
     <string name="reason_down">跟随最近实际使用的较低重量</string>
