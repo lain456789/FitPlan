@@ -293,8 +293,9 @@ public class P0RegressionTest {
                 assertEquals("0", ((TextView) original).getText().toString());
             });
             for (String[] edit : new String[][] {{"0", "35"}, {"3", "2"}, {"10", "8"}}) {
+                scenario.onActivity(a -> click(a, edit[0]));
+                InstrumentationRegistry.getInstrumentation().waitForIdleSync();
                 scenario.onActivity(a -> {
-                    click(a, edit[0]);
                     List<EditText> fields = new ArrayList<>();
                     edits(a.activeDialog.getWindow().getDecorView(), fields);
                     assertEquals(1, fields.size());

@@ -3,10 +3,11 @@ package com.example.fitplan;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.widget.SeekBar;
+
+import androidx.appcompat.widget.AppCompatSeekBar;
 
 /** Draws prescription units against the native thumb's padded travel range. */
-final class PrescriptionSeekBar extends SeekBar {
+final class PrescriptionSeekBar extends AppCompatSeekBar {
     private final int minValue;
     private final int maxValue;
     private final int interval;

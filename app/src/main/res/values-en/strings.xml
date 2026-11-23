@@ -177,7 +177,7 @@
     <string name="definitions">How statistics work</string>
     <string name="definitions_text">Performed sets and actual reps count, including sets below target. Records with no performed sets are excluded from the workout count. A set meets its target when actual reps reach the target. Volume = weight × actual reps. Bodyweight sets and reps still count. Duration includes rest and time outside the app. Weeks run Monday–Sunday in your local time zone, based on workout finish time. Editing or deleting history recalculates reports.</string>
     <string name="privacy">Workout records stay on this device with no account or cloud sync. Only when you send a prompt in AI Coach are your local training summary and profile sent to Zhipu GLM.</string>
-    <string name="version">v0.6.0</string>
+    <string name="version">v0.6.2</string>
     <string name="back_label">Back</string>
     <string name="ex0">Barbell bench press</string>
     <string name="ex1">Incline dumbbell press</string>
@@ -402,4 +402,34 @@
     <string name="set_unrecorded">Set %1$d · Not recorded</string>
     <string name="remove_set">Remove set</string>
     <string name="set_total">%1$d sets total</string>
+    <string name="manual_add">+ Add</string>
+    <string name="manual_title">Log a past workout</string>
+    <string name="manual_help">Record training done outside the app. Returning to records keeps your draft; only the final save adds it to history.</string>
+    <string name="manual_name">Workout name (optional, up to 80 characters)</string>
+    <string name="manual_date">Workout date: %1$s</string>
+    <string name="manual_time">End time: %1$s</string>
+    <string name="manual_duration">Duration (minutes, optional, 1–1440)</string>
+    <string name="manual_actual_only">Actual results only. No original target was supplied, so target completion and progression are not inferred.</string>
+    <string name="manual_remove_set">Remove set</string>
+    <string name="manual_add_set">Add a performed set</string>
+    <string name="manual_remove_exercise_confirm">Remove this exercise and its draft sets?</string>
+    <string name="manual_discard">Discard draft</string>
+    <string name="manual_discard_confirm">Discard this entry? Unsaved contents will be cleared.</string>
+    <string name="manual_save">Save to history</string>
+    <string name="manual_search">Search exercises or body parts</string>
+    <string name="manual_set_help">Enter one set you actually performed. Bodyweight sets may use 0 kg; effort is optional.</string>
+    <string name="manual_set_line">Set %1$d · %2$s kg × %3$d reps · %4$s</string>
+    <string name="manual_default_name">Workout on %1$s</string>
+    <string name="manual_saved">Saved to workout history</string>
+    <string name="manual_source">Manually entered</string>
+    <string name="manual_duration_unknown">Duration was not supplied and adds no time to duration totals.</string>
+    <string name="manual_progress_actual">Actual total reps: %1$d · Performed sets: %2$d</string>
+    <string name="manual_invalid_set">Each set needs a weight from 0–1000 kg and a whole number of reps from 1–100.</string>
+    <string name="manual_invalid_date">Choose an actual workout date and end time no later than now.</string>
+    <string name="manual_invalid_duration">Leave duration blank or enter whole minutes from 1–1440.</string>
+    <string name="manual_need_exercise">Add at least one exercise.</string>
+    <string name="manual_need_set">Each exercise needs at least one performed set.</string>
+    <string name="manual_exercise_limit">A workout can contain up to 30 exercises.</string>
+    <string name="manual_set_limit">Each exercise can contain up to 20 sets.</string>
+    <string name="manual_name_limit">Workout names may contain up to 80 characters.</string>
 </resources>

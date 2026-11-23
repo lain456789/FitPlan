@@ -84,23 +84,30 @@ final class ProgressScreen extends Screen {
         }
         ProgressEngine.Sample latest = result.latest;
         text(summary, s("progress_latest", date(latest.finished)), 14);
-        text(
-                summary,
-                s(
-                        "progress_configuration",
-                        latest.weight() < 0 ? s("progress_no_load") : num(latest.weight()) + " kg",
-                        latest.targetSets,
-                        latest.targetReps),
-                16);
-        text(
-                summary,
-                s(
-                        "progress_actual",
-                        latest.totalReps(),
-                        latest.performed(),
-                        latest.met(),
-                        latest.targetSets),
-                16);
+        if (latest.targetReps <= 0) {
+            text(summary, s("manual_actual_only"), 14);
+            text(summary, s("manual_progress_actual", latest.totalReps(), latest.performed()), 16);
+        } else {
+            text(
+                    summary,
+                    s(
+                            "progress_configuration",
+                            latest.weight() < 0
+                                    ? s("progress_no_load")
+                                    : num(latest.weight()) + " kg",
+                            latest.targetSets,
+                            latest.targetReps),
+                    16);
+            text(
+                    summary,
+                    s(
+                            "progress_actual",
+                            latest.totalReps(),
+                            latest.performed(),
+                            latest.met(),
+                            latest.targetSets),
+                    16);
+        }
         text(
                 summary,
                 s("progress_effort", s("effort_" + TrainingFeedback.EFFORTS[latest.effort()])),

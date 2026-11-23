@@ -69,6 +69,7 @@ public final class ProgressEngine {
         }
 
         public int met() {
+            if (targetReps <= 0) return 0;
             int n = 0;
             for (SetResult s : sets) if (s.done && s.reps >= targetReps) n++;
             return n;

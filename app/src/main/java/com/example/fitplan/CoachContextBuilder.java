@@ -151,6 +151,7 @@ public final class CoachContextBuilder {
         }
 
         int metSets() {
+            if (targetReps <= 0) return 0;
             int count = 0;
             for (CoachModels.SetLog log : logs) {
                 if (log.isPerformed() && log.reps >= targetReps) {
@@ -555,10 +556,12 @@ public final class CoachContextBuilder {
                 ExerciseSample s = samples.get(i);
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("date", s.date);
-                item.put("target", s.targetSets + "x" + s.targetReps);
+                item.put(
+                        "target",
+                        s.targetReps > 0 ? s.targetSets + "x" + s.targetReps : "not_recorded");
                 item.put("max_weight_kg", round1(Math.max(0, s.maxWeight())));
                 item.put("performed_sets", s.performedSets());
-                item.put("met_sets", s.metSets());
+                item.put("met_sets", s.targetReps > 0 ? s.metSets() : null);
                 item.put("total_reps", s.totalReps());
                 item.put("has_hard_set", s.hasHardSet());
                 item.put("has_discomfort", s.hasDiscomfort());
@@ -614,7 +617,11 @@ public final class CoachContextBuilder {
                                 ? builtInZhName(row.exerciseId, row.exerciseId)
                                 : row.name);
                 rowObj.put("part", row.part);
-                rowObj.put("target", row.targetSets + "x" + row.targetReps);
+                rowObj.put(
+                        "target",
+                        row.targetReps > 0
+                                ? row.targetSets + "x" + row.targetReps
+                                : "not_recorded");
                 if (row.retired) {
                     rowObj.put("retired_replaced", true);
                 }
@@ -777,7 +784,9 @@ public final class CoachContextBuilder {
         }
         int strainedSessions = 0;
         for (ExerciseSample s : relevant) {
-            boolean missedTarget = s.metSets() < s.targetSets || s.performedSets() < s.targetSets;
+            boolean missedTarget =
+                    s.targetReps > 0
+                            && (s.metSets() < s.targetSets || s.performedSets() < s.targetSets);
             if (missedTarget || s.hasHardSet()) {
                 strainedSessions++;
             }

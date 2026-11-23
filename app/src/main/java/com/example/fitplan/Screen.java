@@ -81,6 +81,13 @@ abstract class Screen {
         return activity.date(time);
     }
 
+    String actualWeight(JSONObject log) {
+        double weight = log.optDouble("weight");
+        return Double.isFinite(weight)
+                ? java.math.BigDecimal.valueOf(weight).stripTrailingZeros().toPlainString()
+                : num(weight);
+    }
+
     String day() {
         return activity.day();
     }
@@ -262,7 +269,12 @@ abstract class Screen {
                 title = illustratedHeader(header, row.optString("exerciseId"));
             }
             text(title, activity.exerciseName(row), 20);
-            text(exerciseCard, s("feedback_target", row.optInt("reps")), 14);
+            text(
+                    exerciseCard,
+                    row.optBoolean("actualOnly")
+                            ? s("manual_actual_only")
+                            : s("feedback_target", row.optInt("reps")),
+                    14);
             if (row.optBoolean("retired")) text(exerciseCard, s("replacement_retired"), 14);
             if (row.has("replacementOf")) text(exerciseCard, s("replacement_confirmed"), 14);
             LinearLayout details = new LinearLayout(activity);
@@ -371,7 +383,7 @@ abstract class Screen {
                             active
                                     ? s("set_total", logs.length() - skippedSets)
                                     : log.optBoolean("done") ? s("done") : s("not_done"),
-                            num(log.optDouble("weight")),
+                            actualWeight(log),
                             log.optInt("reps")),
                     16);
             if (log.optBoolean("done") || log.optBoolean("resolved") || !active)

@@ -5,6 +5,8 @@ import android.widget.LinearLayout;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.List;
+
 final class RecordsScreen extends Screen {
     RecordsScreen(MainActivity activity) {
         super(activity);
@@ -13,13 +15,14 @@ final class RecordsScreen extends Screen {
     void history() {
         activity.recordTabs();
         title(s("history_title"));
-        JSONArray sessions = store.list("history");
+        List<JSONObject> sessions = HistoryReader.sorted(store.list("history"));
         button(content, s("progress_title"), () -> show("progress"));
-        if (sessions.length() == 0) text(content, s("empty_history"), 16);
-        for (int i = 0; i < sessions.length(); i++) {
-            JSONObject session = sessions.optJSONObject(i);
+        if (sessions.size() == 0) text(content, s("empty_history"), 16);
+        for (int i = 0; i < sessions.size(); i++) {
+            JSONObject session = sessions.get(i);
             LinearLayout c = card(content);
             text(c, activity.planName(session), 20);
+            if ("manual".equals(session.optString("recordSource"))) text(c, s("manual_source"), 14);
             if (session.optBoolean("abandoned")) text(c, s("abandoned_workout"), 14);
             text(
                     c,
@@ -46,14 +49,22 @@ final class RecordsScreen extends Screen {
     void historyDetail(JSONObject session) {
         content.removeAllViews();
         title(activity.planName(session));
+        if ("manual".equals(session.optString("recordSource"))) {
+            text(content, s("manual_source"), 14);
+            if (!session.optBoolean("durationKnown"))
+                text(content, s("manual_duration_unknown"), 14);
+        }
         if (session.optBoolean("abandoned")) text(content, s("abandoned_workout"), 14);
         button(content, s("back_history"), () -> show("history"));
         text(
                 content,
-                s(
-                        "session_time",
-                        date(session.optLong("started")),
-                        date(session.optLong("finished"))),
+                "manual".equals(session.optString("recordSource"))
+                                && !session.optBoolean("durationKnown")
+                        ? s("manual_time", date(session.optLong("finished")))
+                        : s(
+                                "session_time",
+                                date(session.optLong("started")),
+                                date(session.optLong("finished"))),
                 14);
         button(
                 content,

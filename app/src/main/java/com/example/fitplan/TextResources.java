@@ -874,6 +874,66 @@ final class TextResources {
                 return R.string.coach_err_server;
             case "coach_err_generic":
                 return R.string.coach_err_generic;
+            case "manual_add":
+                return R.string.manual_add;
+            case "manual_title":
+                return R.string.manual_title;
+            case "manual_help":
+                return R.string.manual_help;
+            case "manual_name":
+                return R.string.manual_name;
+            case "manual_date":
+                return R.string.manual_date;
+            case "manual_time":
+                return R.string.manual_time;
+            case "manual_duration":
+                return R.string.manual_duration;
+            case "manual_actual_only":
+                return R.string.manual_actual_only;
+            case "manual_remove_set":
+                return R.string.manual_remove_set;
+            case "manual_add_set":
+                return R.string.manual_add_set;
+            case "manual_remove_exercise_confirm":
+                return R.string.manual_remove_exercise_confirm;
+            case "manual_discard":
+                return R.string.manual_discard;
+            case "manual_discard_confirm":
+                return R.string.manual_discard_confirm;
+            case "manual_save":
+                return R.string.manual_save;
+            case "manual_search":
+                return R.string.manual_search;
+            case "manual_set_help":
+                return R.string.manual_set_help;
+            case "manual_set_line":
+                return R.string.manual_set_line;
+            case "manual_default_name":
+                return R.string.manual_default_name;
+            case "manual_saved":
+                return R.string.manual_saved;
+            case "manual_source":
+                return R.string.manual_source;
+            case "manual_duration_unknown":
+                return R.string.manual_duration_unknown;
+            case "manual_progress_actual":
+                return R.string.manual_progress_actual;
+            case "manual_invalid_set":
+                return R.string.manual_invalid_set;
+            case "manual_invalid_date":
+                return R.string.manual_invalid_date;
+            case "manual_invalid_duration":
+                return R.string.manual_invalid_duration;
+            case "manual_need_exercise":
+                return R.string.manual_need_exercise;
+            case "manual_need_set":
+                return R.string.manual_need_set;
+            case "manual_exercise_limit":
+                return R.string.manual_exercise_limit;
+            case "manual_set_limit":
+                return R.string.manual_set_limit;
+            case "manual_name_limit":
+                return R.string.manual_name_limit;
             default:
                 throw new IllegalArgumentException("Unknown text key: " + key);
         }

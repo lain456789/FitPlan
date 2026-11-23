@@ -29,7 +29,12 @@ final class SetEntryDialog extends Screen {
         JSONObject row = session.optJSONArray("rows").optJSONObject(rowIndex);
         JSONObject log = row.optJSONArray("logs").optJSONObject(logIndex);
         LinearLayout form = column();
-        text(form, s("feedback_help", row.optInt("reps")), 14);
+        text(
+                form,
+                row.optBoolean("actualOnly")
+                        ? s("manual_actual_only")
+                        : s("feedback_help", row.optInt("reps")),
+                14);
         String initialReps =
                 !active && !log.optBoolean("done") && !log.has("feedbackVersion")
                         ? "0"

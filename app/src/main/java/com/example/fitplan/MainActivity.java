@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
     String page = "home", detailId = "", metric = "sessions", exerciseId = "";
     long selectedWeek;
     JSONObject homeDraft;
+    JSONObject manualHistoryDraft;
     Runnable captureHome;
     TextView timerLabel;
     final List<CoachModels.ChatMessage> coachMessages = new ArrayList<>();
@@ -132,6 +133,8 @@ public class MainActivity extends AppCompatActivity {
             try {
                 String draft = state.getString("draft");
                 if (draft != null) homeDraft = new JSONObject(draft);
+                String manual = state.getString("manualHistoryDraft");
+                if (manual != null) manualHistoryDraft = new JSONObject(manual);
             } catch (JSONException ignored) {
             }
         }
@@ -143,7 +146,8 @@ public class MainActivity extends AppCompatActivity {
                                 if (page.equals("planDetail")
                                         || page.equals("workout")
                                         || page.equals("library")) show("plans");
-                                else if (page.equals("historyDetail")
+                                else if (page.equals("manualHistory")
+                                        || page.equals("historyDetail")
                                         || page.equals("weekly")
                                         || page.equals("progress")) show("history");
                                 else if (!page.equals("home")) show("home");
@@ -175,6 +179,8 @@ public class MainActivity extends AppCompatActivity {
         state.putString("metric", metric);
         state.putString("exercise", exerciseId);
         if (homeDraft != null) state.putString("draft", homeDraft.toString());
+        if (manualHistoryDraft != null)
+            state.putString("manualHistoryDraft", manualHistoryDraft.toString());
         super.onSaveInstanceState(state);
     }
 
@@ -474,6 +480,9 @@ public class MainActivity extends AppCompatActivity {
                     else new TrainingScreen(this).editPlan(p);
                     break;
                 }
+            case "manualHistory":
+                new ManualHistoryScreen(this).render();
+                break;
             case "history":
                 new RecordsScreen(this).history();
                 break;
@@ -515,6 +524,7 @@ public class MainActivity extends AppCompatActivity {
                                         ? "profile"
                                         : page.equals("history")
                                                         || page.equals("historyDetail")
+                                                        || page.equals("manualHistory")
                                                         || page.equals("weekly")
                                                         || page.equals("progress")
                                                 ? "records"
@@ -553,10 +563,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void recordTabs() {
-        tabs(new String[] {"history", "weekly"}, new String[] {"history", "weekly"});
+        LinearLayout row =
+                tabs(new String[] {"history", "weekly"}, new String[] {"history", "weekly"});
+        Button add = button(row, s("manual_add"), () -> show("manualHistory"));
+        add.setContentDescription(s("manual_title"));
+        add.setTextSize(14);
+        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
     }
 
-    private void tabs(String[] routes, String[] labels) {
+    private LinearLayout tabs(String[] routes, String[] labels) {
         LinearLayout row = new LinearLayout(this);
         content.addView(row);
         for (int i = 0; i < routes.length; i++) {
@@ -568,6 +583,7 @@ public class MainActivity extends AppCompatActivity {
                 b.setBackgroundTintList(ColorStateList.valueOf(ACCENT));
             }
         }
+        return row;
     }
 
     void loadReport(long week, Consumer<ReportEngine.Report> callback, TextView status) {

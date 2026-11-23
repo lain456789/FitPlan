@@ -177,7 +177,7 @@
     <string name="definitions">统计口径</string>
     <string name="definitions_text">只统计已训练组及其实际次数，未达目标的已训练组也会计入；零已训练组的记录不计训练次数。达标组是实际次数达到目标的已训练组。训练量 = 重量 × 实际次数，自重动作仍计入组数和次数。训练时长包含休息及离开应用时间。自然周为本地时间周一至周日，按训练结束时间归属；历史修改或删除后重新计算。</string>
     <string name="privacy">训练记录保存在本机，不使用账号或云同步；仅在「AI 教练」主动发送提问时，将本地训练摘要与档案发送至智谱 GLM 生成建议。</string>
-    <string name="version">v0.6.0</string>
+    <string name="version">v0.6.2</string>
     <string name="back_label">返回</string>
     <string name="ex0">杠铃卧推</string>
     <string name="ex1">哑铃上斜卧推</string>
@@ -402,4 +402,34 @@
     <string name="set_unrecorded">第 %1$d 组 · 未记录</string>
     <string name="remove_set">减少一组</string>
     <string name="set_total">共 %1$d 组</string>
+    <string name="manual_add">+ 补录</string>
+    <string name="manual_title">补录训练</string>
+    <string name="manual_help">补记未使用 App 的训练。返回记录页会保留草稿；确认保存后才会加入历史。</string>
+    <string name="manual_name">训练名称（选填，最多 80 字）</string>
+    <string name="manual_date">训练日期：%1$s</string>
+    <string name="manual_time">结束时间：%1$s</string>
+    <string name="manual_duration">训练时长（分钟，选填，1–1440）</string>
+    <string name="manual_actual_only">仅记录实际表现，未提供原定目标，不判断达标或触发进阶建议。</string>
+    <string name="manual_remove_set">删除此组</string>
+    <string name="manual_add_set">添加一组实际记录</string>
+    <string name="manual_remove_exercise_confirm">删除这个动作及草稿中的逐组记录？</string>
+    <string name="manual_discard">放弃补录草稿</string>
+    <string name="manual_discard_confirm">放弃本次补录？尚未保存的内容将被清除。</string>
+    <string name="manual_save">保存到历史</string>
+    <string name="manual_search">搜索动作名称或训练部位</string>
+    <string name="manual_set_help">填写实际训练过的一组。自重动作可填 0 kg；难度可以不填。</string>
+    <string name="manual_set_line">第 %1$d 组 · %2$s kg × %3$d 次 · %4$s</string>
+    <string name="manual_default_name">%1$s 补录训练</string>
+    <string name="manual_saved">已保存到训练历史</string>
+    <string name="manual_source">手动补录</string>
+    <string name="manual_duration_unknown">未填写训练时长；本条记录不计入训练时长合计。</string>
+    <string name="manual_progress_actual">实际总次数 %1$d · 已训练 %2$d 组</string>
+    <string name="manual_invalid_set">每组需填写 0–1000 kg 的重量和 1–100 的整数次数。</string>
+    <string name="manual_invalid_date">请选择不晚于当前时间的实际训练日期和结束时间。</string>
+    <string name="manual_invalid_duration">时长请留空，或填写 1–1440 的整数分钟。</string>
+    <string name="manual_need_exercise">请至少添加一个训练动作。</string>
+    <string name="manual_need_set">每个动作至少需要一组实际训练记录。</string>
+    <string name="manual_exercise_limit">一次补录最多添加 30 个动作。</string>
+    <string name="manual_set_limit">每个动作最多补录 20 组。</string>
+    <string name="manual_name_limit">训练名称最多填写 80 字。</string>
 </resources>
