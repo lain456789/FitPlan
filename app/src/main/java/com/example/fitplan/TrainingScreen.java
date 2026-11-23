@@ -788,25 +788,40 @@ final class TrainingScreen extends Screen {
             int remaining = WorkoutAdjustments.pendingRow(row);
             if (remaining == 0) continue;
             visible++;
-            LinearLayout c = activity.column();
+            LinearLayout c = new LinearLayout(activity);
+            c.setOrientation(LinearLayout.HORIZONTAL);
             c.setBackground(activity.shape(MainActivity.CARD, 24));
+            c.setPadding(activity.dp(16), activity.dp(12), activity.dp(16), activity.dp(12));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(cardWidth, -1);
             lp.setMarginEnd(activity.dp(12));
             track.addView(c, lp);
-            LinearLayout header = pane(c);
+            LinearLayout left = new LinearLayout(activity);
+            left.setOrientation(LinearLayout.VERTICAL);
+            c.addView(left, new LinearLayout.LayoutParams(0, -1, 1));
+            TextView name = text(left, activity.exerciseName(row), 18);
+            name.setTypeface(null, Typeface.BOLD);
             text(
-                    illustratedHeader(header, row.optString("exerciseId")),
-                    activity.exerciseName(row),
-                    18);
-            text(
-                    c,
+                    left,
                     s(
                             "prescription",
                             num(row.optDouble("weight")),
                             row.optInt("sets"),
                             row.optInt("reps")),
                     14);
-            button(c, s("complete_set", remaining), () -> completeNextSet(session, rowIndex));
+            left.addView(new View(activity), new LinearLayout.LayoutParams(-1, 0, 1));
+            Button complete = button(
+                    left,
+                    s("complete_set", row.optInt("sets") - remaining),
+                    () -> completeNextSet(session, rowIndex));
+            complete.setTextSize(12);
+            complete.setMinHeight(activity.dp(32));
+            complete.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
+            int imgRes = exerciseImage(row.optString("exerciseId"));
+            ImageView image = new ImageView(activity);
+            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            if (imgRes != 0) image.setImageResource(imgRes);
+            image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            c.addView(image, new LinearLayout.LayoutParams(0, -1, 1));
         }
         if (visible == 0) text(parent, s("all_sets_done"), 16);
     }

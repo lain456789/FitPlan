@@ -432,7 +432,7 @@
     <string name="manual_exercise_limit">A workout can contain up to 30 exercises.</string>
     <string name="manual_set_limit">Each exercise can contain up to 20 sets.</string>
     <string name="manual_name_limit">Workout names may contain up to 80 characters.</string>
-    <string name="complete_set">Complete set · %1$d left</string>
+    <string name="complete_set">Complete %1$d sets</string>
     <string name="all_sets_done">All exercises completed</string>
     <string name="move_left">Move left</string>
     <string name="move_right">Move right</string>

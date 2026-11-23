@@ -432,7 +432,7 @@
     <string name="manual_exercise_limit">一次补录最多添加 30 个动作。</string>
     <string name="manual_set_limit">每个动作最多补录 20 组。</string>
     <string name="manual_name_limit">训练名称最多填写 80 字。</string>
-    <string name="complete_set">完成一组 · 剩 %1$d 组</string>
+    <string name="complete_set">完成 %1$d 组</string>
     <string name="all_sets_done">所有动作已完成，可结束训练</string>
     <string name="move_left">前移</string>
     <string name="move_right">后移</string>
