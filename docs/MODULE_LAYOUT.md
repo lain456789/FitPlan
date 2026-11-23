@@ -29,4 +29,4 @@
 
 基于 codex/manual-workout-history-v0.6.2 的 968c352，在本地 feature/module-layout-v0.6.3 分支实现。DailyPlanScreen 承接原表单和生成规则，HomeScreen 与 WeeklyScreen 展示同一次后台计算的今日与周报快照；ReportEngine.Report 增加 today 摘要。没有数据库迁移或历史数据重写。
 
-版本 0.6.3，versionCode 13。下载包使用当前 Windows 调试签名，不能覆盖其他签名包；不要通过卸载已有应用来尝试保留数据。API Key 未配置。详细检查结果见 [验证记录](TESTING.md)。本次变更尚未推送 GitHub。
+版本 0.6.3，versionCode 13。下载包使用当前 Windows 调试签名，不能覆盖其他签名包；不要通过卸载已有应用来尝试保留数据。API Key 未配置。详细检查结果见 [验证记录](TESTING.md)。本次布局变更已包含在后续 v0.6.4 功能分支中，供合并审核。
