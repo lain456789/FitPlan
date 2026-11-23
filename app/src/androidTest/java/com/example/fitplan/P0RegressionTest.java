@@ -266,19 +266,43 @@ public class P0RegressionTest {
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(a -> {
                 a.openPlan(plan);
-                click(a, a.s("adjust"));
             });
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(a -> {
-                List<EditText> fields = new ArrayList<>();
-                edits(a.activeDialog.getWindow().getDecorView(), fields);
-                assertEquals(3, fields.size());
-                fields.get(0).setText("35");
-                fields.get(1).setText("2");
-                fields.get(2).setText("8");
-                click(a, a.s("save"));
+                View original = find(a.content, "40");
+                android.widget.SeekBar slider =
+                        (android.widget.SeekBar) ((ViewGroup) original.getParent()).getChildAt(1);
+                assertEquals(200, slider.getMax()); // 0–100 kg in half-kilogram increments.
+                long now = android.os.SystemClock.uptimeMillis();
+                for (int action :
+                        new int[] {
+                            android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP
+                        }) {
+                    android.view.MotionEvent event =
+                            android.view.MotionEvent.obtain(
+                                    now,
+                                    now,
+                                    action,
+                                    slider.getPaddingLeft(),
+                                    slider.getHeight() / 2f,
+                                    0);
+                    slider.dispatchTouchEvent(event);
+                    event.recycle();
+                }
+                assertTrue(original.isAttachedToWindow());
+                assertEquals("0", ((TextView) original).getText().toString());
             });
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            for (String[] edit : new String[][] {{"0", "35"}, {"3", "2"}, {"10", "8"}}) {
+                scenario.onActivity(a -> {
+                    click(a, edit[0]);
+                    List<EditText> fields = new ArrayList<>();
+                    edits(a.activeDialog.getWindow().getDecorView(), fields);
+                    assertEquals(1, fields.size());
+                    fields.get(0).setText(edit[1]);
+                    click(a, a.s("save"));
+                });
+                InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            }
             scenario.recreate();
             scenario.onActivity(a -> {
                 JSONObject stored = a.find("plan", plan.optString("id")),

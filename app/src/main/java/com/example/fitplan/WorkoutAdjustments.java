@@ -290,6 +290,7 @@ final class WorkoutAdjustments {
             if (i == rowIndex) updated.put(replacement);
         }
         put(next, "rows", updated);
+        put(next, "displayRow", rowIndex + 1);
         JSONArray unavailableList = new JSONArray();
         for (String item : blocked) unavailableList.put(item);
         put(next, "unavailableEquipment", unavailableList);

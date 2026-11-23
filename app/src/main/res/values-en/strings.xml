@@ -94,7 +94,7 @@
     <string name="one_set">Record a performed set or a reason for not training first</string>
     <string name="finish_confirm">Finish workout? Performed sets and actual reps count, including sets below target.</string>
     <string name="discard">Discard workout</string>
-    <string name="discard_confirm">Discard and delete this active workout?</string>
+    <string name="discard_confirm">Abandon this unfinished workout?</string>
     <string name="done">Performed</string>
     <string name="not_done">Not performed</string>
     <string name="log_line">Set %1$d · %2$s · %3$s kg × %4$d reps</string>
@@ -138,7 +138,7 @@
     <string name="plan_time_limit">At generation, time limited the exercise count or number of sets.</string>
     <string name="plan_missing_parts">Selected body parts not covered by this plan: %1$s. Change the time or edit the plan.</string>
     <string name="plan_over_budget">The current estimate exceeds your available time. Review the edited plan.</string>
-    <string name="confirm_weight_hint">Open Edit weight / sets / reps and save to confirm. Legacy recommendations also need confirmation.</string>
+    <string name="confirm_weight_hint">Adjust a slider, tap a value, or confirm the current weight.</string>
     <string name="confirm_weight_before_start">Confirm the pending exercise weights before starting.</string>
     <string name="weekly_title">See your progress, week by week</string>
     <string name="this_week">This week</string>
@@ -392,4 +392,14 @@
     <string name="coach_err_network">Network request timed out or dropped. Please try again.</string>
     <string name="coach_err_server">Zhipu server temporarily unavailable. Please try again shortly.</string>
     <string name="coach_err_generic">Request failed: %1$s</string>
+    <string name="previous_exercise">← Previous</string>
+    <string name="next_exercise">Next →</string>
+    <string name="exercise_position">Exercise %1$d / %2$d</string>
+    <string name="no_pending_sets">No pending sets for this exercise</string>
+    <string name="review_recorded">Review recorded sets</string>
+    <string name="delete_with_workout">Also delete this workout</string>
+    <string name="abandoned_workout">Abandoned workout</string>
+    <string name="set_unrecorded">Set %1$d · Not recorded</string>
+    <string name="remove_set">Remove set</string>
+    <string name="set_total">%1$d sets total</string>
 </resources>

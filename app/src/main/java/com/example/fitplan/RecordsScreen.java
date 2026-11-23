@@ -20,6 +20,7 @@ final class RecordsScreen extends Screen {
             JSONObject session = sessions.optJSONObject(i);
             LinearLayout c = card(content);
             text(c, activity.planName(session), 20);
+            if (session.optBoolean("abandoned")) text(c, s("abandoned_workout"), 14);
             text(
                     c,
                     s(
@@ -45,6 +46,7 @@ final class RecordsScreen extends Screen {
     void historyDetail(JSONObject session) {
         content.removeAllViews();
         title(activity.planName(session));
+        if (session.optBoolean("abandoned")) text(content, s("abandoned_workout"), 14);
         button(content, s("back_history"), () -> show("history"));
         text(
                 content,
@@ -76,6 +78,6 @@ final class RecordsScreen extends Screen {
                             activity.sessionNotes(session, check)),
                     14);
         new TrainingScreen(activity).adjustmentHistory(session);
-        renderLogs(session, false);
+        renderLogs(session, false, content, null);
     }
 }

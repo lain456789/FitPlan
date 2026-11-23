@@ -3,6 +3,23 @@ package com.example.fitplan;
 final class TextResources {
     static int id(String key) {
         switch (key) {
+            case "set_unrecorded":
+                return R.string.set_unrecorded;
+            case "previous_exercise":
+                return R.string.previous_exercise;
+            case "next_exercise":
+                return R.string.next_exercise;
+            case "exercise_position":
+                return R.string.exercise_position;
+            case "no_pending_sets":
+                return R.string.no_pending_sets;
+            case "review_recorded":
+                return R.string.review_recorded;
+            case "delete_with_workout":
+                return R.string.delete_with_workout;
+            case "abandoned_workout":
+                return R.string.abandoned_workout;
+
             case "browse_name":
                 return R.string.browse_name;
             case "browse_muscle":
@@ -285,6 +302,10 @@ final class TextResources {
                 return R.string.set_done;
             case "set_title":
                 return R.string.set_title;
+            case "set_total":
+                return R.string.set_total;
+            case "remove_set":
+                return R.string.remove_set;
             case "add_set":
                 return R.string.add_set;
             case "max_sets":

@@ -144,7 +144,7 @@ final class SetEntryDialog extends Screen {
                             put(updated, "restUntil", System.currentTimeMillis() + 60000);
                         store.saveSessionEdit(
                                 active ? "active" : "history", session, updated, false);
-                        if (active) show("workout");
+                        if (active) refreshAtCurrentPosition("workout");
                         else activity.openHistory(updated);
                     } catch (TrainingFeedback.Invalid e) {
                         throw new IllegalArgumentException(s(e.key));

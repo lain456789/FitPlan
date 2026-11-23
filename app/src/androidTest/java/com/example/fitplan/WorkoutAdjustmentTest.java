@@ -215,6 +215,47 @@ public class WorkoutAdjustmentTest {
     }
 
     @Test
+    public void reducingSetsProtectsRecordedSetsAndAllowsAnEmptyExerciseToRestart() {
+        JSONObject session = fixture();
+        String recorded = firstLog(session).toString();
+        try (ActivityScenario<MainActivity> scenario =
+                ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(a -> a.show("workout"));
+            idle();
+            scenario.onActivity(a -> {
+                View timer = a.timerLabel;
+                View remove = findView(a.content, a.s("remove_set"));
+                android.widget.ScrollView scroll = a.findViewById(R.id.scroller);
+                scroll.scrollTo(0, a.dp(150));
+                int offset = scroll.getScrollY();
+                assertTrue(offset > 0);
+                click(a, a.s("add_set"));
+                assertTrue(remove == findView(a.content, a.s("remove_set")));
+                assertTrue(timer == a.timerLabel);
+                assertEquals(offset, scroll.getScrollY());
+                click(a, a.s("remove_set"));
+                assertTrue(remove == findView(a.content, a.s("remove_set")));
+                assertEquals(offset, scroll.getScrollY());
+                click(a, a.s("remove_set"));
+                click(a, a.s("remove_set"));
+                assertFalse(findView(a.content, a.s("remove_set")).isEnabled());
+                assertEquals(
+                        recorded, firstLog(find("active", session.optString("id"))).toString());
+                click(a, a.s("next_exercise"));
+                click(a, a.s("remove_set"));
+                click(a, a.s("remove_set"));
+                assertFalse(findView(a.content, a.s("remove_set")).isEnabled());
+                assertTrue(
+                        collect(a.content, TextView.class).stream()
+                                .anyMatch(v -> a.s("no_pending_sets").contentEquals(v.getText())));
+                click(a, a.s("add_set"));
+                assertTrue(findView(a.content, a.s("remove_set")).isEnabled());
+                assertNotNull(findView(a.content, a.s("record_set", 1)));
+            });
+        }
+    }
+
+    @Test
     public void creatingAndCancellingPreviewNeverChangesStoredRecords() {
         JSONObject session = fixture();
         String before = session.toString();
