@@ -432,4 +432,15 @@
     <string name="manual_exercise_limit">A workout can contain up to 30 exercises.</string>
     <string name="manual_set_limit">Each exercise can contain up to 20 sets.</string>
     <string name="manual_name_limit">Workout names may contain up to 80 characters.</string>
+    <string name="dashboard_title">Training overview</string>
+    <string name="today_summary">Today</string>
+    <string name="known_duration">Recorded duration</string>
+    <string name="known_duration_help">Includes recorded duration, rest and time away from the app. Missing duration is not estimated.</string>
+    <string name="empty_today">No saved training for today yet.</string>
+    <string name="go_training">Go to training</string>
+    <string name="daily_plan_tab">Today</string>
+    <string name="my_plans_tab">My plans</string>
+    <string name="progress_tab">Progress</string>
+    <string name="back_training">Back to training</string>
+    <string name="back_dashboard">Back to home</string>
 </resources>

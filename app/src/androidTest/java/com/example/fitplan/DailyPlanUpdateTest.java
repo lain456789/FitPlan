@@ -316,7 +316,7 @@ public class DailyPlanUpdateTest {
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(a -> {
-                HomeScreen home = new HomeScreen(a);
+                DailyPlanScreen home = new DailyPlanScreen(a);
                 JSONObject first = home.submitCheckin(check(day, 30));
                 String planId = first.optString("id");
                 JSONObject updated = check(day, 60);

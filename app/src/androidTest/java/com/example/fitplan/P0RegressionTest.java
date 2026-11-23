@@ -120,7 +120,7 @@ public class P0RegressionTest {
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(a -> {
-                HomeScreen home = new HomeScreen(a);
+                DailyPlanScreen home = new DailyPlanScreen(a);
                 JSONObject normal = home.generate(check(false)),
                         reduced = home.generate(check(true));
                 assertEquals(6, total(normal));
@@ -224,7 +224,7 @@ public class P0RegressionTest {
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(a -> {
-                HomeScreen home = new HomeScreen(a);
+                DailyPlanScreen home = new DailyPlanScreen(a);
                 JSONObject ref = home.recentReference(exercise, 10, 3);
                 assertNotNull(ref);
                 assertEquals(40, ref.optDouble("weight"), 0);

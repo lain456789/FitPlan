@@ -370,7 +370,7 @@ public class ProgressFeedbackTest {
                                 0,
                                 "parts",
                                 new JSONArray().put("chest"));
-                JSONObject plan = new HomeScreen(a).generate(check);
+                JSONObject plan = new DailyPlanScreen(a).generate(check);
                 JSONObject chosen = null;
                 JSONArray rows = plan.optJSONArray("rows");
                 for (int i = 0; i < rows.length(); i++)

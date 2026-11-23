@@ -57,10 +57,11 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout content;
     android.app.AlertDialog activeDialog;
     String page = "home", detailId = "", metric = "sessions", exerciseId = "";
+    String progressReturn = "history", manualReturn = "dailyPlan";
     long selectedWeek;
-    JSONObject homeDraft;
+    JSONObject dailyDraft;
     JSONObject manualHistoryDraft;
-    Runnable captureHome;
+    Runnable captureDaily;
     TextView timerLabel;
     final List<CoachModels.ChatMessage> coachMessages = new ArrayList<>();
     boolean coachProfileExpanded = false;
@@ -127,12 +128,14 @@ public class MainActivity extends AppCompatActivity {
         if (state != null) {
             page = state.getString("page", "home");
             detailId = state.getString("detail", "");
+            progressReturn = state.getString("progressReturn", "history");
+            manualReturn = state.getString("manualReturn", "dailyPlan");
             selectedWeek = state.getLong("week", selectedWeek);
             metric = state.getString("metric", "sessions");
             exerciseId = state.getString("exercise", "");
             try {
                 String draft = state.getString("draft");
-                if (draft != null) homeDraft = new JSONObject(draft);
+                if (draft != null) dailyDraft = new JSONObject(draft);
                 String manual = state.getString("manualHistoryDraft");
                 if (manual != null) manualHistoryDraft = new JSONObject(manual);
             } catch (JSONException ignored) {
@@ -143,15 +146,7 @@ public class MainActivity extends AppCompatActivity {
                         this,
                         new OnBackPressedCallback(true) {
                             public void handleOnBackPressed() {
-                                if (page.equals("planDetail")
-                                        || page.equals("workout")
-                                        || page.equals("library")) show("plans");
-                                else if (page.equals("manualHistory")
-                                        || page.equals("historyDetail")
-                                        || page.equals("weekly")
-                                        || page.equals("progress")) show("history");
-                                else if (!page.equals("home")) show("home");
-                                else finish();
+                                navigateBack();
                             }
                         });
         show(page);
@@ -161,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         handler.post(ticker);
+        if (page.equals("home")) show("home");
     }
 
     @Override
@@ -175,10 +171,12 @@ public class MainActivity extends AppCompatActivity {
         captureDraft();
         state.putString("page", page);
         state.putString("detail", detailId);
+        state.putString("progressReturn", progressReturn);
+        state.putString("manualReturn", manualReturn);
         state.putLong("week", selectedWeek);
         state.putString("metric", metric);
         state.putString("exercise", exerciseId);
-        if (homeDraft != null) state.putString("draft", homeDraft.toString());
+        if (dailyDraft != null) state.putString("draft", dailyDraft.toString());
         if (manualHistoryDraft != null)
             state.putString("manualHistoryDraft", manualHistoryDraft.toString());
         super.onSaveInstanceState(state);
@@ -214,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void captureDraft() {
-        if (captureHome != null) captureHome.run();
+        if (captureDaily != null) captureDaily.run();
     }
 
     String language() {
@@ -448,15 +446,33 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
+    void navigateBack() {
+        if (page.equals("manualHistory")) show(manualReturn);
+        else if (page.equals("progress")) show(progressReturn);
+        else if (page.equals("planDetail") || page.equals("workout")) show("plans");
+        else if (page.equals("plans") || page.equals("library")) show("dailyPlan");
+        else if (page.equals("historyDetail")) show("history");
+        else if (!page.equals("home")) show("home");
+        else finish();
+    }
+
     void show(String route) {
+        if (route.equals("weekly")) route = "home";
+        if (route.equals("progress") && !page.equals("progress"))
+            progressReturn =
+                    page.equals("home")
+                            ? "home"
+                            : page.equals("historyDetail") ? "historyDetail" : "history";
+        if (route.equals("manualHistory") && !page.equals("manualHistory"))
+            manualReturn = page.equals("plans") || page.equals("library") ? page : "dailyPlan";
         captureDraft();
-        captureHome = null;
+        captureDaily = null;
         timerLabel = null;
         if (!route.equals("coach")) clearCoachSession();
         generation++;
         page = route;
         content.removeAllViews();
-        LinearLayout homeActions = findViewById(R.id.home_actions);
+        LinearLayout homeActions = findViewById(R.id.page_actions);
         homeActions.removeAllViews();
         homeActions.setVisibility(View.GONE);
         ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
@@ -464,6 +480,9 @@ public class MainActivity extends AppCompatActivity {
         ((ScrollView) findViewById(R.id.scroller)).scrollTo(0, 0);
         renderNavigation();
         switch (route) {
+            case "dailyPlan":
+                new DailyPlanScreen(this).today();
+                break;
             case "plans":
                 new TrainingScreen(this).plans();
                 break;
@@ -493,9 +512,6 @@ public class MainActivity extends AppCompatActivity {
                     else new RecordsScreen(this).historyDetail(h);
                     break;
                 }
-            case "weekly":
-                new WeeklyScreen(this).render();
-                break;
             case "progress":
                 new ProgressScreen(this).render();
                 break;
@@ -507,7 +523,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             default:
                 page = "home";
-                new HomeScreen(this).today();
+                new HomeScreen(this).render();
         }
     }
 
@@ -516,7 +532,7 @@ public class MainActivity extends AppCompatActivity {
         nav.removeAllViews();
         nav.setBackground(shape(Color.rgb(36, 40, 46), 32));
         String group =
-                page.equals("home")
+                (page.equals("home") || (page.equals("progress") && progressReturn.equals("home")))
                         ? "home"
                         : page.equals("coach")
                                 ? "coach"
@@ -524,12 +540,10 @@ public class MainActivity extends AppCompatActivity {
                                         ? "profile"
                                         : page.equals("history")
                                                         || page.equals("historyDetail")
-                                                        || page.equals("manualHistory")
-                                                        || page.equals("weekly")
                                                         || page.equals("progress")
                                                 ? "records"
                                                 : "training";
-        String[] routes = {"home", "plans", "history", "coach", "profile"},
+        String[] routes = {"home", "dailyPlan", "history", "coach", "profile"},
                 labels = {"home", "training", "records", "coach", "profile"};
         for (int i = 0; i < routes.length; i++) {
             final String route = routes[i];
@@ -557,18 +571,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void trainingTabs() {
-        tabs(new String[] {"plans", "library"}, new String[] {"plans", "library"});
+        LinearLayout header = new LinearLayout(this);
+        content.addView(header);
+        TextView label = text(header, s("training"), 20);
+        label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button add = button(header, s("manual_add"), () -> show("manualHistory"));
+        add.setContentDescription(s("manual_title"));
+        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
+        tabs(
+                new String[] {"dailyPlan", "plans", "library"},
+                new String[] {"daily_plan_tab", "my_plans_tab", "library"});
         if (store.first("active") != null)
             button(content, s("continue_workout"), () -> show("workout"));
     }
 
     void recordTabs() {
-        LinearLayout row =
-                tabs(new String[] {"history", "weekly"}, new String[] {"history", "weekly"});
-        Button add = button(row, s("manual_add"), () -> show("manualHistory"));
-        add.setContentDescription(s("manual_title"));
-        add.setTextSize(14);
-        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
+        tabs(new String[] {"history", "progress"}, new String[] {"history", "progress_tab"});
     }
 
     private LinearLayout tabs(String[] routes, String[] labels) {
@@ -608,23 +626,6 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
-    }
-
-    void loadHomeSummary(LinearLayout parent) {
-        LinearLayout c = card(parent);
-        c.setOrientation(LinearLayout.HORIZONTAL);
-        c.setGravity(Gravity.CENTER_VERTICAL);
-        TextView status = text(c, s("loading"), 14);
-        status.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button weekly = button(c, s("weekly"), () -> show("weekly"));
-        weekly.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
-        loadReport(
-                ReportEngine.weekStart(System.currentTimeMillis(), TimeZone.getDefault()),
-                r -> {
-                    status.setText(s("home_week_summary", r.current.sessions, r.current.sets));
-                    status.setVisibility(View.VISIBLE);
-                },
-                status);
     }
 
     private static class NavIcon extends View {

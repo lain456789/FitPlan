@@ -177,8 +177,8 @@ final class CoachScreen extends Screen {
         content.addView(chatContainer, new LinearLayout.LayoutParams(-1, -2));
         renderMessages();
 
-        // 7. Pinned bottom composer + persistent privacy footer inside R.id.home_actions
-        LinearLayout actions = activity.findViewById(R.id.home_actions);
+        // 7. Pinned bottom composer + persistent privacy footer inside R.id.page_actions
+        LinearLayout actions = activity.findViewById(R.id.page_actions);
         actions.removeAllViews();
         actions.setVisibility(View.VISIBLE);
 

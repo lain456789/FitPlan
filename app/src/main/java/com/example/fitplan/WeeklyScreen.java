@@ -20,14 +20,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.function.Consumer;
 
 final class WeeklyScreen extends Screen {
     WeeklyScreen(MainActivity activity) {
         super(activity);
     }
 
-    void render() {
-        activity.recordTabs();
+    void render(Consumer<ReportEngine.Report> todayLoaded) {
         title(s("weekly_title"));
         TimeZone zone = TimeZone.getDefault();
         long current = ReportEngine.weekStart(System.currentTimeMillis(), zone);
@@ -53,7 +53,7 @@ final class WeeklyScreen extends Screen {
                         () -> {
                             activity.selectedWeek =
                                     ReportEngine.shiftDays(activity.selectedWeek, -7, zone);
-                            show("weekly");
+                            show("home");
                         });
         prev.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         Button next =
@@ -63,7 +63,7 @@ final class WeeklyScreen extends Screen {
                         () -> {
                             activity.selectedWeek =
                                     ReportEngine.shiftDays(activity.selectedWeek, 7, zone);
-                            show("weekly");
+                            show("home");
                         });
         next.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         next.setEnabled(activity.selectedWeek < current);
@@ -74,10 +74,16 @@ final class WeeklyScreen extends Screen {
                     s("back_current"),
                     () -> {
                         activity.selectedWeek = current;
-                        show("weekly");
+                        show("home");
                     });
         TextView status = text(content, s("loading"), 16);
-        activity.loadReport(activity.selectedWeek, this::loaded, status);
+        activity.loadReport(
+                activity.selectedWeek,
+                report -> {
+                    todayLoaded.accept(report);
+                    loaded(report);
+                },
+                status);
     }
 
     private String difference(double current, double previous) {

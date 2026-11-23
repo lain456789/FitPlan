@@ -36,6 +36,51 @@ public class ReportEngineTest {
     }
 
     @Test
+    public void todayRemainsCurrentWhileBrowsingAnOlderWeek() {
+        List<ReportEngine.Session> data =
+                Arrays.asList(
+                        session("2025-12-31 23:59", "old", 20, 10, true),
+                        session("2026-01-01 00:00", "new", 30, 10, true),
+                        session("2026-01-01 15:00", "future", 50, 10, true),
+                        session("2026-01-01 10:00", "undone", 50, 10, false));
+        ReportEngine.Report report =
+                ReportEngine.build(data, time("2025-12-22 00:00"), time("2026-01-01 12:00"), zone);
+        assertEquals(0, report.current.sessions);
+        assertEquals(1, report.today.sessions);
+        assertEquals(1, report.today.sets);
+        assertEquals(300, report.today.volume, 0);
+        assertEquals(time("2026-01-01 00:00"), report.today.start);
+    }
+
+    @Test
+    public void todayCountsBodyweightWithoutInventingDurationAndRecomputesCorrections() {
+        ReportEngine.Session bodyweight = session("2026-01-01 10:00", "custom", 0, 12, true);
+        bodyweight.started = 0;
+        List<ReportEngine.Session> data = new ArrayList<>(Collections.singletonList(bodyweight));
+        long now = time("2026-01-01 12:00");
+        ReportEngine.Report report = ReportEngine.build(data, now, now, zone);
+        assertEquals(1, report.today.sets);
+        assertEquals(0, report.today.duration);
+        assertEquals(0, report.today.volume, 0);
+        bodyweight.sets.get(0).weight = 5;
+        assertEquals(60, ReportEngine.build(data, now, now, zone).today.volume, 0);
+        data.clear();
+        assertEquals(0, ReportEngine.build(data, now, now, zone).today.sessions);
+    }
+
+    @Test
+    public void localDayBoundaryRespectsTimeZoneAndDaylightSaving() {
+        TimeZone ny = TimeZone.getTimeZone("America/New_York");
+        Calendar clock = Calendar.getInstance(ny);
+        clock.clear();
+        clock.set(2026, Calendar.MARCH, 8, 12, 0);
+        long midnight = ReportEngine.dayStart(clock.getTimeInMillis(), ny);
+        assertEquals(23 * 3600000L, ReportEngine.shiftDays(midnight, 1, ny) - midnight);
+        assertEquals(
+                time("2026-01-01 00:00"), ReportEngine.dayStart(time("2026-01-01 23:59"), zone));
+    }
+
+    @Test
     public void weekStartsOnMondayAcrossYear() {
         assertEquals(
                 time("2025-12-29 00:00"), ReportEngine.weekStart(time("2026-01-01 12:00"), zone));

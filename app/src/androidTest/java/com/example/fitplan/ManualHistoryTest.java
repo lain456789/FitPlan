@@ -282,7 +282,7 @@ public class ManualHistoryTest {
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(a -> {
-                a.show("history");
+                a.show("dailyPlan");
                 click(a, "manual_add");
                 assertEquals("manualHistory", a.page);
                 ids.add(a.manualHistoryDraft.optString("id"));
@@ -373,8 +373,8 @@ public class ManualHistoryTest {
                                 .optJSONObject(0)
                                 .optJSONArray("logs")
                                 .length());
-                click(a, "back_history");
-                assertEquals("history", a.page);
+                click(a, "back_training");
+                assertEquals("dailyPlan", a.page);
                 click(a, "manual_add");
             });
             scenario.recreate();
@@ -388,7 +388,7 @@ public class ManualHistoryTest {
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(a -> {
                 assertNull(a.manualHistoryDraft);
-                assertEquals("history", a.page);
+                assertEquals("dailyPlan", a.page);
             });
         }
     }
@@ -421,7 +421,7 @@ public class ManualHistoryTest {
                     .commit();
             try (ActivityScenario<MainActivity> scenario =
                     ActivityScenario.launch(MainActivity.class)) {
-                scenario.onActivity(a -> a.show("history"));
+                scenario.onActivity(a -> a.show("dailyPlan"));
                 InstrumentationRegistry.getInstrumentation().waitForIdleSync();
                 scenario.onActivity(a -> {
                     View add = find(a.content, a.s("manual_add"));

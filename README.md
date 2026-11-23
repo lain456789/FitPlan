@@ -2,12 +2,23 @@
 
 Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周报完全离线运行，并内置可选联网的 AI 健身教练，支持每日状态填写、训练计划、逐组记录、休息计时、历史修正、中英双语周报与基于本地训练数据的 AI 建议。
 
+## v0.6.3 首页数据看板与训练入口
+
+- **首页**直接展示今日次数、已训练组数、训练量、已知时长及完整周报，可切换历史周和趋势指标。切换历史周不改变顶部今日数据。
+- **训练**包含「今日计划／我的计划／动作库」，每日状态填写和生成计划迁移至此。生成后进入计划详情，确认或修改后再开始训练。
+- **手动补录**入口改为「训练 → + 补录」，退出可保留草稿，保存后进入历史详情。
+- **记录**保留历史和表现分析。五个底部入口、双语、训练快照和本地数据库保持兼容。
+
+下载 [v0.6.3 调试 APK](downloads/FitPlan-v0.6.3-debug.apk)。使用本次 Windows 调试签名，可覆盖本机重建的 v0.6.2；不能保证覆盖仓库内不同签名的旧 APK。安装前请保留数据备份。未配置 GLM API Key，AI 教练页面可查看，联网回答需另行配置。
+
+具体操作与验证范围见 [布局调整说明](docs/MODULE_LAYOUT.md)。
+
 ## v0.6.2 手动补录训练
 
-没有在 App 里开始训练，也可以事后补录。在「记录」页右上角点击「+ 补录」，选择实际训练日期和结束时间。训练名称和时长可选填。
+没有在 App 里开始训练，也可以事后补录。在「训练」页右上角点击「+ 补录」，选择实际训练日期和结束时间。训练名称和时长可选填。
 
 - 搜索并添加动作库中的内置或自定义动作。每组可分别填写实际重量、次数和可选难度，并在保存前修改或删除。
-- 返回记录页可保留当前草稿。点击「保存到历史」后生成一条独立记录，标记为「手动补录」，可通过现有历史入口修改或删除。
+- 返回训练页可保留当前草稿。点击「保存到历史」后生成一条独立记录，标记为「手动补录」，可通过现有历史入口修改或删除。
 - 历史按实际训练时间排序。补录数据按所选日期计入周报，并纳入 AI 教练的本地训练摘要。原定目标未填写时，实际次数不参与达标判断，也不会触发进阶建议。
 
 使用细节见 [手动补录训练](docs/MANUAL_HISTORY.md)，验证范围见 [测试记录](docs/TESTING.md)。
@@ -70,9 +81,9 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 
 ## 功能
 
-- **首页**：睡眠、饮食、酸痛、训练部位与可用时间；顶部继续训练、固定生成按钮，以及表单下方的简洁本周摘要。
-- **训练**：计划和动作库独立展示；30 个内置动作，支持搜索、筛选与自定义动作，其中新增 14 个用于补充器械替换候选。
-- **记录**：查看历史、手动补录训练及修改实际重量、组数和次数。历史与计划独立保存，周报离线计算。
+- **首页**：今日训练摘要、完整周报、历史周切换与趋势图。
+- **训练**：今日状态和计划生成、我的计划、动作库，以及补录入口；30 个内置动作，支持搜索、筛选与自定义动作，其中新增 14 个用于补充器械替换候选。
+- **记录**：查看与修正历史、删除记录及表现分析。历史与计划独立保存，周报离线计算。
 - **周报**：每日已训练组、部位分布、近八周训练次数/组数/训练量，以及单动作最高实际重量走势。
 - **AI 教练**：基于本地训练统计与循证 Skill 的多轮问答建议、可折叠个人训练档案、快捷提问与离线拦截提示。
 - **我的**：简体中文、English、跟随系统；用户输入保持原文，明确标记的示例数据有双语标题。
@@ -81,7 +92,7 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 
 ## 安装体验
 
-[下载 v0.6.2 调试 APK](downloads/FitPlan-v0.6.2-debug.apk)（本包未配置 GLM API Key）。[v0.6.1](downloads/FitPlan-v0.6.1-debug.apk)、[v0.6.0](downloads/FitPlan-v0.6.0-debug.apk)、[v0.5.1](downloads/FitPlan-v0.5.1-debug.apk)、[v0.5.0](downloads/FitPlan-v0.5.0-debug.apk)、[v0.4.0](downloads/FitPlan-v0.4.0-debug.apk)、[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
+[下载 v0.6.3 调试 APK](downloads/FitPlan-v0.6.3-debug.apk)；[v0.6.2](downloads/FitPlan-v0.6.2-debug.apk)（本包未配置 GLM API Key）。[v0.6.1](downloads/FitPlan-v0.6.1-debug.apk)、[v0.6.0](downloads/FitPlan-v0.6.0-debug.apk)、[v0.5.1](downloads/FitPlan-v0.5.1-debug.apk)、[v0.5.0](downloads/FitPlan-v0.5.0-debug.apk)、[v0.4.0](downloads/FitPlan-v0.4.0-debug.apk)、[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
 
 v0.5.0 至 v0.6.1 的安装包均使用同一 Windows 调试密钥签名，可从这些旧版覆盖更新至 v0.6.1。仓库中的 v0.4.0 APK 使用另一把密钥，Android 会拒绝用此包直接覆盖安装。需要保留旧版训练记录时，可用另一台设备或模拟器体验新版。
 
@@ -113,7 +124,7 @@ macOS/Linux 使用 `./gradlew`。APK 构建输出位于 `app/build/outputs/apk/d
 
 | 位置 | 内容 |
 |---|---|
-| `app/src/main/java/com/example/fitplan` | 四入口页面、训练记录、SQLite、规则和周报计算 |
+| `app/src/main/java/com/example/fitplan` | 五入口页面、训练记录、SQLite、规则和周报计算 |
 | `app/src/main/res` | XML 布局、主题、中文和英文资源 |
 | `app/src/test` | 推荐规则、周报计算单元测试 |
 | `app/src/androidTest` | 数据持久化、界面流程与双语设备测试 |

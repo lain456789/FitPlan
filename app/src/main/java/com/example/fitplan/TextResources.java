@@ -3,6 +3,28 @@ package com.example.fitplan;
 final class TextResources {
     static int id(String key) {
         switch (key) {
+            case "dashboard_title":
+                return R.string.dashboard_title;
+            case "today_summary":
+                return R.string.today_summary;
+            case "known_duration":
+                return R.string.known_duration;
+            case "known_duration_help":
+                return R.string.known_duration_help;
+            case "empty_today":
+                return R.string.empty_today;
+            case "go_training":
+                return R.string.go_training;
+            case "daily_plan_tab":
+                return R.string.daily_plan_tab;
+            case "my_plans_tab":
+                return R.string.my_plans_tab;
+            case "progress_tab":
+                return R.string.progress_tab;
+            case "back_training":
+                return R.string.back_training;
+            case "back_dashboard":
+                return R.string.back_dashboard;
             case "set_unrecorded":
                 return R.string.set_unrecorded;
             case "previous_exercise":

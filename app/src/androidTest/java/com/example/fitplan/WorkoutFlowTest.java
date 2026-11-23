@@ -95,6 +95,9 @@ public class WorkoutFlowTest {
                                                 "reps",
                                                 10)));
         store.save("plan", plan);
+        String language =
+                context.getSharedPreferences("preferences", 0).getString("language", "zh");
+        context.getSharedPreferences("preferences", 0).edit().putString("language", "zh").commit();
         String sessionId = null;
         try {
             Intent intent =
@@ -104,7 +107,7 @@ public class WorkoutFlowTest {
                                             | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             InstrumentationRegistry.getInstrumentation().startActivitySync(intent);
             click("训练", null);
-            click("计划", null);
+            click("我的计划", null);
             click("开始训练", name);
             JSONObject active = store.first("active");
             assertNotNull(active);
@@ -126,6 +129,10 @@ public class WorkoutFlowTest {
             assertEquals(20, history.optJSONArray("rows").optJSONObject(0).optDouble("weight"), 0);
             assertFalse(store.first("plan").optJSONArray("rows").optJSONObject(0).has("logs"));
         } finally {
+            context.getSharedPreferences("preferences", 0)
+                    .edit()
+                    .putString("language", language)
+                    .commit();
             store.delete(plan.optString("id"));
             if (sessionId != null) store.delete(sessionId);
             store.close();

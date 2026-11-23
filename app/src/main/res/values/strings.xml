@@ -432,4 +432,15 @@
     <string name="manual_exercise_limit">一次补录最多添加 30 个动作。</string>
     <string name="manual_set_limit">每个动作最多补录 20 组。</string>
     <string name="manual_name_limit">训练名称最多填写 80 字。</string>
+    <string name="dashboard_title">训练概览</string>
+    <string name="today_summary">今日训练</string>
+    <string name="known_duration">已知训练时长</string>
+    <string name="known_duration_help">仅汇总已填写的时长，包含休息和离开应用时间；未填写的时长不推算。</string>
+    <string name="empty_today">今天还没有已保存的训练记录。</string>
+    <string name="go_training">前往训练</string>
+    <string name="daily_plan_tab">今日计划</string>
+    <string name="my_plans_tab">我的计划</string>
+    <string name="progress_tab">表现分析</string>
+    <string name="back_training">返回训练</string>
+    <string name="back_dashboard">返回首页</string>
 </resources>

@@ -138,6 +138,7 @@ public class V2BehaviorTest {
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(a -> {
+                a.show("dailyPlan");
                 List<EditText> edits = collect(a.content, EditText.class);
                 edits.get(0).setText("65");
                 edits.get(1).setText("自定义备注 unchanged");
@@ -154,7 +155,7 @@ public class V2BehaviorTest {
                         a.reason(object("reason", "保持最近实际完成重量；今日恢复状态较差，减少一组，可手动调整"))
                                 .startsWith("Keep"));
                 assertEquals("profile", a.page);
-                a.show("home");
+                a.show("dailyPlan");
                 assertEquals("65", collect(a.content, EditText.class).get(0).getText().toString());
                 assertTrue(collect(a.content, CheckBox.class).get(0).isChecked());
                 a.selectedWeek =
@@ -165,11 +166,11 @@ public class V2BehaviorTest {
                                 TimeZone.getDefault());
                 a.show("weekly");
                 a.setLanguage("zh");
-                assertEquals("weekly", a.page);
+                assertEquals("home", a.page);
             });
             scenario.recreate();
             scenario.onActivity(a -> {
-                assertEquals("weekly", a.page);
+                assertEquals("home", a.page);
                 assertEquals(
                         ReportEngine.shiftDays(
                                 ReportEngine.weekStart(
@@ -177,7 +178,7 @@ public class V2BehaviorTest {
                                 -7,
                                 TimeZone.getDefault()),
                         a.selectedWeek);
-                a.show("home");
+                a.show("dailyPlan");
                 assertEquals("65", collect(a.content, EditText.class).get(0).getText().toString());
                 assertEquals(
                         "自定义备注 unchanged",
@@ -329,7 +330,7 @@ public class V2BehaviorTest {
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             screenshot("charts-en-fixture");
             scenario.onActivity(a -> {
-                assertEquals("weekly", a.page);
+                assertEquals("home", a.page);
                 assertNotNull(find(a.content, "Eight-week trend"));
                 a.show("library");
                 assertNotNull(find(a.content, "Barbell bench press"));

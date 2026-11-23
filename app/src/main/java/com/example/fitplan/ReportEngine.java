@@ -73,10 +73,20 @@ public final class ReportEngine {
     }
 
     public static final class Report {
-        public Summary current, previous;
+        public Summary today, current, previous;
         public boolean partial;
         public final List<Summary> weeks = new ArrayList<>();
         public final Map<String, ExerciseTrend> exercises = new LinkedHashMap<>();
+    }
+
+    public static long dayStart(long time, TimeZone zone) {
+        Calendar c = Calendar.getInstance(zone);
+        c.setTimeInMillis(time);
+        c.set(Calendar.HOUR_OF_DAY, 0);
+        c.set(Calendar.MINUTE, 0);
+        c.set(Calendar.SECOND, 0);
+        c.set(Calendar.MILLISECOND, 0);
+        return c.getTimeInMillis();
     }
 
     public static long weekStart(long time, TimeZone zone) {
@@ -136,6 +146,7 @@ public final class ReportEngine {
                 start = Math.min(weekStart(selectedWeek, zone), currentWeek);
         long end = shiftDays(start, 7, zone);
         Report report = new Report();
+        report.today = aggregate(sessions, dayStart(now, zone), now + 1, zone);
         report.partial = start == currentWeek;
         long limit = report.partial ? now + 1 : end;
         report.current = aggregate(sessions, start, limit, zone);

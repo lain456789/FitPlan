@@ -502,6 +502,7 @@ public class InteractionImprovementsTest {
         String before = session.toString();
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(activity -> activity.show("dailyPlan"));
             idle();
             scenario.onActivity(activity -> {
                 View resume = findView(activity.content, activity.s("continue_workout"));
@@ -511,20 +512,20 @@ public class InteractionImprovementsTest {
                 question.getLocationOnScreen(questionAt);
                 assertTrue(resumeAt[1] < questionAt[1]);
                 View generate =
-                        findView(activity.findViewById(R.id.home_actions), activity.s("generate"));
+                        findView(activity.findViewById(R.id.page_actions), activity.s("generate"));
                 Rect visible = new Rect();
                 assertTrue(generate.getGlobalVisibleRect(visible));
                 assertEquals(generate.getHeight(), visible.height());
                 collect(activity.content, EditText.class).get(0).setText("30");
                 activity.show("plans");
-                assertEquals(View.GONE, activity.findViewById(R.id.home_actions).getVisibility());
-                activity.show("home");
+                assertEquals(View.GONE, activity.findViewById(R.id.page_actions).getVisibility());
+                activity.show("dailyPlan");
                 assertEquals(
                         "30",
                         collect(activity.content, EditText.class).get(0).getText().toString());
                 click(activity, activity.s("continue_workout"));
                 assertEquals("workout", activity.page);
-                assertEquals(View.GONE, activity.findViewById(R.id.home_actions).getVisibility());
+                assertEquals(View.GONE, activity.findViewById(R.id.page_actions).getVisibility());
             });
         }
         assertEquals(before, find("active", session.optString("id")).toString());
@@ -541,23 +542,24 @@ public class InteractionImprovementsTest {
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
-                assertNull(new HomeScreen(activity).todayCheck());
+                activity.show("dailyPlan");
+                assertNull(new DailyPlanScreen(activity).todayCheck());
                 collect(activity.content, CheckBox.class).get(0).setChecked(true);
                 collect(activity.content, EditText.class).get(0).setText("35");
                 collect(activity.content, Spinner.class).get(1).setSelection(2);
                 click(activity, activity.s("generate"));
-                assertEquals("plans", activity.page);
-                assertEquals(View.GONE, activity.findViewById(R.id.home_actions).getVisibility());
-                JSONObject check = new HomeScreen(activity).todayCheck();
+                assertEquals("planDetail", activity.page);
+                assertEquals(View.GONE, activity.findViewById(R.id.page_actions).getVisibility());
+                JSONObject check = new DailyPlanScreen(activity).todayCheck();
                 assertEquals(35, check.optInt("minutes"));
                 assertEquals(2, check.optInt("sleep"));
-                activity.show("home");
+                activity.show("dailyPlan");
                 collect(activity.content, EditText.class).get(0).setText("25");
                 click(activity, activity.s("generate"));
                 assertEquals(
                         check.optString("id"),
-                        new HomeScreen(activity).todayCheck().optString("id"));
-                assertEquals(25, new HomeScreen(activity).todayCheck().optInt("minutes"));
+                        new DailyPlanScreen(activity).todayCheck().optString("id"));
+                assertEquals(25, new DailyPlanScreen(activity).todayCheck().optInt("minutes"));
             });
         } finally {
             for (String kind : new String[] {"plan", "checkin"}) {
