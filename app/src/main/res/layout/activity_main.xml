@@ -19,7 +19,7 @@
         android:textStyle="bold"
         android:textColor="#B8F261" />
 
-    <ScrollView
+    <com.example.fitplan.LockableScrollView
         android:id="@+id/scroller"
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -35,7 +35,7 @@
             android:paddingRight="20dp"
             android:paddingTop="8dp"
             android:paddingBottom="16dp" />
-    </ScrollView>
+    </com.example.fitplan.LockableScrollView>
 
     <LinearLayout
         android:id="@+id/home_actions"

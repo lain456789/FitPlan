@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
     JSONObject manualHistoryDraft;
     Runnable captureHome;
     TextView timerLabel;
+    TextView elapsedLabel;
     final List<CoachModels.ChatMessage> coachMessages = new ArrayList<>();
     boolean coachProfileExpanded = false;
     boolean coachSending = false;
@@ -76,8 +77,8 @@ public class MainActivity extends AppCompatActivity {
     private final Runnable ticker =
             new Runnable() {
                 public void run() {
+                    JSONObject active = store.first("active");
                     if (timerLabel != null) {
-                        JSONObject active = store.first("active");
                         long left =
                                 active == null
                                         ? 0
@@ -94,6 +95,20 @@ public class MainActivity extends AppCompatActivity {
                                                 String.format(
                                                         locale(), "%d:%02d", left / 60, left % 60))
                                         : s("rest_done"));
+                    }
+                    if (elapsedLabel != null && active != null) {
+                        long elapsed =
+                                Math.max(
+                                        0,
+                                        System.currentTimeMillis() - active.optLong("started"));
+                        elapsedLabel.setText(
+                                s(
+                                        "workout_elapsed",
+                                        String.format(
+                                                locale(),
+                                                "%d:%02d",
+                                                elapsed / 60000,
+                                                (elapsed / 1000) % 60)));
                     }
                     handler.postDelayed(this, 1000);
                 }
@@ -452,6 +467,7 @@ public class MainActivity extends AppCompatActivity {
         captureDraft();
         captureHome = null;
         timerLabel = null;
+        elapsedLabel = null;
         if (!route.equals("coach")) clearCoachSession();
         generation++;
         page = route;
@@ -461,7 +477,9 @@ public class MainActivity extends AppCompatActivity {
         homeActions.setVisibility(View.GONE);
         ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
                 .hideSoftInputFromWindow(content.getWindowToken(), 0);
-        ((ScrollView) findViewById(R.id.scroller)).scrollTo(0, 0);
+        LockableScrollView scroller = (LockableScrollView) findViewById(R.id.scroller);
+        scroller.setScrollable(!route.equals("workout"));
+        scroller.scrollTo(0, 0);
         renderNavigation();
         switch (route) {
             case "plans":

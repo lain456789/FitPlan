@@ -6,18 +6,21 @@ import static com.example.fitplan.Store.object;
 import static com.example.fitplan.Store.put;
 
 import android.app.AlertDialog;
+import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
-import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -305,70 +308,111 @@ final class TrainingScreen extends Screen {
         if (plan.has("note") || plan.has("noteCode")) text(content, s("plan_note"), 14);
         Runnable refreshBudget = planBudget(plan);
         refreshBudget.run();
-        button(content, s("back_plans"), () -> show("plans"));
-        button(
-                content,
-                s("rename"),
-                () -> {
-                    LinearLayout f = column();
-                    EditText n = input(f, s("name"), activity.planName(plan), false);
-                    dialog(
-                            s("rename_plan"),
-                            f,
-                            () -> {
-                                if (n.getText().toString().trim().isEmpty())
-                                    throw new IllegalArgumentException(s("enter_name"));
-                                put(plan, "name", n.getText().toString().trim());
-                                put(plan, "autoName", false);
-                                store.save("plan", plan);
-                                activity.openPlan(plan);
-                            });
-                });
-        button(
-                content,
-                s("add_exercise"),
-                () -> {
-                    JSONArray catalogue = store.list("exercise");
-                    String[] labels = new String[catalogue.length()];
-                    for (int i = 0; i < labels.length; i++)
-                        labels[i] = activity.exerciseName(catalogue.optJSONObject(i));
-                    new AlertDialog.Builder(activity)
-                            .setTitle(s("choose_exercise"))
-                            .setItems(
-                                    labels,
-                                    (d, index) -> {
-                                        JSONObject ex = catalogue.optJSONObject(index);
-                                        JSONObject row =
-                                                object(
-                                                        "exerciseId",
-                                                        ex.optString("id"),
-                                                        "name",
-                                                        activity.exerciseName(ex),
-                                                        "part",
-                                                        ex.optString("part"),
-                                                        "weight",
-                                                        0,
-                                                        "sets",
-                                                        3,
-                                                        "reps",
-                                                        10);
-                                        plan.optJSONArray("rows").put(row);
+        LinearLayout actions = new LinearLayout(activity);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        content.addView(actions, new LinearLayout.LayoutParams(-1, -2));
+        Button back = button(actions, s("back_label"), () -> show("plans"));
+        back.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button renameBtn =
+                button(
+                        actions,
+                        s("rename"),
+                        () -> {
+                            LinearLayout f = column();
+                            EditText n = input(f, s("name"), activity.planName(plan), false);
+                            dialog(
+                                    s("rename_plan"),
+                                    f,
+                                    () -> {
+                                        if (n.getText().toString().trim().isEmpty())
+                                            throw new IllegalArgumentException(s("enter_name"));
+                                        put(plan, "name", n.getText().toString().trim());
+                                        put(plan, "autoName", false);
                                         store.save("plan", plan);
                                         activity.openPlan(plan);
-                                    })
-                            .show();
-                });
+                                    });
+                        });
+        renameBtn.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button addBtn =
+                button(
+                        actions,
+                        s("add_exercise"),
+                        () -> {
+                            JSONArray catalogue = store.list("exercise");
+                            String[] labels = new String[catalogue.length()];
+                            for (int i = 0; i < labels.length; i++)
+                                labels[i] = activity.exerciseName(catalogue.optJSONObject(i));
+                            new AlertDialog.Builder(activity)
+                                    .setTitle(s("choose_exercise"))
+                                    .setItems(
+                                            labels,
+                                            (d, index) -> {
+                                                JSONObject ex = catalogue.optJSONObject(index);
+                                                JSONObject row =
+                                                        object(
+                                                                "exerciseId",
+                                                                ex.optString("id"),
+                                                                "name",
+                                                                activity.exerciseName(ex),
+                                                                "part",
+                                                                ex.optString("part"),
+                                                                "weight",
+                                                                0,
+                                                                "sets",
+                                                                3,
+                                                                "reps",
+                                                                10);
+                                                plan.optJSONArray("rows").put(row);
+                                                store.save("plan", plan);
+                                                activity.openPlan(plan);
+                                            })
+                                    .show();
+                        });
+        addBtn.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         JSONArray rows = plan.optJSONArray("rows"), history = store.list("history");
         ProgressScreen progress = new ProgressScreen(activity);
+        HorizontalScrollView strip = new HorizontalScrollView(activity);
+        strip.setHorizontalScrollBarEnabled(false);
+        strip.setClipChildren(false);
+        strip.setClipToPadding(false);
+        content.addView(strip, new LinearLayout.LayoutParams(-1, 0, 1));
+        LinearLayout track = new LinearLayout(activity);
+        track.setOrientation(LinearLayout.HORIZONTAL);
+        track.setClipChildren(false);
+        track.setClipToPadding(false);
+        track.setPadding(0, activity.dp(4), 0, activity.dp(8));
+        strip.addView(track, new LinearLayout.LayoutParams(-2, -1));
+        int cardWidth =
+                Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.90f);
+        final LinearLayout[] dragging = {null};
+        final int[] dragFrom = {-1};
+        final int[] dragTarget = {-1};
+        final float[] lastX = {0};
+        final float[] downX = {0};
+        final int cardGap = activity.dp(12);
         for (int i = 0; i < rows.length(); i++) {
             final int index = i;
             JSONObject row = rows.optJSONObject(i);
-            LinearLayout c = card(content);
+            LinearLayout c = activity.column();
+            GradientDrawable cardBg = new GradientDrawable();
+            cardBg.setColor(MainActivity.CARD);
+            cardBg.setCornerRadius(activity.dp(28));
+            cardBg.setStroke(activity.dp(1), 0xFF2E343D);
+            c.setBackground(cardBg);
+            c.setElevation(activity.dp(2));
+            LinearLayout.LayoutParams cardLayout = new LinearLayout.LayoutParams(cardWidth, -1);
+            cardLayout.setMarginEnd(cardGap);
+            track.addView(c, cardLayout);
+            int imageRes = exerciseImage(row.optString("exerciseId"));
+            if (imageRes != 0) {
+                ImageView hero = new ImageView(activity);
+                hero.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                hero.setImageResource(imageRes);
+                hero.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+                c.addView(hero, new LinearLayout.LayoutParams(-1, 0, 1));
+            }
             LinearLayout header = pane(c);
-            text(
-                    illustratedHeader(header, row.optString("exerciseId")),
-                    activity.exerciseName(row),
-                    18);
+            text(header, activity.exerciseName(row), 18);
             LinearLayout sliders = pane(c);
             LinearLayout details = pane(c);
             LinearLayout confirmation = pane(c);
@@ -388,9 +432,9 @@ final class TrainingScreen extends Screen {
                         refreshBudget.run();
                         refreshDetails.run();
                     };
-            prescriptionSlider(sliders, plan, row, "weight", "weight_label", 0, 100, 10, refresh);
-            prescriptionSlider(sliders, plan, row, "sets", "sets_label", 1, 10, 1, refresh);
-            prescriptionSlider(sliders, plan, row, "reps", "reps_label", 1, 20, 5, refresh);
+            prescriptionSlider(sliders, plan, row, "weight", "weight_label", 0, 100, refresh);
+            prescriptionSlider(sliders, plan, row, "sets", "sets_label", 1, 10, refresh);
+            prescriptionSlider(sliders, plan, row, "reps", "reps_label", 1, 20, refresh);
             if (PlanEdits.needsConfirmation(plan, row)) {
                 text(confirmation, s("confirm_weight_hint"), 14);
                 button(
@@ -402,16 +446,108 @@ final class TrainingScreen extends Screen {
                         });
             }
             refreshDetails.run();
-            button(
-                    c,
-                    s("remove_exercise"),
-                    () -> {
+            LinearLayout rowActions = new LinearLayout(activity);
+            rowActions.setOrientation(LinearLayout.HORIZONTAL);
+            rowActions.setGravity(Gravity.CENTER);
+            c.addView(rowActions, new LinearLayout.LayoutParams(-1, -2));
+            TextView prev = actionButton(rowActions, s("move_left"));
+            prev.setEnabled(index > 0);
+            prev.setAlpha(index > 0 ? 1f : 0.35f);
+            prev.setOnClickListener(v -> moveRow(rows, plan, index, index - 1));
+            TextView remove = actionButton(rowActions, s("remove_short"));
+            remove.setOnClickListener(
+                    v -> {
                         rows.remove(index);
                         store.save("plan", plan);
                         activity.openPlan(plan);
                     });
+            TextView next = actionButton(rowActions, s("move_right"));
+            next.setEnabled(index < rows.length() - 1);
+            next.setAlpha(index < rows.length() - 1 ? 1f : 0.35f);
+            next.setOnClickListener(v -> moveRow(rows, plan, index, index + 1));
+            header.setOnLongClickListener(
+                    v -> {
+                        if (rows.length() <= 1) return false;
+                        dragging[0] = c;
+                        dragFrom[0] = index;
+                        dragTarget[0] = index;
+                        downX[0] = lastX[0];
+                        c.setElevation(activity.dp(18));
+                        c.setAlpha(0.96f);
+                        c.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start();
+                        header.requestDisallowInterceptTouchEvent(true);
+                        return true;
+                    });
+            header.setOnTouchListener(
+                    (v, event) -> {
+                        switch (event.getActionMasked()) {
+                            case MotionEvent.ACTION_DOWN:
+                                lastX[0] = event.getRawX();
+                                return false;
+                            case MotionEvent.ACTION_MOVE:
+                                if (dragging[0] == null) {
+                                    lastX[0] = event.getRawX();
+                                    return false;
+                                }
+                                {
+                                    float dx = event.getRawX() - downX[0];
+                                    c.setTranslationX(dx);
+                                    float step = cardWidth + cardGap;
+                                    int target = Math.round((dragFrom[0] * step + dx) / step);
+                                    target = Math.max(0, Math.min(rows.length() - 1, target));
+                                    if (target != dragTarget[0]) {
+                                        dragTarget[0] = target;
+                                        for (int k = 0; k < track.getChildCount(); k++) {
+                                            View other = track.getChildAt(k);
+                                            if (other == c) continue;
+                                            float shift = 0;
+                                            if (dragFrom[0] < target
+                                                    && k > dragFrom[0]
+                                                    && k <= target) shift = -step;
+                                            else if (dragFrom[0] > target
+                                                    && k >= target
+                                                    && k < dragFrom[0]) shift = step;
+                                            other.animate()
+                                                    .translationX(shift)
+                                                    .setDuration(180)
+                                                    .start();
+                                        }
+                                    }
+                                    lastX[0] = event.getRawX();
+                                    return true;
+                                }
+                            case MotionEvent.ACTION_UP:
+                            case MotionEvent.ACTION_CANCEL:
+                                if (dragging[0] == null) return false;
+                                {
+                                    int target = dragTarget[0];
+                                    if (target != dragFrom[0]) {
+                                        JSONArray reordered = reorder(rows, dragFrom[0], target);
+                                        while (rows.length() > 0) rows.remove(0);
+                                        for (int k = 0; k < reordered.length(); k++)
+                                            rows.put(reordered.opt(k));
+                                        store.save("plan", plan);
+                                    }
+                                    dragging[0] = null;
+                                    header.requestDisallowInterceptTouchEvent(false);
+                                    activity.openPlan(plan);
+                                    return true;
+                                }
+                        }
+                        return false;
+                    });
         }
         button(content, s("start_plan"), () -> start(plan));
+    }
+
+    private static JSONArray reorder(JSONArray rows, int from, int to) {
+        java.util.List<Object> items = new java.util.ArrayList<>();
+        for (int i = 0; i < rows.length(); i++) items.add(rows.opt(i));
+        Object moved = items.remove(from);
+        items.add(to, moved);
+        JSONArray out = new JSONArray();
+        for (Object item : items) out.put(item);
+        return out;
     }
 
     private Runnable planBudget(JSONObject plan) {
@@ -468,75 +604,124 @@ final class TrainingScreen extends Screen {
             String labelKey,
             int min,
             int max,
-            int tickInterval,
             Runnable refresh) {
         String label = s(labelKey);
-        text(card, label, 14);
+        boolean weight = key.equals("weight");
+        double step = weight ? 0.5 : 1;
         LinearLayout line = pane(card);
         line.setOrientation(LinearLayout.HORIZONTAL);
         line.setGravity(Gravity.CENTER_VERTICAL);
-        boolean weight = key.equals("weight");
-        int scale = weight ? 2 : 1;
-        SeekBar slider = new PrescriptionSeekBar(activity, min, max, tickInterval);
-        slider.setMax((max - min) * scale);
-        slider.setContentDescription(label);
-        Button numberButton = new Button(activity);
-        numberButton.setTextColor(MainActivity.ACCENT);
-        numberButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff2b3427));
-        numberButton.setMinHeight(activity.dp(48));
-        line.addView(numberButton);
-        line.addView(slider, new LinearLayout.LayoutParams(0, activity.dp(64), 1));
+        TextView labelView = new TextView(activity);
+        labelView.setText(label);
+        labelView.setTextSize(14);
+        labelView.setTextColor(MainActivity.MUTED);
+        line.addView(labelView, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView minus = stepperButton(line, "\u2212");
+        TextView number = stepperNumber(line);
+        TextView plus = stepperButton(line, "+");
         Runnable sync =
                 () -> {
                     double value = row.optDouble(key);
-                    String number =
+                    String text =
                             java.math.BigDecimal.valueOf(value)
                                     .stripTrailingZeros()
                                     .toPlainString();
-                    numberButton.setText(number);
-                    numberButton.setContentDescription(label + " " + number);
-                    slider.setProgress((int) Math.round((value - min) * scale));
+                    number.setText(text);
+                    number.setContentDescription(label + " " + text);
                 };
         sync.run();
-        numberButton.setOnClickListener(v -> {
-            LinearLayout form = column();
-            EditText field = input(form, label, numberButton.getText().toString(), true);
-            field.selectAll();
-            dialog(
-                    label,
-                    form,
-                    () -> {
-                        double value = weight ? number(field, min, max) : integer(field, min, max);
-                        updatePrescription(plan, row, key, value);
-                        sync.run();
-                        refresh.run();
-                    });
-        });
-        slider.setOnSeekBarChangeListener(
-                new SeekBar.OnSeekBarChangeListener() {
-                    boolean dragging;
-
-                    private void commit(int progress) {
-                        updatePrescription(plan, row, key, min + (double) progress / scale);
-                        sync.run();
-                        refresh.run();
-                    }
-
-                    public void onStartTrackingTouch(SeekBar bar) {
-                        dragging = true;
-                    }
-
-                    public void onProgressChanged(SeekBar bar, int progress, boolean user) {
-                        if (!user) return;
-                        numberButton.setText(num(min + (double) progress / scale));
-                        if (!dragging) commit(progress);
-                    }
-
-                    public void onStopTrackingTouch(SeekBar bar) {
-                        dragging = false;
-                        commit(bar.getProgress());
-                    }
+        number.setOnClickListener(
+                v -> {
+                    LinearLayout form = column();
+                    EditText field = input(form, label, number.getText().toString(), true);
+                    field.selectAll();
+                    dialog(
+                            label,
+                            form,
+                            () -> {
+                                double value =
+                                        weight ? number(field, min, max) : integer(field, min, max);
+                                updatePrescription(plan, row, key, value);
+                                sync.run();
+                                refresh.run();
+                            });
                 });
+        minus.setOnClickListener(
+                v -> {
+                    updatePrescription(
+                            plan, row, key, Math.max(min, row.optDouble(key) - step));
+                    sync.run();
+                    refresh.run();
+                });
+        plus.setOnClickListener(
+                v -> {
+                    updatePrescription(
+                            plan, row, key, Math.min(max, row.optDouble(key) + step));
+                    sync.run();
+                    refresh.run();
+                });
+    }
+
+    private TextView stepperButton(LinearLayout parent, String glyph) {
+        TextView b = new TextView(activity);
+        b.setText(glyph);
+        b.setTextSize(20);
+        b.setTextColor(MainActivity.FG);
+        b.setGravity(Gravity.CENTER);
+        b.setClickable(true);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xFF1C2128);
+        bg.setCornerRadius(activity.dp(20));
+        bg.setStroke(activity.dp(1), 0xFF2E343D);
+        b.setBackground(bg);
+        parent.addView(b, new LinearLayout.LayoutParams(activity.dp(40), activity.dp(40)));
+        return b;
+    }
+
+    private TextView stepperNumber(LinearLayout parent) {
+        TextView b = new TextView(activity);
+        b.setTextSize(17);
+        b.setTextColor(MainActivity.ACCENT);
+        b.setGravity(Gravity.CENTER);
+        b.setClickable(true);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xFF1C2128);
+        bg.setCornerRadius(activity.dp(20));
+        bg.setStroke(activity.dp(1), 0xFF2E343D);
+        b.setBackground(bg);
+        LinearLayout.LayoutParams lp =
+                new LinearLayout.LayoutParams(activity.dp(64), activity.dp(40));
+        lp.setMarginStart(activity.dp(8));
+        lp.setMarginEnd(activity.dp(8));
+        parent.addView(b, lp);
+        return b;
+    }
+
+    private TextView actionButton(LinearLayout parent, String text) {
+        TextView b = new TextView(activity);
+        b.setText(text);
+        b.setTextSize(13);
+        b.setTextColor(MainActivity.FG);
+        b.setGravity(Gravity.CENTER);
+        b.setClickable(true);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xFF1C2128);
+        bg.setCornerRadius(activity.dp(18));
+        bg.setStroke(activity.dp(1), 0xFF2E343D);
+        b.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, activity.dp(36), 1);
+        lp.setMarginEnd(activity.dp(8));
+        parent.addView(b, lp);
+        return b;
+    }
+
+    private void moveRow(JSONArray rows, JSONObject plan, int from, int to) {
+        if (from < 0 || from >= rows.length() || to < 0 || to >= rows.length()) return;
+        JSONArray reordered = reorder(rows, from, to);
+        while (rows.length() > 0) rows.remove(0);
+        for (int k = 0; k < reordered.length(); k++) rows.put(reordered.opt(k));
+        store.save("plan", plan);
+        activity.openPlan(plan);
     }
 
     void start(JSONObject plan) {
@@ -580,6 +765,88 @@ final class TrainingScreen extends Screen {
         show("workout");
     }
 
+    private void workoutCards(JSONObject session, LinearLayout parent) {
+        JSONArray rows = session.optJSONArray("rows");
+        HorizontalScrollView strip = new HorizontalScrollView(activity);
+        strip.setHorizontalScrollBarEnabled(false);
+        strip.setClipChildren(false);
+        strip.setClipToPadding(false);
+        parent.addView(strip, new LinearLayout.LayoutParams(-1, 0, 1));
+        LinearLayout track = new LinearLayout(activity);
+        track.setOrientation(LinearLayout.HORIZONTAL);
+        track.setClipChildren(false);
+        track.setClipToPadding(false);
+        track.setPadding(0, activity.dp(4), 0, activity.dp(8));
+        strip.addView(track, new LinearLayout.LayoutParams(-2, -1));
+        int cardWidth =
+                Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.86f);
+        int visible = 0;
+        for (int i = 0; i < rows.length(); i++) {
+            final int rowIndex = i;
+            JSONObject row = rows.optJSONObject(i);
+            int remaining = WorkoutAdjustments.pendingRow(row);
+            if (remaining == 0) continue;
+            visible++;
+            LinearLayout c = activity.column();
+            c.setBackground(activity.shape(MainActivity.CARD, 24));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(cardWidth, -1);
+            lp.setMarginEnd(activity.dp(12));
+            track.addView(c, lp);
+            LinearLayout header = pane(c);
+            text(
+                    illustratedHeader(header, row.optString("exerciseId")),
+                    activity.exerciseName(row),
+                    18);
+            text(
+                    c,
+                    s(
+                            "prescription",
+                            num(row.optDouble("weight")),
+                            row.optInt("sets"),
+                            row.optInt("reps")),
+                    14);
+            button(c, s("complete_set", remaining), () -> completeNextSet(session, rowIndex));
+        }
+        if (visible == 0) text(parent, s("all_sets_done"), 16);
+    }
+
+    private void completeNextSet(JSONObject session, int rowIndex) {
+        JSONObject row = session.optJSONArray("rows").optJSONObject(rowIndex);
+        JSONArray logs = row.optJSONArray("logs");
+        int logIndex = -1;
+        for (int j = 0; j < logs.length(); j++) {
+            if (WorkoutAdjustments.isPending(logs.optJSONObject(j))) {
+                logIndex = j;
+                break;
+            }
+        }
+        if (logIndex < 0) {
+            refreshAtCurrentPosition("workout");
+            return;
+        }
+        try {
+            JSONObject updated =
+                    TrainingFeedback.record(
+                            session,
+                            rowIndex,
+                            logIndex,
+                            row.optDouble("weight"),
+                            row.optInt("reps"),
+                            true,
+                            "appropriate",
+                            "none",
+                            System.currentTimeMillis());
+            store.saveSessionEdit("active", session, updated, false);
+        } catch (TrainingFeedback.Invalid e) {
+            toast(s(e.key));
+        } catch (Store.StaleWorkout e) {
+            toast(s("feedback_stale"));
+            show("workout");
+            return;
+        }
+        refreshAtCurrentPosition("workout");
+    }
+
     void workout() {
         title(s("workout_title"));
         JSONObject session = store.first("active");
@@ -588,56 +855,61 @@ final class TrainingScreen extends Screen {
             button(content, s("choose_plan"), () -> show("plans"));
             return;
         }
-        LinearLayout rest = card(content);
-        activity.timerLabel = text(rest, s("rest_timer"), 20);
-        button(
-                rest,
-                s("rest60"),
-                () -> {
-                    put(session, "restUntil", System.currentTimeMillis() + 60000);
-                    store.save("active", session);
-                });
-        button(
-                rest,
-                s("rest90"),
-                () -> {
-                    put(session, "restUntil", System.currentTimeMillis() + 90000);
-                    store.save("active", session);
-                });
-        button(
-                rest,
-                s("stop_rest"),
-                () -> {
-                    put(session, "restUntil", 0);
-                    store.save("active", session);
-                });
-        text(
-                content,
-                s("started", activity.planName(session), date(session.optLong("started"))),
-                16);
-        text(content, s("logging_help"), 14);
-        LinearLayout exercise = pane(content);
-        JSONArray rows = session.optJSONArray("rows");
-        int current = session.optInt("displayRow");
-        LinearLayout nav = pane(content);
-        nav.setOrientation(LinearLayout.HORIZONTAL);
-        for (int direction : new int[] {-1, 1}) {
-            int target = current + direction;
-            Button arrow =
-                    button(
-                            nav,
-                            s(direction < 0 ? "previous_exercise" : "next_exercise"),
-                            () -> {
-                                put(session, "displayRow", target);
-                                store.save("active", session);
-                                refreshAtCurrentPosition("workout");
-                            });
-            arrow.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-            arrow.setEnabled(target >= 0 && target < rows.length());
-        }
-        LinearLayout adjustment = card(content);
-        TextView summary = text(adjustment, "", 18);
-        text(adjustment, s("remaining_estimate_note"), 14);
+        LinearLayout cardsArea = new LinearLayout(activity);
+        cardsArea.setOrientation(LinearLayout.VERTICAL);
+        content.addView(cardsArea, new LinearLayout.LayoutParams(-1, 0, 1));
+        workoutCards(session, cardsArea);
+        LinearLayout timer = card(content);
+        LinearLayout times = new LinearLayout(activity);
+        times.setOrientation(LinearLayout.HORIZONTAL);
+        timer.addView(times, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout elapsedBox = new LinearLayout(activity);
+        elapsedBox.setOrientation(LinearLayout.VERTICAL);
+        elapsedBox.setGravity(Gravity.CENTER);
+        times.addView(elapsedBox, new LinearLayout.LayoutParams(0, -2, 1));
+        text(elapsedBox, s("workout_elapsed_label"), 13);
+        activity.elapsedLabel = text(elapsedBox, s("workout_elapsed", "0:00"), 26);
+        LinearLayout restBox = new LinearLayout(activity);
+        restBox.setOrientation(LinearLayout.VERTICAL);
+        restBox.setGravity(Gravity.CENTER);
+        times.addView(restBox, new LinearLayout.LayoutParams(0, -2, 1));
+        text(restBox, s("rest_timer"), 13);
+        activity.timerLabel = text(restBox, s("rest_done"), 26);
+        LinearLayout restButtons = new LinearLayout(activity);
+        restButtons.setOrientation(LinearLayout.HORIZONTAL);
+        timer.addView(restButtons, new LinearLayout.LayoutParams(-1, -2));
+        Button b60 =
+                button(
+                        restButtons,
+                        s("rest60"),
+                        () -> {
+                            put(session, "restUntil", System.currentTimeMillis() + 60000);
+                            store.save("active", session);
+                        });
+        b60.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button b90 =
+                button(
+                        restButtons,
+                        s("rest90"),
+                        () -> {
+                            put(session, "restUntil", System.currentTimeMillis() + 90000);
+                            store.save("active", session);
+                        });
+        b90.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button bStop =
+                button(
+                        restButtons,
+                        s("stop_rest"),
+                        () -> {
+                            put(session, "restUntil", 0);
+                            store.save("active", session);
+                        });
+        bStop.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout bottom = new LinearLayout(activity);
+        bottom.setOrientation(LinearLayout.VERTICAL);
+        content.addView(bottom, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout adjustment = card(bottom);
+        TextView summary = text(adjustment, "", 16);
         Button shorten =
                 button(adjustment, s("shorten_remaining"), () -> shortenRemaining(session));
         TextView none = text(adjustment, s("adjust_nothing_left"), 14);
@@ -657,51 +929,59 @@ final class TrainingScreen extends Screen {
                     none.setVisibility(pending == 0 ? View.VISIBLE : View.GONE);
                 };
         refreshSummary.run();
-        renderLogs(session, true, exercise, refreshSummary);
-        adjustmentHistory(session);
-        button(
-                content,
-                s("finish"),
-                () -> {
-                    if (performedSets(session) == 0 && TrainingFeedback.recorded(session) == 0) {
-                        toast(s("one_set"));
-                        return;
-                    }
-                    finishWorkout(session);
-                });
-        button(
-                content,
-                s("discard"),
-                () -> {
-                    LinearLayout form = column();
-                    CheckBox delete = new CheckBox(activity);
-                    delete.setText(s("delete_with_workout"));
-                    form.addView(delete);
-                    dialog(
-                            s("discard_confirm"),
-                            form,
-                            s("confirm"),
-                            () -> {
-                                if (delete.isChecked()) {
-                                    store.delete(session.optString("id"));
-                                } else {
-                                    JSONObject archived = copy(session);
-                                    put(archived, "finished", System.currentTimeMillis());
-                                    put(archived, "abandoned", true);
-                                    put(archived, "restUntil", 0);
-                                    archived.remove("displayRow");
-                                    try {
-                                        store.saveSessionEdit("active", session, archived, true);
-                                    } catch (Store.StaleWorkout e) {
-                                        activity.activeDialog.dismiss();
-                                        show("workout");
-                                        toast(s("feedback_stale"));
-                                        return;
-                                    }
-                                }
-                                show(delete.isChecked() ? "workout" : "history");
-                            });
-                });
+        adjustmentHistory(session, bottom);
+        LinearLayout endButtons = new LinearLayout(activity);
+        endButtons.setOrientation(LinearLayout.HORIZONTAL);
+        bottom.addView(endButtons, new LinearLayout.LayoutParams(-1, -2));
+        Button finish =
+                button(
+                        endButtons,
+                        s("finish"),
+                        () -> {
+                            if (performedSets(session) == 0
+                                    && TrainingFeedback.recorded(session) == 0) {
+                                toast(s("one_set"));
+                                return;
+                            }
+                            finishWorkout(session);
+                        });
+        finish.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button discard =
+                button(
+                        endButtons,
+                        s("discard"),
+                        () -> {
+                            LinearLayout form = column();
+                            CheckBox delete = new CheckBox(activity);
+                            delete.setText(s("delete_with_workout"));
+                            form.addView(delete);
+                            dialog(
+                                    s("discard_confirm"),
+                                    form,
+                                    s("confirm"),
+                                    () -> {
+                                        if (delete.isChecked()) {
+                                            store.delete(session.optString("id"));
+                                        } else {
+                                            JSONObject archived = copy(session);
+                                            put(archived, "finished", System.currentTimeMillis());
+                                            put(archived, "abandoned", true);
+                                            put(archived, "restUntil", 0);
+                                            archived.remove("displayRow");
+                                            try {
+                                                store.saveSessionEdit(
+                                                        "active", session, archived, true);
+                                            } catch (Store.StaleWorkout e) {
+                                                activity.activeDialog.dismiss();
+                                                show("workout");
+                                                toast(s("feedback_stale"));
+                                                return;
+                                            }
+                                        }
+                                        show(delete.isChecked() ? "workout" : "history");
+                                    });
+                        });
+        discard.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
     }
 
     void finishWorkout(JSONObject session) {
@@ -952,10 +1232,10 @@ final class TrainingScreen extends Screen {
         d.show();
     }
 
-    void adjustmentHistory(JSONObject session) {
+    void adjustmentHistory(JSONObject session, LinearLayout parent) {
         JSONArray changes = session.optJSONArray("adjustments");
         if (changes == null || changes.length() == 0) return;
-        LinearLayout card = card(content);
+        LinearLayout card = card(parent);
         text(card, s("adjustment_history"), 18);
         button(
                 card,

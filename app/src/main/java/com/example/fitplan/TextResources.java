@@ -934,6 +934,20 @@ final class TextResources {
                 return R.string.manual_set_limit;
             case "manual_name_limit":
                 return R.string.manual_name_limit;
+            case "complete_set":
+                return R.string.complete_set;
+            case "all_sets_done":
+                return R.string.all_sets_done;
+            case "move_left":
+                return R.string.move_left;
+            case "move_right":
+                return R.string.move_right;
+            case "remove_short":
+                return R.string.remove_short;
+            case "workout_elapsed":
+                return R.string.workout_elapsed;
+            case "workout_elapsed_label":
+                return R.string.workout_elapsed_label;
             default:
                 throw new IllegalArgumentException("Unknown text key: " + key);
         }
