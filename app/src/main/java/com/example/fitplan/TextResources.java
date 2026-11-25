@@ -180,6 +180,10 @@ final class TextResources {
                 return R.string.core;
             case "unknown":
                 return R.string.unknown;
+            case "daily_minutes_max":
+                return R.string.daily_minutes_max;
+            case "daily_minutes_invalid":
+                return R.string.daily_minutes_invalid;
             case "minutes_label":
                 return R.string.minutes_label;
             case "volume_label":

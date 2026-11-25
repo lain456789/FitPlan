@@ -468,4 +468,6 @@
     <string name="collapse_section">收起%1$s</string>
     <string name="section_expanded">已展开</string>
     <string name="section_collapsed">已收起</string>
+    <string name="daily_minutes_max">可用时间不能超过 180 分钟，请修改后再生成计划。</string>
+    <string name="daily_minutes_invalid">请填写 10–180 范围内的整数分钟数。</string>
 </resources>

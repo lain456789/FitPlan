@@ -2,7 +2,7 @@
 
 Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周报完全离线运行，并内置可选联网的 AI 健身教练，支持每日状态填写、训练计划、逐组记录、休息计时、历史修正、中英双语周报与基于本地训练数据的 AI 建议。
 
-## v0.6.6 首页精简与滚动体验优化
+## v0.6.6 首页、今日计划与滚动体验优化
 
 2026 年 11 月 25 日更新，包含 v0.6.5 的训练计划与执行界面改版。
 
@@ -11,6 +11,7 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 - **可展开数据模块**：训练部位分布、每天训练了多少组、近八周走势、单动作重量走势默认收起。点击标题或右侧向下箭头展开，再点向上箭头收起；四个模块独立控制，切换周、页面或语言时保留展开状态。此更新仍属于 v0.6.6。
 - **切换周不卡顿**：「上一周／下一周／回到本周」只刷新周报，保留阅读位置及上方圆环；连续点击只采用最后一次选择的结果。
 - **全局 Logo 动画**：所有页面顶部完整显示 FitPlan；向下浏览时随滚动缩小、淡出并释放顶部空间，滚回顶部恢复。底部导航与固定操作区保持可见。
+- **今日计划表单**：原灰色说明改为白色，正文、选项统一为 16sp，时间与状态字段改为同宽纵向排列。可用时间超过 180 分钟时立即弹出提示并标记输入错误；提交时拦截超范围、空值和非整数，10 与 180 分钟均可正常生成计划，修正输入后清除错误。
 - **数据兼容**：保留本地 SQLite、原记录 ID、计划和进行中训练快照；不修改训练推荐规则，也不写入演示记录。
 
 下载 [v0.6.6 调试 APK](downloads/FitPlan-v0.6.6-debug.apk)；校验值见 [SHA256SUMS](downloads/SHA256SUMS)。应用版本为 0.6.6 / versionCode 16，使用本机 Windows 调试签名，可覆盖相同签名的旧版。安装包未配置 GLM API Key。
@@ -28,6 +29,14 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 | <img src="docs/screenshots/v066-sections-collapsed.png" width="260" alt="四个首页模块默认收起"> | <img src="docs/screenshots/v066-sections-expanded.png" width="260" alt="展开的训练部位分布与每日组数图"> |
 
 [English 展开示例](docs/screenshots/v066-sections-english.png)。
+
+今日计划表单（模拟器界面）：
+
+| 中文 | English |
+|---|---|
+| <img src="docs/screenshots/v066-daily-fields-zh.png" width="260" alt="白色文字与统一对齐的今日计划表单"> | <img src="docs/screenshots/v066-daily-fields-en.png" width="260" alt="Aligned daily plan fields in English"> |
+
+[超过 180 分钟的提示示例](docs/screenshots/v066-daily-time-error.png)。
 
 以下为历史版本记录；当前界面和安装包以 v0.6.6 为准。
 
