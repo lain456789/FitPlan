@@ -121,7 +121,7 @@
     <string name="range_error">请填写 %1$s–%2$s 范围内的数值</string>
     <string name="integer_error">组数、次数和分钟数请填写整数</string>
     <string name="rest_left">休息中 %1$s</string>
-    <string name="rest_done">休息完成 · 按自己的节奏继续</string>
+    <string name="rest_done">休息完成</string>
     <string name="reason_first">暂无可比的完整记录：请设置并确认重量（自重可确认为 0）</string>
     <string name="reason_up">采用最近实际完成的较高重量，不额外加重</string>
     <string name="reason_down">跟随最近实际使用的较低重量</string>
@@ -454,4 +454,11 @@
     <string name="ring_plan_source">目标来自今日计划 · 查看或调整 ›</string>
     <string name="ring_make_plan">制定今日计划，开启目标圆环 ›</string>
     <string name="ring_short_help">对照今日计划；时长含休息。点圆环查看说明。</string>
+    <string name="complete_set">完成 %1$d 组</string>
+    <string name="all_sets_done">所有动作已完成，可结束训练</string>
+    <string name="move_left">前移</string>
+    <string name="move_right">后移</string>
+    <string name="remove_short">移除</string>
+    <string name="workout_elapsed">%1$s</string>
+    <string name="workout_elapsed_label">训练时长</string>
 </resources>

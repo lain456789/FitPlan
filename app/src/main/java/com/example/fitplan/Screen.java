@@ -247,6 +247,11 @@ abstract class Screen {
         return labels;
     }
 
+    int exerciseImage(String id) {
+        int index = Catalog.builtIn(id);
+        return index >= 0 && index < EXERCISE_IMAGES.length ? EXERCISE_IMAGES[index] : 0;
+    }
+
     void refreshAtCurrentPosition(String route) {
         ScrollView scroll = activity.findViewById(R.id.scroller);
         int position = scroll.getScrollY();

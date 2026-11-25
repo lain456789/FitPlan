@@ -88,7 +88,7 @@ final class RecordsScreen extends Screen {
                                     [check.optInt("food")],
                             activity.sessionNotes(session, check)),
                     14);
-        new TrainingScreen(activity).adjustmentHistory(session);
+        new TrainingScreen(activity).adjustmentHistory(session, content);
         renderLogs(session, false, content, null);
     }
 }

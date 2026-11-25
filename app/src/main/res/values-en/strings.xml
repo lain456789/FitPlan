@@ -121,7 +121,7 @@
     <string name="range_error">Enter a value between %1$s and %2$s</string>
     <string name="integer_error">Sets, reps and minutes must be whole numbers</string>
     <string name="rest_left">Rest · %1$s</string>
-    <string name="rest_done">Rest finished · Continue at your own pace</string>
+    <string name="rest_done">Rest finished</string>
     <string name="reason_first">No comparable complete record: set and confirm a weight (confirm 0 for bodyweight)</string>
     <string name="reason_up">Use the latest higher actual weight, without an extra increase</string>
     <string name="reason_down">Follow the latest lower actual weight</string>
@@ -454,4 +454,11 @@
     <string name="ring_plan_source">Targets from today’s plan · View or edit ›</string>
     <string name="ring_make_plan">Create today’s plan to set ring targets ›</string>
     <string name="ring_short_help">Based on today’s plan. Time includes rest. Tap rings for details.</string>
+    <string name="complete_set">Complete %1$d sets</string>
+    <string name="all_sets_done">All exercises completed</string>
+    <string name="move_left">Move left</string>
+    <string name="move_right">Move right</string>
+    <string name="remove_short">Remove</string>
+    <string name="workout_elapsed">%1$s</string>
+    <string name="workout_elapsed_label">Elapsed</string>
 </resources>
