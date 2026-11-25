@@ -464,4 +464,8 @@
     <string name="completed_exercises">已完成的动作</string>
     <string name="ring_exercises_unit">个动作</string>
     <string name="ring_exercises_explanation">仅统计已结束并保存的训练。同一动作在某次训练中的全部计划组完成后计为 1 个，同一天按动作 ID 去重；未完成、跳过的组不算完成，补录按实际记录的组判断。</string>
+    <string name="expand_section">展开%1$s</string>
+    <string name="collapse_section">收起%1$s</string>
+    <string name="section_expanded">已展开</string>
+    <string name="section_collapsed">已收起</string>
 </resources>

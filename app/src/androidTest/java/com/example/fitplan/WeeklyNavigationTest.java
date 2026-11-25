@@ -103,7 +103,7 @@ public class WeeklyNavigationTest {
                 final View[] rings = new View[1], navigation = new View[1];
                 final int[] position = new int[1];
                 scenario.onActivity(a -> {
-                    View partCard = (View) find(a.content, a.s("part_chart")).getParent();
+                    View partCard = a.content.findViewWithTag("report_card_part_chart");
                     assertEquals(
                             "Report cards keep the full content width",
                             a.content.getWidth()

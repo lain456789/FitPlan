@@ -39,8 +39,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     String page = "home", detailId = "", metric = "sessions", exerciseId = "";
     String progressReturn = "history", manualReturn = "dailyPlan";
     long selectedWeek;
+    final Set<String> expandedReportSections = new HashSet<>();
     JSONObject dailyDraft;
     JSONObject manualHistoryDraft;
     Runnable captureDaily;
@@ -151,6 +154,8 @@ public class MainActivity extends AppCompatActivity {
             selectedWeek = state.getLong("week", selectedWeek);
             metric = state.getString("metric", "sessions");
             exerciseId = state.getString("exercise", "");
+            ArrayList<String> expanded = state.getStringArrayList("expandedReportSections");
+            if (expanded != null) expandedReportSections.addAll(expanded);
             try {
                 String draft = state.getString("draft");
                 if (draft != null) dailyDraft = new JSONObject(draft);
@@ -208,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
         state.putLong("week", selectedWeek);
         state.putString("metric", metric);
         state.putString("exercise", exerciseId);
+        state.putStringArrayList("expandedReportSections", new ArrayList<>(expandedReportSections));
         if (dailyDraft != null) state.putString("draft", dailyDraft.toString());
         if (manualHistoryDraft != null)
             state.putString("manualHistoryDraft", manualHistoryDraft.toString());

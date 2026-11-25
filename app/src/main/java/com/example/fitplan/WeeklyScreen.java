@@ -3,13 +3,19 @@ package com.example.fitplan;
 import static com.example.fitplan.Store.object;
 
 import android.graphics.Typeface;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import androidx.core.view.ViewCompat;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -144,8 +150,7 @@ final class WeeklyScreen extends Screen {
                 num(r.duration / 60000.0),
                 s("minutes_unit") + "\n" + difference(r.duration / 60000.0, p.duration / 60000.0),
                 0xff6edddd);
-        LinearLayout parts = card(content);
-        text(parts, s("part_chart"), 20);
+        LinearLayout parts = section(content, "part_chart");
         if (r.parts.isEmpty()) text(parts, s("empty_week"), 14);
         for (Map.Entry<String, Integer> entry : r.parts.entrySet()) {
             text(parts, s("part_summary", activity.partName(entry.getKey()), entry.getValue()), 16);
@@ -163,9 +168,8 @@ final class WeeklyScreen extends Screen {
             daily.add(new ReportEngine.Point(time, r.daily[i]));
             dailyLabels[i] = new SimpleDateFormat("EEE", activity.locale()).format(new Date(time));
         }
-        chart(content, s("daily_chart"), daily, dailyLabels, false, s("completed_sets"));
-        LinearLayout trend = card(content);
-        text(trend, s("eight_weeks"), 20);
+        chartInto(section(content, "daily_chart"), daily, dailyLabels, false, s("completed_sets"));
+        LinearLayout trend = section(content, "eight_weeks");
         String[] metrics = {"sessions", "completed_sets", "total_volume"};
         int index =
                 activity.metric.equals("completed_sets")
@@ -209,8 +213,7 @@ final class WeeklyScreen extends Screen {
                 };
         metric.setOnItemSelectedListener(listener(render));
         render.run();
-        LinearLayout exercises = card(content);
-        text(exercises, s("exercise_trend"), 20);
+        LinearLayout exercises = section(content, "exercise_trend");
         button(exercises, s("progress_title"), () -> show("progress"));
         if (report.exercises.isEmpty()) text(exercises, s("no_exercise"), 16);
         else {
@@ -257,16 +260,62 @@ final class WeeklyScreen extends Screen {
         };
     }
 
-    private void chart(
-            LinearLayout parent,
-            String title,
-            List<ReportEngine.Point> points,
-            String[] labels,
-            boolean line,
-            String unit) {
-        LinearLayout c = card(parent);
-        text(c, title, 20);
-        chartInto(c, points, labels, line, unit);
+    private LinearLayout section(LinearLayout parent, String key) {
+        LinearLayout card = card(parent);
+        card.setTag("report_card_" + key);
+        LinearLayout header = new LinearLayout(activity);
+        header.setTag("report_toggle_" + key);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setMinimumHeight(activity.dp(48));
+        header.setFocusable(true);
+        card.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        TextView label = text(header, s(key), 20);
+        label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        ImageButton arrow = new ImageButton(activity);
+        arrow.setTag("report_arrow_" + key);
+        arrow.setImageResource(R.drawable.ic_report_expand);
+        arrow.setPadding(activity.dp(12), activity.dp(12), activity.dp(12), activity.dp(12));
+        arrow.setFocusable(false);
+        arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        TypedValue ripple = new TypedValue();
+        activity.getTheme()
+                .resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, ripple, true);
+        arrow.setBackgroundResource(ripple.resourceId);
+        header.addView(arrow, new LinearLayout.LayoutParams(activity.dp(48), activity.dp(48)));
+        LinearLayout body = new LinearLayout(activity);
+        body.setTag("report_body_" + key);
+        body.setOrientation(LinearLayout.VERTICAL);
+        card.addView(body, new LinearLayout.LayoutParams(-1, -2));
+        Runnable update =
+                () -> {
+                    boolean expanded = activity.expandedReportSections.contains(key);
+                    body.setVisibility(expanded ? View.VISIBLE : View.GONE);
+                    arrow.setRotation(expanded ? 180 : 0);
+                    String action = s(expanded ? "collapse_section" : "expand_section", s(key));
+                    header.setContentDescription(action);
+                    arrow.setContentDescription(action);
+                    ViewCompat.setStateDescription(
+                            header, s(expanded ? "section_expanded" : "section_collapsed"));
+                };
+        header.setAccessibilityDelegate(
+                new View.AccessibilityDelegate() {
+                    @Override
+                    public void onInitializeAccessibilityNodeInfo(
+                            View host, AccessibilityNodeInfo info) {
+                        super.onInitializeAccessibilityNodeInfo(host, info);
+                        info.setClassName(Button.class.getName());
+                    }
+                });
+        header.setOnClickListener(v -> {
+            if (!activity.expandedReportSections.remove(key))
+                activity.expandedReportSections.add(key);
+            // Only toggle the existing body; preserve chart selection and the surrounding page.
+            update.run();
+        });
+        arrow.setOnClickListener(v -> header.performClick());
+        update.run();
+        return body;
     }
 
     private void chartInto(

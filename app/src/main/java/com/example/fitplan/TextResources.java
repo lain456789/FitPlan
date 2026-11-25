@@ -466,6 +466,14 @@ final class TextResources {
                 return R.string.summary;
             case "part_summary":
                 return R.string.part_summary;
+            case "expand_section":
+                return R.string.expand_section;
+            case "collapse_section":
+                return R.string.collapse_section;
+            case "section_expanded":
+                return R.string.section_expanded;
+            case "section_collapsed":
+                return R.string.section_collapsed;
             case "daily_chart":
                 return R.string.daily_chart;
             case "part_chart":
