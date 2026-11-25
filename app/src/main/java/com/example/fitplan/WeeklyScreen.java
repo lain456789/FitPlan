@@ -14,7 +14,6 @@ import android.widget.TextView;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -23,67 +22,87 @@ import java.util.TimeZone;
 import java.util.function.Consumer;
 
 final class WeeklyScreen extends Screen {
+    private TextView dateRange;
+    private TextView status;
+    private Button next;
+    private Button back;
+    private LinearLayout reportArea;
+    private Consumer<ReportEngine.Report> todayLoaded;
+    private int requestId;
+    private boolean hasReport;
+
     WeeklyScreen(MainActivity activity) {
         super(activity);
     }
 
     void render(Consumer<ReportEngine.Report> todayLoaded) {
+        this.todayLoaded = todayLoaded;
         title(s("weekly_title"));
-        TimeZone zone = TimeZone.getDefault();
-        long current = ReportEngine.weekStart(System.currentTimeMillis(), zone);
-        activity.selectedWeek =
-                Math.min(ReportEngine.weekStart(activity.selectedWeek, zone), current);
-        text(
-                content,
-                DateFormat.getDateInstance(DateFormat.MEDIUM, activity.locale())
-                                .format(new Date(activity.selectedWeek))
-                        + " — "
-                        + DateFormat.getDateInstance(DateFormat.MEDIUM, activity.locale())
-                                .format(
-                                        new Date(
-                                                ReportEngine.shiftDays(
-                                                        activity.selectedWeek, 6, zone))),
-                16);
+        dateRange = text(content, "", 16);
+        dateRange.setTag("weekly_range");
         LinearLayout controls = new LinearLayout(activity);
         content.addView(controls);
-        Button prev =
-                button(
-                        controls,
-                        s("previous_week"),
-                        () -> {
-                            activity.selectedWeek =
-                                    ReportEngine.shiftDays(activity.selectedWeek, -7, zone);
-                            show("home");
-                        });
+        Button prev = button(controls, s("previous_week"), () -> changeWeek(-7));
         prev.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button next =
-                button(
-                        controls,
-                        s("next_week"),
-                        () -> {
-                            activity.selectedWeek =
-                                    ReportEngine.shiftDays(activity.selectedWeek, 7, zone);
-                            show("home");
-                        });
+        next = button(controls, s("next_week"), () -> changeWeek(7));
         next.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        back = button(content, s("back_current"), () -> load(currentWeek()));
+        reportArea = new LinearLayout(activity);
+        reportArea.setOrientation(LinearLayout.VERTICAL);
+        reportArea.setTag("weekly_report");
+        content.addView(reportArea);
+        status = text(reportArea, s("loading"), 16);
+        load(activity.selectedWeek);
+    }
+
+    private long currentWeek() {
+        return ReportEngine.weekStart(System.currentTimeMillis(), TimeZone.getDefault());
+    }
+
+    private void changeWeek(int days) {
+        load(ReportEngine.shiftDays(activity.selectedWeek, days, TimeZone.getDefault()));
+    }
+
+    private String range(long week) {
+        DateFormat format = DateFormat.getDateInstance(DateFormat.MEDIUM, activity.locale());
+        return format.format(new Date(week))
+                + " — "
+                + format.format(new Date(ReportEngine.shiftDays(week, 6, TimeZone.getDefault())));
+    }
+
+    private void load(long week) {
+        long current = currentWeek();
+        activity.selectedWeek =
+                Math.min(ReportEngine.weekStart(week, TimeZone.getDefault()), current);
         next.setEnabled(activity.selectedWeek < current);
         next.setAlpha(next.isEnabled() ? 1f : .4f);
-        if (activity.selectedWeek != current)
-            button(
-                    content,
-                    s("back_current"),
-                    () -> {
-                        activity.selectedWeek = current;
-                        show("home");
-                    });
-        TextView status = text(content, s("loading"), 16);
+        back.setVisibility(activity.selectedWeek < current ? View.VISIBLE : View.GONE);
+        if (!hasReport) {
+            dateRange.setText(range(activity.selectedWeek));
+            status.setText(s("loading"));
+        }
+        final int request = ++requestId;
         activity.loadReport(
                 activity.selectedWeek,
                 report -> {
-                    todayLoaded.accept(report);
-                    loaded(report);
+                    // A later tap can supersede this request without changing the page.
+                    if (request != requestId) return;
+                    LinearLayout replacement = new LinearLayout(activity);
+                    replacement.setOrientation(LinearLayout.VERTICAL);
+                    loaded(report, replacement);
+                    // Keep the current cards on screen until the replacement is complete.
+                    // Neither the ScrollView nor today's animated rings is recreated.
+                    reportArea.removeAllViews();
+                    reportArea.addView(replacement);
+                    dateRange.setText(range(report.current.start));
+                    if (!hasReport) todayLoaded.accept(report);
+                    hasReport = true;
                 },
-                status);
+                () -> {
+                    if (request != requestId) return;
+                    if (hasReport) toast(s("read_error"));
+                    else status.setText(s("read_error"));
+                });
     }
 
     private String difference(double current, double previous) {
@@ -104,7 +123,7 @@ final class WeeklyScreen extends Screen {
         text(c, change, 12);
     }
 
-    private void loaded(ReportEngine.Report report) {
+    private void loaded(ReportEngine.Report report, LinearLayout content) {
         ReportEngine.Summary r = report.current, p = report.previous;
         text(content, s(report.partial ? "to_date" : "full_week"), 14);
         LinearLayout row = new LinearLayout(activity);
@@ -121,34 +140,10 @@ final class WeeklyScreen extends Screen {
         tile(row2, s("completed_sets"), num(r.sets), difference(r.sets, p.sets), 0xffc1a1ff);
         tile(
                 row2,
-                s("total_volume"),
-                num(r.volume),
-                s("volume_unit") + "\n" + difference(r.volume, p.volume),
+                s("duration"),
+                num(r.duration / 60000.0),
+                s("minutes_unit") + "\n" + difference(r.duration / 60000.0, p.duration / 60000.0),
                 0xff6edddd);
-        LinearLayout duration = card(content);
-        text(
-                duration,
-                s("duration") + " · " + num(r.duration / 60000.0) + " " + s("minutes_unit"),
-                20);
-        text(duration, difference(r.duration / 60000.0, p.duration / 60000.0), 14);
-        LinearLayout summary = card(content);
-        text(
-                summary,
-                r.sessions == 0 ? s("empty_week") : s("summary", r.sessions, r.days, r.sets),
-                18);
-        if (!r.parts.isEmpty()) {
-            String best =
-                    Collections.max(r.parts.entrySet(), Map.Entry.comparingByValue()).getKey();
-            text(summary, s("part_summary", activity.partName(best), r.parts.get(best)), 16);
-        }
-        List<ReportEngine.Point> daily = new ArrayList<>();
-        String[] dailyLabels = new String[7];
-        for (int i = 0; i < 7; i++) {
-            long time = ReportEngine.shiftDays(r.start, i, TimeZone.getDefault());
-            daily.add(new ReportEngine.Point(time, r.daily[i]));
-            dailyLabels[i] = new SimpleDateFormat("EEE", activity.locale()).format(new Date(time));
-        }
-        chart(s("daily_chart"), daily, dailyLabels, false, s("completed_sets"));
         LinearLayout parts = card(content);
         text(parts, s("part_chart"), 20);
         if (r.parts.isEmpty()) text(parts, s("empty_week"), 14);
@@ -161,6 +156,14 @@ final class WeeklyScreen extends Screen {
             bar.setProgressTintList(android.content.res.ColorStateList.valueOf(0xffc1a1ff));
             parts.addView(bar, new LinearLayout.LayoutParams(-1, activity.dp(8)));
         }
+        List<ReportEngine.Point> daily = new ArrayList<>();
+        String[] dailyLabels = new String[7];
+        for (int i = 0; i < 7; i++) {
+            long time = ReportEngine.shiftDays(r.start, i, TimeZone.getDefault());
+            daily.add(new ReportEngine.Point(time, r.daily[i]));
+            dailyLabels[i] = new SimpleDateFormat("EEE", activity.locale()).format(new Date(time));
+        }
+        chart(content, s("daily_chart"), daily, dailyLabels, false, s("completed_sets"));
         LinearLayout trend = card(content);
         text(trend, s("eight_weeks"), 20);
         String[] metrics = {"sessions", "completed_sets", "total_volume"};
@@ -173,7 +176,8 @@ final class WeeklyScreen extends Screen {
                         trend,
                         s("metric"),
                         new String[] {s(metrics[0]), s(metrics[1]), s(metrics[2])},
-                        index);
+                        index,
+                        false);
         LinearLayout chartArea = activity.column();
         trend.addView(chartArea);
         Runnable render =
@@ -207,7 +211,6 @@ final class WeeklyScreen extends Screen {
         render.run();
         LinearLayout exercises = card(content);
         text(exercises, s("exercise_trend"), 20);
-        text(exercises, s("exercise_hint"), 14);
         button(exercises, s("progress_title"), () -> show("progress"));
         if (report.exercises.isEmpty()) text(exercises, s("no_exercise"), 16);
         else {
@@ -242,9 +245,6 @@ final class WeeklyScreen extends Screen {
             pick.setOnItemSelectedListener(listener(draw));
             draw.run();
         }
-        LinearLayout help = card(content);
-        text(help, s("definitions"), 18);
-        text(help, s("definitions_text"), 14);
     }
 
     private AdapterView.OnItemSelectedListener listener(Runnable action) {
@@ -258,12 +258,13 @@ final class WeeklyScreen extends Screen {
     }
 
     private void chart(
+            LinearLayout parent,
             String title,
             List<ReportEngine.Point> points,
             String[] labels,
             boolean line,
             String unit) {
-        LinearLayout c = card(content);
+        LinearLayout c = card(parent);
         text(c, title, 20);
         chartInto(c, points, labels, line, unit);
     }
@@ -292,10 +293,8 @@ final class WeeklyScreen extends Screen {
                                                         num(points.get(index).value))
                                                 + " "
                                                 + unit));
-        view.setContentDescription(unit + " · " + s("chart_help"));
         c.addView(view, new LinearLayout.LayoutParams(-1, activity.dp(190)));
         c.addView(selection);
-        text(c, s("chart_help"), 12);
         StringBuilder data = new StringBuilder();
         for (int i = 0; i < points.size(); i++) {
             if (i > 0) data.append("\n");
@@ -303,6 +302,6 @@ final class WeeklyScreen extends Screen {
                     .append(" ")
                     .append(unit);
         }
-        text(c, data.toString(), 13);
+        view.setContentDescription(unit + " · " + s("chart_help") + "\n" + data);
     }
 }

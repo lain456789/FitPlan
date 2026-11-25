@@ -14,10 +14,10 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.HorizontalScrollView;
-import android.widget.ImageView;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -383,8 +383,7 @@ final class TrainingScreen extends Screen {
         track.setClipToPadding(false);
         track.setPadding(0, activity.dp(4), 0, activity.dp(8));
         strip.addView(track, new LinearLayout.LayoutParams(-2, -1));
-        int cardWidth =
-                Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.90f);
+        int cardWidth = Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.90f);
         final LinearLayout[] dragging = {null};
         final int[] dragFrom = {-1};
         final int[] dragTarget = {-1};
@@ -456,87 +455,79 @@ final class TrainingScreen extends Screen {
             prev.setAlpha(index > 0 ? 1f : 0.35f);
             prev.setOnClickListener(v -> moveRow(rows, plan, index, index - 1));
             TextView remove = actionButton(rowActions, s("remove_short"));
-            remove.setOnClickListener(
-                    v -> {
-                        rows.remove(index);
-                        store.save("plan", plan);
-                        activity.openPlan(plan);
-                    });
+            remove.setOnClickListener(v -> {
+                rows.remove(index);
+                store.save("plan", plan);
+                activity.openPlan(plan);
+            });
             TextView next = actionButton(rowActions, s("move_right"));
             next.setEnabled(index < rows.length() - 1);
             next.setAlpha(index < rows.length() - 1 ? 1f : 0.35f);
             next.setOnClickListener(v -> moveRow(rows, plan, index, index + 1));
-            header.setOnLongClickListener(
-                    v -> {
-                        if (rows.length() <= 1) return false;
-                        dragging[0] = c;
-                        dragFrom[0] = index;
-                        dragTarget[0] = index;
-                        downX[0] = lastX[0];
-                        c.setElevation(activity.dp(18));
-                        c.setAlpha(0.96f);
-                        c.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start();
-                        header.requestDisallowInterceptTouchEvent(true);
-                        return true;
-                    });
-            header.setOnTouchListener(
-                    (v, event) -> {
-                        switch (event.getActionMasked()) {
-                            case MotionEvent.ACTION_DOWN:
-                                lastX[0] = event.getRawX();
-                                return false;
-                            case MotionEvent.ACTION_MOVE:
-                                if (dragging[0] == null) {
-                                    lastX[0] = event.getRawX();
-                                    return false;
-                                }
-                                {
-                                    float dx = event.getRawX() - downX[0];
-                                    c.setTranslationX(dx);
-                                    float step = cardWidth + cardGap;
-                                    int target = Math.round((dragFrom[0] * step + dx) / step);
-                                    target = Math.max(0, Math.min(rows.length() - 1, target));
-                                    if (target != dragTarget[0]) {
-                                        dragTarget[0] = target;
-                                        for (int k = 0; k < track.getChildCount(); k++) {
-                                            View other = track.getChildAt(k);
-                                            if (other == c) continue;
-                                            float shift = 0;
-                                            if (dragFrom[0] < target
-                                                    && k > dragFrom[0]
-                                                    && k <= target) shift = -step;
-                                            else if (dragFrom[0] > target
-                                                    && k >= target
-                                                    && k < dragFrom[0]) shift = step;
-                                            other.animate()
-                                                    .translationX(shift)
-                                                    .setDuration(180)
-                                                    .start();
-                                        }
-                                    }
-                                    lastX[0] = event.getRawX();
-                                    return true;
-                                }
-                            case MotionEvent.ACTION_UP:
-                            case MotionEvent.ACTION_CANCEL:
-                                if (dragging[0] == null) return false;
-                                {
-                                    int target = dragTarget[0];
-                                    if (target != dragFrom[0]) {
-                                        JSONArray reordered = reorder(rows, dragFrom[0], target);
-                                        while (rows.length() > 0) rows.remove(0);
-                                        for (int k = 0; k < reordered.length(); k++)
-                                            rows.put(reordered.opt(k));
-                                        store.save("plan", plan);
-                                    }
-                                    dragging[0] = null;
-                                    header.requestDisallowInterceptTouchEvent(false);
-                                    activity.openPlan(plan);
-                                    return true;
-                                }
-                        }
+            header.setOnLongClickListener(v -> {
+                if (rows.length() <= 1) return false;
+                dragging[0] = c;
+                dragFrom[0] = index;
+                dragTarget[0] = index;
+                downX[0] = lastX[0];
+                c.setElevation(activity.dp(18));
+                c.setAlpha(0.96f);
+                c.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start();
+                header.requestDisallowInterceptTouchEvent(true);
+                return true;
+            });
+            header.setOnTouchListener((v, event) -> {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        lastX[0] = event.getRawX();
                         return false;
-                    });
+                    case MotionEvent.ACTION_MOVE:
+                        if (dragging[0] == null) {
+                            lastX[0] = event.getRawX();
+                            return false;
+                        }
+                        {
+                            float dx = event.getRawX() - downX[0];
+                            c.setTranslationX(dx);
+                            float step = cardWidth + cardGap;
+                            int target = Math.round((dragFrom[0] * step + dx) / step);
+                            target = Math.max(0, Math.min(rows.length() - 1, target));
+                            if (target != dragTarget[0]) {
+                                dragTarget[0] = target;
+                                for (int k = 0; k < track.getChildCount(); k++) {
+                                    View other = track.getChildAt(k);
+                                    if (other == c) continue;
+                                    float shift = 0;
+                                    if (dragFrom[0] < target && k > dragFrom[0] && k <= target)
+                                        shift = -step;
+                                    else if (dragFrom[0] > target && k >= target && k < dragFrom[0])
+                                        shift = step;
+                                    other.animate().translationX(shift).setDuration(180).start();
+                                }
+                            }
+                            lastX[0] = event.getRawX();
+                            return true;
+                        }
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        if (dragging[0] == null) return false;
+                        {
+                            int target = dragTarget[0];
+                            if (target != dragFrom[0]) {
+                                JSONArray reordered = reorder(rows, dragFrom[0], target);
+                                while (rows.length() > 0) rows.remove(0);
+                                for (int k = 0; k < reordered.length(); k++)
+                                    rows.put(reordered.opt(k));
+                                store.save("plan", plan);
+                            }
+                            dragging[0] = null;
+                            header.requestDisallowInterceptTouchEvent(false);
+                            activity.openPlan(plan);
+                            return true;
+                        }
+                }
+                return false;
+            });
         }
         button(content, s("start_plan"), () -> start(plan));
     }
@@ -631,36 +622,30 @@ final class TrainingScreen extends Screen {
                     number.setContentDescription(label + " " + text);
                 };
         sync.run();
-        number.setOnClickListener(
-                v -> {
-                    LinearLayout form = column();
-                    EditText field = input(form, label, number.getText().toString(), true);
-                    field.selectAll();
-                    dialog(
-                            label,
-                            form,
-                            () -> {
-                                double value =
-                                        weight ? number(field, min, max) : integer(field, min, max);
-                                updatePrescription(plan, row, key, value);
-                                sync.run();
-                                refresh.run();
-                            });
-                });
-        minus.setOnClickListener(
-                v -> {
-                    updatePrescription(
-                            plan, row, key, Math.max(min, row.optDouble(key) - step));
-                    sync.run();
-                    refresh.run();
-                });
-        plus.setOnClickListener(
-                v -> {
-                    updatePrescription(
-                            plan, row, key, Math.min(max, row.optDouble(key) + step));
-                    sync.run();
-                    refresh.run();
-                });
+        number.setOnClickListener(v -> {
+            LinearLayout form = column();
+            EditText field = input(form, label, number.getText().toString(), true);
+            field.selectAll();
+            dialog(
+                    label,
+                    form,
+                    () -> {
+                        double value = weight ? number(field, min, max) : integer(field, min, max);
+                        updatePrescription(plan, row, key, value);
+                        sync.run();
+                        refresh.run();
+                    });
+        });
+        minus.setOnClickListener(v -> {
+            updatePrescription(plan, row, key, Math.max(min, row.optDouble(key) - step));
+            sync.run();
+            refresh.run();
+        });
+        plus.setOnClickListener(v -> {
+            updatePrescription(plan, row, key, Math.min(max, row.optDouble(key) + step));
+            sync.run();
+            refresh.run();
+        });
     }
 
     private TextView stepperButton(LinearLayout parent, String glyph) {
@@ -779,8 +764,7 @@ final class TrainingScreen extends Screen {
         track.setClipToPadding(false);
         track.setPadding(0, activity.dp(4), 0, activity.dp(8));
         strip.addView(track, new LinearLayout.LayoutParams(-2, -1));
-        int cardWidth =
-                Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.86f);
+        int cardWidth = Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.86f);
         int visible = 0;
         for (int i = 0; i < rows.length(); i++) {
             final int rowIndex = i;
@@ -809,10 +793,11 @@ final class TrainingScreen extends Screen {
                             row.optInt("reps")),
                     14);
             left.addView(new View(activity), new LinearLayout.LayoutParams(-1, 0, 1));
-            Button complete = button(
-                    left,
-                    s("complete_set", row.optInt("sets") - remaining),
-                    () -> completeNextSet(session, rowIndex));
+            Button complete =
+                    button(
+                            left,
+                            s("complete_set", row.optInt("sets") - remaining),
+                            () -> completeNextSet(session, rowIndex));
             complete.setTextSize(12);
             complete.setMinHeight(activity.dp(32));
             complete.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));

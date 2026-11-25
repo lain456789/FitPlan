@@ -167,7 +167,7 @@
     <string name="exercise_hint">Highest actual weight per workout; dates without workouts are not filled with zero.</string>
     <string name="no_exercise">Complete a workout to see exercise trends.</string>
     <string name="chart_point">%1$s: %2$s</string>
-    <string name="chart_help">Tap the chart for values. Full data is listed below.</string>
+    <string name="chart_help">Tap the chart for values.</string>
     <string name="loading">Loading local records…</string>
     <string name="read_error">Could not read records. Go back and try again.</string>
     <string name="language">App language</string>
@@ -177,7 +177,7 @@
     <string name="definitions">How statistics work</string>
     <string name="definitions_text">Performed sets and actual reps count, including sets below target. Records with no performed sets are excluded from the workout count. A set meets its target when actual reps reach the target. Volume = weight × actual reps. Bodyweight sets and reps still count. Duration includes rest and time outside the app. Weeks run Monday–Sunday in your local time zone, based on workout finish time. Editing or deleting history recalculates reports.</string>
     <string name="privacy">Workout records stay on this device with no account or cloud sync. Only when you send a prompt in AI Coach are your local training summary and profile sent to Zhipu GLM.</string>
-    <string name="version">v0.6.2</string>
+    <string name="version">v0.6.6</string>
     <string name="back_label">Back</string>
     <string name="ex0">Barbell bench press</string>
     <string name="ex1">Incline dumbbell press</string>
@@ -461,4 +461,7 @@
     <string name="remove_short">Remove</string>
     <string name="workout_elapsed">%1$s</string>
     <string name="workout_elapsed_label">Elapsed</string>
+    <string name="completed_exercises">Completed exercises</string>
+    <string name="ring_exercises_unit">exercises</string>
+    <string name="ring_exercises_explanation">Only finished, saved workouts count. An exercise counts once all of its planned sets in a workout are completed; each exercise ID counts once per day. Unfinished or skipped sets do not count as complete. Manual entries use their recorded sets.</string>
 </resources>

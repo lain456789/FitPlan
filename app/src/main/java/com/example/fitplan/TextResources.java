@@ -3,6 +3,12 @@ package com.example.fitplan;
 final class TextResources {
     static int id(String key) {
         switch (key) {
+            case "completed_exercises":
+                return R.string.completed_exercises;
+            case "ring_exercises_unit":
+                return R.string.ring_exercises_unit;
+            case "ring_exercises_explanation":
+                return R.string.ring_exercises_explanation;
             case "ring_short_help":
                 return R.string.ring_short_help;
             case "ring_sets_unit":

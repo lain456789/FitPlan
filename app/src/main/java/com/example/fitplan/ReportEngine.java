@@ -34,8 +34,27 @@ public final class ReportEngine {
         }
     }
 
+    public static final class ExerciseEntry {
+        public final String exerciseId;
+        public final int plannedSets;
+        public final List<SetEntry> sets = new ArrayList<>();
+        public boolean hasSkippedSets;
+
+        public ExerciseEntry(String exerciseId, int plannedSets) {
+            this.exerciseId = exerciseId;
+            this.plannedSets = plannedSets;
+        }
+
+        boolean complete() {
+            if (plannedSets <= 0 || sets.size() < plannedSets || hasSkippedSets) return false;
+            for (SetEntry entry : sets) if (!entry.valid()) return false;
+            return true;
+        }
+    }
+
     public static final class Session {
         public long started, finished;
+        public final List<ExerciseEntry> exercises = new ArrayList<>();
         public final List<SetEntry> sets = new ArrayList<>();
 
         public Session(long started, long finished) {
@@ -46,7 +65,7 @@ public final class ReportEngine {
 
     public static final class Summary {
         public long start, end, duration;
-        public int sessions, days, sets;
+        public int sessions, days, sets, completedExercises;
         public double volume;
         public final int[] daily = new int[7];
         public final Map<String, Integer> parts = new LinkedHashMap<>();
@@ -75,6 +94,7 @@ public final class ReportEngine {
     public static final class Targets {
         public String planId = "";
         public double sets, volume, minutes;
+        public int exercises;
         public boolean hasPlan, volumePending;
     }
 
@@ -119,6 +139,7 @@ public final class ReportEngine {
         result.start = start;
         result.end = end;
         Set<Integer> days = new HashSet<>();
+        Set<String> completedExercises = new HashSet<>();
         for (Session session : sessions) {
             if (session.finished <= 0 || session.finished < start || session.finished >= end)
                 continue;
@@ -128,6 +149,16 @@ public final class ReportEngine {
             Calendar c = Calendar.getInstance(zone);
             c.setTimeInMillis(session.finished);
             int day = (c.get(Calendar.DAY_OF_WEEK) + 5) % 7;
+            Map<String, Boolean> completion = new HashMap<>();
+            for (ExerciseEntry exercise : session.exercises) {
+                String id = exercise.exerciseId;
+                if (id == null || id.isEmpty()) continue;
+                completion.put(
+                        id,
+                        exercise.complete() && (!completion.containsKey(id) || completion.get(id)));
+            }
+            for (Map.Entry<String, Boolean> exercise : completion.entrySet())
+                if (exercise.getValue()) completedExercises.add(exercise.getKey());
             result.sessions++;
             result.sets += valid;
             result.daily[day] += valid;
@@ -143,6 +174,7 @@ public final class ReportEngine {
                 }
         }
         result.days = days.size();
+        result.completedExercises = completedExercises.size();
         return result;
     }
 

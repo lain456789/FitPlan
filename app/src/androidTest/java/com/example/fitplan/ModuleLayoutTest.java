@@ -157,7 +157,7 @@ public class ModuleLayoutTest {
                         ActivityScenario.launch(MainActivity.class)) {
             waitHome(scenario);
             long now = System.currentTimeMillis();
-            double[] baseVolume = {0};
+            double[] baseExercises = {0};
             int[] baseSets = {0};
             JSONObject draft = ManualHistory.draft(now);
             String id = draft.optString("id");
@@ -170,11 +170,17 @@ public class ModuleLayoutTest {
                                             now,
                                             TimeZone.getDefault())
                                     .today;
-                    baseVolume[0] = before.volume;
+                    baseExercises[0] = before.completedExercises;
                     baseSets[0] = before.sets;
                     JSONObject row =
                             ManualHistory.row(
-                                    object("id", "builtin-0", "name", "Bench", "part", "chest"));
+                                    object(
+                                            "id",
+                                            "module-layout-test-exercise",
+                                            "name",
+                                            "Bench",
+                                            "part",
+                                            "chest"));
                     row.optJSONArray("logs").put(ManualHistory.log("25", "8", "appropriate", now));
                     draft.optJSONArray("rows").put(row);
                     a.show("dailyPlan");
@@ -191,8 +197,8 @@ public class ModuleLayoutTest {
                             a.num(baseSets[0] + 1),
                             ((TextView) find(a.content, "today_sets")).getText().toString());
                     assertEquals(
-                            a.num(baseVolume[0] + 200) + " " + a.s("volume_unit"),
-                            ((TextView) find(a.content, "today_volume")).getText().toString());
+                            a.num(baseExercises[0] + 1),
+                            ((TextView) find(a.content, "today_exercises")).getText().toString());
                     JSONObject saved = a.find("history", id);
                     Store.put(
                             saved.optJSONArray("rows")
@@ -209,8 +215,8 @@ public class ModuleLayoutTest {
                 waitHome(scenario);
                 scenario.onActivity(a -> {
                     assertEquals(
-                            a.num(baseVolume[0] + 240) + " " + a.s("volume_unit"),
-                            ((TextView) find(a.content, "today_volume")).getText().toString());
+                            a.num(baseExercises[0] + 1),
+                            ((TextView) find(a.content, "today_exercises")).getText().toString());
                     db.delete(id);
                     a.show("home");
                 });

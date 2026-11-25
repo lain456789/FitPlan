@@ -5,7 +5,9 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 
 /** Read-only reference to the latest saved daily template, never an active session. */
@@ -31,6 +33,7 @@ final class DailyTargetReader {
             double minutes = plan.optDouble("minutes", 0);
             if (Double.isFinite(minutes) && minutes > 0) result.minutes = minutes;
             boolean invalid = false;
+            Set<String> exerciseIds = new HashSet<>();
             for (int j = 0; j < rows.length(); j++) {
                 JSONObject row = rows.optJSONObject(j);
                 if (row == null) {
@@ -44,6 +47,8 @@ final class DailyTargetReader {
                     continue;
                 }
                 result.sets += sets;
+                String exerciseId = row.optString("exerciseId");
+                if (!exerciseId.isEmpty()) exerciseIds.add(exerciseId);
                 if (PlanEdits.needsConfirmation(plan, row)
                         || !Double.isFinite(weight)
                         || weight < 0
@@ -54,6 +59,7 @@ final class DailyTargetReader {
                 result.sets = 0;
                 result.volumePending = true;
             }
+            result.exercises = invalid ? 0 : exerciseIds.size();
             if (result.volumePending) result.volume = 0;
             return result;
         }

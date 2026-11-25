@@ -131,10 +131,19 @@ abstract class Screen {
     }
 
     Spinner select(LinearLayout parent, String label, String[] options, int selected) {
-        TextView caption = text(parent, label, 14);
+        return select(parent, label, options, selected, true);
+    }
+
+    Spinner select(
+            LinearLayout parent, String label, String[] options, int selected, boolean showLabel) {
         Spinner spinner = new Spinner(activity);
         spinner.setId(android.view.View.generateViewId());
-        caption.setLabelFor(spinner.getId());
+        if (showLabel) {
+            TextView caption = text(parent, label, 14);
+            caption.setLabelFor(spinner.getId());
+        } else {
+            spinner.setContentDescription(label);
+        }
         ArrayAdapter<String> adapter =
                 new ArrayAdapter<>(activity, android.R.layout.simple_spinner_item, options);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);

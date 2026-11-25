@@ -35,14 +35,8 @@ final class HomeScreen extends Screen {
         ReportEngine.Targets goals = report.targets;
         parent.removeAllViews();
         String setsGoal = goal(data.sets, goals.sets, s("ring_sets_unit"), false);
-        String volumeGoal =
-                !goals.hasPlan
-                        ? s("ring_no_target")
-                        : goals.volumePending
-                                ? s("ring_weight_pending")
-                                : goals.volume <= 0
-                                        ? s("ring_bodyweight")
-                                        : goal(data.volume, goals.volume, s("volume_unit"), false);
+        String exerciseGoal =
+                goal(data.completedExercises, goals.exercises, s("ring_exercises_unit"), false);
         String timeGoal = goal(data.duration / 60000.0, goals.minutes, s("minutes_unit"), true);
         String description =
                 s("completed_sets")
@@ -51,13 +45,13 @@ final class HomeScreen extends Screen {
                         + ", "
                         + setsGoal
                         + "; "
-                        + s("total_volume")
+                        + s("completed_exercises")
                         + ": "
-                        + num(data.volume)
+                        + num(data.completedExercises)
                         + " "
-                        + s("volume_unit")
+                        + s("ring_exercises_unit")
                         + ", "
-                        + volumeGoal
+                        + exerciseGoal
                         + "; "
                         + s("known_duration")
                         + ": "
@@ -73,14 +67,18 @@ final class HomeScreen extends Screen {
         chartRow.setOrientation(stacked ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
         chartRow.setGravity(Gravity.CENTER_VERTICAL);
         parent.addView(chartRow);
-        ActivityRingsView rings =
-                new ActivityRingsView(activity, data, goals, s("ring_today"), description);
+        ActivityRingsView rings = new ActivityRingsView(activity, data, goals, description);
         rings.setTag("today_rings");
         rings.setFocusable(true);
         rings.setOnClickListener(view ->
                 new android.app.AlertDialog.Builder(activity)
                         .setTitle(s("definitions"))
-                        .setMessage(description + "\n\n" + s("ring_explanation"))
+                        .setMessage(
+                                description
+                                        + "\n\n"
+                                        + s("ring_exercises_explanation")
+                                        + "\n\n"
+                                        + s("ring_explanation"))
                         .setPositiveButton(s("confirm"), null)
                         .show());
         int diameter =
@@ -117,11 +115,11 @@ final class HomeScreen extends Screen {
                 ActivityRingsView.SETS);
         metric(
                 legend,
-                "total_volume",
-                num(data.volume) + " " + s("volume_unit"),
-                volumeGoal,
-                "today_volume",
-                ActivityRingsView.VOLUME);
+                "completed_exercises",
+                num(data.completedExercises),
+                exerciseGoal,
+                "today_exercises",
+                ActivityRingsView.EXERCISES);
         metric(
                 legend,
                 "known_duration",
@@ -136,7 +134,6 @@ final class HomeScreen extends Screen {
         label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         TextView number = text(sessions, num(data.sessions), 18);
         number.setTag("today_sessions");
-        text(parent, s("ring_short_help"), 12);
         TextView source =
                 text(parent, s(goals.hasPlan ? "ring_plan_source" : "ring_make_plan"), 14);
         source.setTextColor(MainActivity.ACCENT);

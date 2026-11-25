@@ -2,6 +2,26 @@
 
 Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周报完全离线运行，并内置可选联网的 AI 健身教练，支持每日状态填写、训练计划、逐组记录、休息计时、历史修正、中英双语周报与基于本地训练数据的 AI 建议。
 
+## v0.6.6 首页精简与滚动体验优化
+
+2026 年 11 月 25 日更新，包含 v0.6.5 的训练计划与执行界面改版。
+
+- **今日圆环**：青色指标改为「已完成的动作」，按动作 ID 去重；绿色仍为已训练组数，紫色仍为已知训练时长。三条环加粗约 40%，缩小中心留白，移除中心「今日」文字。
+- **周报布局**：摘要保留训练次数、训练天数、已训练组数、训练时长四张卡片；部位分布调整到每日组数图之前。删除首页重复说明、统计口径卡、文字总结和图表下方的数据列表，保留图表点选数值及无障碍说明。训练量仍可在八周趋势中查看。
+- **切换周不卡顿**：「上一周／下一周／回到本周」只刷新周报，保留阅读位置及上方圆环；连续点击只采用最后一次选择的结果。
+- **全局 Logo 动画**：所有页面顶部完整显示 FitPlan；向下浏览时随滚动缩小、淡出并释放顶部空间，滚回顶部恢复。底部导航与固定操作区保持可见。
+- **数据兼容**：保留本地 SQLite、原记录 ID、计划和进行中训练快照；不修改训练推荐规则，也不写入演示记录。
+
+下载 [v0.6.6 调试 APK](downloads/FitPlan-v0.6.6-debug.apk)；校验值见 [SHA256SUMS](downloads/SHA256SUMS)。应用版本为 0.6.6 / versionCode 16，使用本机 Windows 调试签名，可覆盖相同签名的旧版。安装包未配置 GLM API Key。
+
+操作与完成动作的统计规则见 [本版说明](docs/DASHBOARD_POLISH.md)，验证范围见 [测试记录](docs/TESTING.md)。
+
+| 中文圆环（固定测试数据） | English（固定测试数据） |
+|---|---|
+| <img src="docs/screenshots/v066-rings-zh.png" width="260" alt="v0.6.6 中文首页测试数据"> | <img src="docs/screenshots/v066-rings-en.png" width="260" alt="v0.6.6 English dashboard test fixture"> |
+
+以下为历史版本记录；当前界面和安装包以 v0.6.6 为准。
+
 ## v0.6.5 训练计划与执行界面改版
 
 - **训练计划编辑页**：动作列表改为可左右滑动的卡片组，长按动作名可拖拽排序（拖动时其他卡片实时让位），也可用「前移／后移」按钮调整顺序，首个动作不可前移、末个动作不可后移。重量、组数、次数由滑条改为紧凑步进器，可点数值精确输入。
@@ -94,7 +114,7 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 
 ## 功能
 
-- **首页**：今日训练圆环与目标参照、完整周报、历史周切换与趋势图。
+- **首页**：已训练组数、已完成动作和时长圆环；四项周摘要、部位分布、每日组数与趋势图。周切换保留当前阅读位置。
 - **训练**：今日状态和计划生成、我的计划、动作库，以及补录入口；30 个内置动作，支持搜索、筛选与自定义动作，其中新增 14 个用于补充器械替换候选。
 - **记录**：查看与修正历史、删除记录及表现分析。历史与计划独立保存，周报离线计算。
 - **周报**：每日已训练组、部位分布、近八周训练次数/组数/训练量，以及单动作最高实际重量走势。
@@ -105,7 +125,7 @@ Java 原生 Android 训练记录应用。核心训练记录、规则推荐与周
 
 ## 安装体验
 
-[下载 v0.6.4 调试 APK](downloads/FitPlan-v0.6.4-debug.apk)；[v0.6.3](downloads/FitPlan-v0.6.3-debug.apk)；[v0.6.2](downloads/FitPlan-v0.6.2-debug.apk)（本包未配置 GLM API Key）。[v0.6.1](downloads/FitPlan-v0.6.1-debug.apk)、[v0.6.0](downloads/FitPlan-v0.6.0-debug.apk)、[v0.5.1](downloads/FitPlan-v0.5.1-debug.apk)、[v0.5.0](downloads/FitPlan-v0.5.0-debug.apk)、[v0.4.0](downloads/FitPlan-v0.4.0-debug.apk)、[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
+[下载当前 v0.6.6 调试 APK](downloads/FitPlan-v0.6.6-debug.apk)；[v0.6.4](downloads/FitPlan-v0.6.4-debug.apk)；[v0.6.3](downloads/FitPlan-v0.6.3-debug.apk)；[v0.6.2](downloads/FitPlan-v0.6.2-debug.apk)（本包未配置 GLM API Key）。[v0.6.1](downloads/FitPlan-v0.6.1-debug.apk)、[v0.6.0](downloads/FitPlan-v0.6.0-debug.apk)、[v0.5.1](downloads/FitPlan-v0.5.1-debug.apk)、[v0.5.0](downloads/FitPlan-v0.5.0-debug.apk)、[v0.4.0](downloads/FitPlan-v0.4.0-debug.apk)、[v0.3.0](downloads/FitPlan-v0.3.0-debug.apk)、[v0.2.2](downloads/FitPlan-v0.2.2-debug.apk)、[v0.2.1](downloads/FitPlan-v0.2.1-debug.apk) 和 [原 v0.2](downloads/FitPlan-v0.2-debug.apk) 安装包继续保留，校验值在 [SHA256SUMS](downloads/SHA256SUMS)。这些包用于开发与课程演示，不是应用商店发布包。
 
 v0.5.0 至 v0.6.1 的安装包均使用同一 Windows 调试密钥签名，可从这些旧版覆盖更新至 v0.6.1。仓库中的 v0.4.0 APK 使用另一把密钥，Android 会拒绝用此包直接覆盖安装。需要保留旧版训练记录时，可用另一台设备或模拟器体验新版。
 
@@ -118,7 +138,7 @@ v0.6.2 下载包使用本次 macOS 构建的调试签名，可以覆盖使用同
 ## 在 Android Studio 运行
 
 1. 克隆仓库并用 Android Studio 打开项目根目录。Windows 上请使用不含中文等非 ASCII 字符的目录，例如 `C:\AndroidProjects\FitPlan`，避免 Android Gradle Plugin 的路径检查失败。
-2. 安装 Android SDK Platform 37.0 与 Build-Tools 36.0.0，并使用兼容 Android Gradle Plugin 9.5.1、Gradle 9.6.0 的 JDK。v0.2.1 在 macOS arm64、Temurin JDK 25、Gradle 9.6.0 上构建验证。
+2. 安装 Android SDK Platform 37.0 与 Build-Tools 36.0.0，并使用兼容 Android Gradle Plugin 9.3.0、Gradle 9.6.0 的 JDK。当前版本在 Windows、JDK 25 构建环境验证。
 3. 等待 Gradle Sync 完成。SDK 路径由本机 Android Studio 配置，`local.properties` 不提交。
 4. 选择 API 24 以上的安卓设备或模拟器，运行 `app`。
 
@@ -149,11 +169,13 @@ macOS/Linux 使用 `./gradlew`。APK 构建输出位于 `app/build/outputs/apk/d
 
 周报以设备本地时区的周一至周日为一周，根据训练结束时间归属。仅已训练组及其实际次数参与统计，未达目标的已训练组也会计入；零已训练组的记录不计训练次数。达标组是实际次数达到目标的已训练组。训练量为实际重量 × 次数之和，自重动作仍计入已训练组数。时长包含休息和离开应用的时间。
 
+首页「已完成的动作」只统计已结束并保存的训练：某动作在一次训练中的全部计划组完成后计为 1 个，同一天按动作 ID 去重；同名但不同 ID 不合并。未完成或跳过的组不算完成，补录按实际记录的组判断；目标为当天最新自动计划中的不同动作数。
+
 本周与上周相同时段比较，完整历史周与前一完整周比较。单动作按 ID 聚合，避免同名动作混在一起；没有训练的日期不补成 0。修改历史后周报重新计算。
 
-推荐规则是可调整的课程项目规则：根据今日状态减少组数且不补入新动作，参考最近可比完整记录中各组均已支持的重量；不额外自动加重。缺少可比记录的动作需用户确认重量（自重可确认为 0）。目前没有器械变体和主观难度字段，不能视为完整训练表现评估。规则不等同于经过验证的个人健身处方。
+推荐规则是可调整的课程项目规则：根据今日状态减少组数且不补入新动作，参考最近可比完整记录中各组均已支持的重量；不额外自动加重。缺少可比记录的动作需用户确认重量（自重可确认为 0）。逐组主观难度与未达标原因用于本地表现分析，但不能视为完整训练表现评估。规则不等同于经过验证的个人健身处方。
 
-## 截图
+## 历史版本截图
 
 下方历史和趋势截图包含带标记的**演示数据**，不是用户真实成绩。
 

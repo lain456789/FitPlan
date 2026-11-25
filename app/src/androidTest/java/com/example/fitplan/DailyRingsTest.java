@@ -83,6 +83,7 @@ public class DailyRingsTest {
         assertTrue(target.hasPlan);
         assertEquals(3, target.sets, 0);
         assertEquals(1200, target.volume, 0);
+        assertEquals(1, target.exercises);
         assertEquals(30, target.minutes, 0);
         p.remove("checkin");
         assertFalse(read(p).hasPlan);
@@ -93,10 +94,12 @@ public class DailyRingsTest {
         JSONObject p = plan(day(now), 0);
         assertEquals(0, read(p).volume, 0);
         assertFalse(read(p).volumePending);
+        assertEquals(1, read(p).exercises);
         JSONObject row = p.optJSONArray("rows").optJSONObject(0);
         put(row, "userConfirmed", false);
         put(row, "needsWeightConfirmation", true);
         assertTrue(read(p).volumePending);
+        assertEquals(1, read(p).exercises);
         assertEquals(3, read(p).sets, 0);
         PlanEdits.confirm(row, 20, 4, 8, now);
         assertEquals(640, read(p).volume, 0);
@@ -206,14 +209,21 @@ public class DailyRingsTest {
                         assertEquals(
                                 a.s("ring_goal", "6", a.s("ring_sets_unit"), a.num(4.0 / 6 * 100)),
                                 goal.getText().toString());
+                        TextView exercises = a.content.findViewWithTag("today_exercises");
+                        assertEquals("1", exercises.getText().toString());
+                        TextView exerciseGoal = a.content.findViewWithTag("today_exercises_target");
+                        assertEquals(
+                                a.s("ring_goal", "2", a.s("ring_exercises_unit"), "50"),
+                                exerciseGoal.getText().toString());
+                        assertTrue(a.content.findViewWithTag("today_volume") == null);
                         ActivityRingsView rings = a.content.findViewWithTag("today_rings");
                         assertTrue(
                                 rings.getContentDescription()
                                         .toString()
-                                        .contains(a.s("volume_unit")));
+                                        .contains(a.s("completed_exercises")));
                         assertNotNull(a.content.findViewWithTag("ring_plan_action"));
                     });
-                    screenshot(context, "v064-rings-" + lang);
+                    screenshot(context, "exercise-rings-" + lang);
                 }
                 put(p.optJSONArray("rows").optJSONObject(0), "sets", 5);
                 store.save("plan", p);
@@ -235,7 +245,7 @@ public class DailyRingsTest {
                     TextView goal = a.content.findViewWithTag("today_sets_target");
                     assertEquals(a.s("ring_no_target"), goal.getText().toString());
                 });
-                screenshot(context, "v064-rings-no-target");
+                screenshot(context, "exercise-rings-no-target");
             } finally {
                 store.delete(p.optString("id"));
                 store.delete(history.optString("id"));

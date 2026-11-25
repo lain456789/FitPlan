@@ -167,7 +167,7 @@
     <string name="exercise_hint">按每次训练的最高实际重量展示；没有训练的日期不补 0。</string>
     <string name="no_exercise">完成训练后可查看单动作走势。</string>
     <string name="chart_point">%1$s：%2$s</string>
-    <string name="chart_help">点选图表查看数值；下方提供完整数据。</string>
+    <string name="chart_help">点选图表查看数值。</string>
     <string name="loading">正在读取本地记录…</string>
     <string name="read_error">无法读取记录，请返回后重试。</string>
     <string name="language">应用语言</string>
@@ -177,7 +177,7 @@
     <string name="definitions">统计口径</string>
     <string name="definitions_text">只统计已训练组及其实际次数，未达目标的已训练组也会计入；零已训练组的记录不计训练次数。达标组是实际次数达到目标的已训练组。训练量 = 重量 × 实际次数，自重动作仍计入组数和次数。训练时长包含休息及离开应用时间。自然周为本地时间周一至周日，按训练结束时间归属；历史修改或删除后重新计算。</string>
     <string name="privacy">训练记录保存在本机，不使用账号或云同步；仅在「AI 教练」主动发送提问时，将本地训练摘要与档案发送至智谱 GLM 生成建议。</string>
-    <string name="version">v0.6.2</string>
+    <string name="version">v0.6.6</string>
     <string name="back_label">返回</string>
     <string name="ex0">杠铃卧推</string>
     <string name="ex1">哑铃上斜卧推</string>
@@ -461,4 +461,7 @@
     <string name="remove_short">移除</string>
     <string name="workout_elapsed">%1$s</string>
     <string name="workout_elapsed_label">训练时长</string>
+    <string name="completed_exercises">已完成的动作</string>
+    <string name="ring_exercises_unit">个动作</string>
+    <string name="ring_exercises_explanation">仅统计已结束并保存的训练。同一动作在某次训练中的全部计划组完成后计为 1 个，同一天按动作 ID 去重；未完成、跳过的组不算完成，补录按实际记录的组判断。</string>
 </resources>

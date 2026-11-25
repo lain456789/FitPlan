@@ -18,7 +18,6 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -99,9 +98,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (elapsedLabel != null && active != null) {
                         long elapsed =
-                                Math.max(
-                                        0,
-                                        System.currentTimeMillis() - active.optLong("started"));
+                                Math.max(0, System.currentTimeMillis() - active.optLong("started"));
                         elapsedLabel.setText(
                                 s(
                                         "workout_elapsed",
@@ -122,6 +119,12 @@ public class MainActivity extends AppCompatActivity {
         updateLocale();
         WindowCompat.enableEdgeToEdge(getWindow());
         setContentView(R.layout.activity_main);
+        View brand = findViewById(R.id.app_brand);
+        LockableScrollView scroll = findViewById(R.id.scroller);
+        scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> updateBrand(brand, y));
+        brand.addOnLayoutChangeListener(
+                (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
+                        updateBrand(brand, scroll.getScrollY()));
         WindowCompat.getInsetsController(getWindow(), findViewById(R.id.main))
                 .setAppearanceLightStatusBars(false);
         WindowCompat.getInsetsController(getWindow(), findViewById(R.id.main))
@@ -165,6 +168,20 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
         show(page);
+    }
+
+    private void updateBrand(View brand, int scrollY) {
+        float height = Math.max(1, brand.getHeight());
+        float progress = Math.max(0, Math.min(1, scrollY / height));
+        float eased = progress * progress * (3 - 2 * progress);
+        // Follow the scroll directly: no queued animations, relayouts, or scroll resets.
+        brand.setPivotX(brand.getPaddingLeft());
+        brand.setPivotY(height / 2);
+        brand.setScaleX(1 - .35f * eased);
+        brand.setScaleY(1 - .35f * eased);
+        brand.setAlpha(1 - eased);
+        // A slight parallax keeps the shrinking text visible until it has faded out.
+        brand.setTranslationY(Math.min(Math.max(0, scrollY), height) * .5f);
     }
 
     @Override
@@ -622,7 +639,7 @@ public class MainActivity extends AppCompatActivity {
         return row;
     }
 
-    void loadReport(long week, Consumer<ReportEngine.Report> callback, TextView status) {
+    void loadReport(long week, Consumer<ReportEngine.Report> callback, Runnable onError) {
         int token = generation;
         Context application = getApplicationContext();
         long now = System.currentTimeMillis();
@@ -635,13 +652,12 @@ public class MainActivity extends AppCompatActivity {
                 report.targets = DailyTargetReader.read(database.list("plan"), now, zone);
                 handler.post(() -> {
                     if (!isDestroyed() && token == generation) {
-                        status.setVisibility(View.GONE);
                         callback.accept(report);
                     }
                 });
             } catch (Exception e) {
                 handler.post(() -> {
-                    if (!isDestroyed() && token == generation) status.setText(s("read_error"));
+                    if (!isDestroyed() && token == generation) onError.run();
                 });
             }
         });

@@ -34,18 +34,28 @@ final class HistoryReader {
                 JSONObject row = rows.optJSONObject(r);
                 if (row == null) continue;
                 JSONArray logs = row.optJSONArray("logs");
+                int count = logs == null ? 0 : logs.length();
+                int planned = row.optInt("sets", count);
+                ReportEngine.ExerciseEntry exercise =
+                        new ReportEngine.ExerciseEntry(
+                                row.optString("exerciseId"),
+                                planned > 0 ? Math.max(planned, count) : 0);
+                session.exercises.add(exercise);
                 if (logs == null) continue;
                 for (int j = 0; j < logs.length(); j++) {
                     JSONObject log = logs.optJSONObject(j);
                     if (log == null) continue;
-                    session.sets.add(
+                    ReportEngine.SetEntry entry =
                             new ReportEngine.SetEntry(
                                     row.optString("exerciseId"),
                                     row.optString("name"),
                                     row.optString("part"),
                                     log.optDouble("weight", 0),
                                     log.optInt("reps"),
-                                    log.optBoolean("done")));
+                                    log.optBoolean("done"));
+                    session.sets.add(entry);
+                    exercise.sets.add(entry);
+                    exercise.hasSkippedSets |= log.optBoolean("skipped");
                 }
             }
             result.add(session);
