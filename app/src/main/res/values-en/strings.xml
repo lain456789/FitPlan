@@ -59,6 +59,10 @@
     <string name="plan_name">Plan name</string>
     <string name="my_plan">My plan</string>
     <string name="new_plan_title">New plan</string>
+    <string name="copy_from_last">Copy from last workout</string>
+    <string name="copy_from_template">Copy from a template</string>
+    <string name="no_history">No workout history to copy yet</string>
+    <string name="no_template">No plan to copy yet</string>
     <string name="enter_name">Enter a name</string>
     <string name="empty_plans">No plans yet. Create one here or generate one from Home.</string>
     <string name="exercise_count">Exercises: %1$d</string>
@@ -90,6 +94,8 @@
     <string name="rest60">Rest 60 seconds</string>
     <string name="rest90">Rest 90 seconds</string>
     <string name="stop_rest">End rest</string>
+    <string name="rest_custom">Custom rest</string>
+    <string name="rest_custom_seconds">Rest duration (seconds)</string>
     <string name="finish">Finish and save workout</string>
     <string name="one_set">Record a performed set or a reason for not training first</string>
     <string name="finish_confirm">Finish workout? Performed sets and actual reps count, including sets below target.</string>
@@ -177,7 +183,7 @@
     <string name="definitions">How statistics work</string>
     <string name="definitions_text">Performed sets and actual reps count, including sets below target. Records with no performed sets are excluded from the workout count. A set meets its target when actual reps reach the target. Volume = weight × actual reps. Bodyweight sets and reps still count. Duration includes rest and time outside the app. Weeks run Monday–Sunday in your local time zone, based on workout finish time. Editing or deleting history recalculates reports.</string>
     <string name="privacy">Workout records stay on this device with no account or cloud sync. Only when you send a prompt in AI Coach are your local training summary and profile sent to Zhipu GLM.</string>
-    <string name="version">v0.6.6</string>
+    <string name="version">v0.6.7</string>
     <string name="back_label">Back</string>
     <string name="ex0">Barbell bench press</string>
     <string name="ex1">Incline dumbbell press</string>

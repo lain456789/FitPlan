@@ -321,6 +321,41 @@ final class TrainingScreen extends Screen {
         activity.openPlan(plan);
     }
 
+    // 自动生成不重复的默认计划名：我的计划1、我的计划2……
+    private String defaultPlanName() {
+        String base = s("my_plan");
+        Set<String> names = new HashSet<>();
+        JSONArray plans = store.list("plan");
+        for (int i = 0; i < plans.length(); i++) names.add(plans.optJSONObject(i).optString("name"));
+        int n = 1;
+        while (names.contains(base + n)) n++;
+        return base + n;
+    }
+
+    // 从历史训练或模板中抽取处方行，复制为一个新计划。
+    private JSONObject planFromRows(JSONArray sourceRows) {
+        JSONArray rows = new JSONArray();
+        if (sourceRows != null)
+            for (int i = 0; i < sourceRows.length(); i++) {
+                JSONObject r = sourceRows.optJSONObject(i);
+                rows.put(
+                        object(
+                                "exerciseId",
+                                r.optString("exerciseId", r.optString("id")),
+                                "name",
+                                activity.exerciseName(r),
+                                "part",
+                                r.optString("part"),
+                                "weight",
+                                r.optDouble("weight"),
+                                "sets",
+                                r.optInt("sets"),
+                                "reps",
+                                r.optInt("reps")));
+            }
+        return object("name", defaultPlanName(), "created", System.currentTimeMillis(), "rows", rows);
+    }
+
     void plans() {
         activity.trainingTabs();
         title(s("plans_title"));
@@ -330,7 +365,7 @@ final class TrainingScreen extends Screen {
                 s("new_plan"),
                 () -> {
                     LinearLayout form = column();
-                    EditText name = input(form, s("plan_name"), s("my_plan"), false);
+                    EditText name = input(form, s("plan_name"), defaultPlanName(), false);
                     dialog(
                             s("new_plan_title"),
                             form,
@@ -349,6 +384,46 @@ final class TrainingScreen extends Screen {
                                                 new JSONArray()));
                                 show("plans");
                             });
+                });
+        button(
+                content,
+                s("copy_from_last"),
+                () -> {
+                    JSONObject last = store.first("history");
+                    if (last == null) {
+                        toast(s("no_history"));
+                        return;
+                    }
+                    store.save("plan", planFromRows(last.optJSONArray("rows")));
+                    show("plans");
+                });
+        button(
+                content,
+                s("copy_from_template"),
+                () -> {
+                    JSONArray templates = store.list("plan");
+                    if (templates.length() == 0) {
+                        toast(s("no_template"));
+                        return;
+                    }
+                    String[] names = new String[templates.length()];
+                    for (int i = 0; i < templates.length(); i++)
+                        names[i] = activity.planName(templates.optJSONObject(i));
+                    activity.activeDialog =
+                            new AlertDialog.Builder(activity)
+                                    .setTitle(s("copy_from_template"))
+                                    .setItems(
+                                            names,
+                                            (d, which) -> {
+                                                store.save(
+                                                        "plan",
+                                                        planFromRows(
+                                                                templates.optJSONObject(which)
+                                                                        .optJSONArray("rows")));
+                                                show("plans");
+                                            })
+                                    .setNegativeButton(s("cancel"), null)
+                                    .show();
                 });
         JSONArray plans = store.list("plan");
         if (plans.length() == 0) text(content, s("empty_plans"), 16);
@@ -381,7 +456,7 @@ final class TrainingScreen extends Screen {
         LinearLayout actions = new LinearLayout(activity);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         content.addView(actions, new LinearLayout.LayoutParams(-1, -2));
-        Button back = button(actions, s("back_label"), () -> show("plans"));
+        Button back = backButton(actions, s("back_label"), () -> show("plans"));
         back.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         Button renameBtn =
                 button(
@@ -921,12 +996,15 @@ final class TrainingScreen extends Screen {
         times.addView(restBox, new LinearLayout.LayoutParams(0, -2, 1));
         text(restBox, s("rest_timer"), 12);
         activity.timerLabel = text(restBox, "0:00", 18);
-        LinearLayout restButtons = new LinearLayout(activity);
-        restButtons.setOrientation(LinearLayout.HORIZONTAL);
-        timer.addView(restButtons, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout restGrid = new LinearLayout(activity);
+        restGrid.setOrientation(LinearLayout.VERTICAL);
+        timer.addView(restGrid, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout restRow1 = new LinearLayout(activity);
+        restRow1.setOrientation(LinearLayout.HORIZONTAL);
+        restGrid.addView(restRow1, new LinearLayout.LayoutParams(-1, -2));
         Button b60 =
                 button(
-                        restButtons,
+                        restRow1,
                         s("rest60"),
                         () -> {
                             put(session, "restUntil", System.currentTimeMillis() + 60000);
@@ -935,16 +1013,38 @@ final class TrainingScreen extends Screen {
         b60.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         Button b90 =
                 button(
-                        restButtons,
+                        restRow1,
                         s("rest90"),
                         () -> {
                             put(session, "restUntil", System.currentTimeMillis() + 90000);
                             store.save("active", session);
                         });
         b90.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout restRow2 = new LinearLayout(activity);
+        restRow2.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams row2Lp = new LinearLayout.LayoutParams(-1, -2);
+        row2Lp.setMargins(0, activity.dp(8), 0, 0);
+        restGrid.addView(restRow2, row2Lp);
+        Button bCustom =
+                button(
+                        restRow2,
+                        s("rest_custom"),
+                        () -> {
+                            LinearLayout form = column();
+                            EditText seconds = input(form, s("rest_custom_seconds"), "", true);
+                            dialog(
+                                    s("rest_custom"),
+                                    form,
+                                    () -> {
+                                        int secs = integer(seconds, 1, 3600);
+                                        put(session, "restUntil", System.currentTimeMillis() + secs * 1000L);
+                                        store.save("active", session);
+                                    });
+                        });
+        bCustom.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         Button bStop =
                 button(
-                        restButtons,
+                        restRow2,
                         s("stop_rest"),
                         () -> {
                             put(session, "restUntil", 0);

@@ -114,6 +114,10 @@ abstract class Screen {
         return activity.button(parent, label, action);
     }
 
+    Button backButton(LinearLayout parent, String label, Runnable action) {
+        return activity.backButton(parent, label, action);
+    }
+
     void toast(String message) {
         Toast.makeText(activity, message, Toast.LENGTH_LONG).show();
     }

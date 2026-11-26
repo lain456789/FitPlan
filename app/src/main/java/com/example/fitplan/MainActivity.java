@@ -13,6 +13,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Vibrator;
 import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
     Runnable captureDaily;
     TextView timerLabel;
     TextView elapsedLabel;
+    int lastRestLeft = -1;
     final List<CoachModels.ChatMessage> coachMessages = new ArrayList<>();
     boolean coachProfileExpanded = false;
     boolean coachSending = false;
@@ -82,14 +84,13 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     JSONObject active = store.first("active");
                     if (timerLabel != null) {
+                        long restUntil = active == null ? 0 : active.optLong("restUntil");
                         long left =
                                 active == null
                                         ? 0
                                         : Math.max(
                                                 0,
-                                                (active.optLong("restUntil")
-                                                                - System.currentTimeMillis()
-                                                                + 999)
+                                                (restUntil - System.currentTimeMillis() + 999)
                                                         / 1000);
                         timerLabel.setText(
                                 left > 0
@@ -98,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
                                                 String.format(
                                                         locale(), "%d:%02d", left / 60, left % 60))
                                         : s("rest_done"));
+                        // 休息倒计时归零且计时器未被手动停止时震动一下。
+                        if (lastRestLeft > 0 && left == 0 && restUntil > 0) vibrate();
+                        lastRestLeft = (int) left;
                     }
                     if (elapsedLabel != null && active != null) {
                         long elapsed =
@@ -465,6 +469,26 @@ public class MainActivity extends AppCompatActivity {
         parent.addView(b, new LinearLayout.LayoutParams(-1, -2));
         b.setOnClickListener(v -> action.run());
         return b;
+    }
+
+    // 全局统一的返回按钮：返回箭头符号 + 统一字号/颜色，保持可见的按钮底色。
+    Button backButton(LinearLayout parent, String label, Runnable action) {
+        Button b = new Button(this);
+        b.setText("\u2190 " + label);
+        b.setAllCaps(false);
+        b.setTextSize(14);
+        b.setTextColor(ACCENT);
+        b.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(43, 52, 39)));
+        b.setMinHeight(dp(40));
+        b.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        parent.addView(b, new LinearLayout.LayoutParams(-1, -2));
+        b.setOnClickListener(v -> action.run());
+        return b;
+    }
+
+    void vibrate() {
+        Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        if (vibrator != null && vibrator.hasVibrator()) vibrator.vibrate(300);
     }
 
     void openPlan(JSONObject plan) {

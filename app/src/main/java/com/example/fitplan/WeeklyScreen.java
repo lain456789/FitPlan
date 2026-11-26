@@ -52,7 +52,7 @@ final class WeeklyScreen extends Screen {
         prev.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         next = button(controls, s("next_week"), () -> changeWeek(7));
         next.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        back = button(content, s("back_current"), () -> load(currentWeek()));
+        back = backButton(content, s("back_current"), () -> load(currentWeek()));
         reportArea = new LinearLayout(activity);
         reportArea.setOrientation(LinearLayout.VERTICAL);
         reportArea.setTag("weekly_report");

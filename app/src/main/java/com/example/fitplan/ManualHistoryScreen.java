@@ -40,7 +40,7 @@ final class ManualHistoryScreen extends Screen {
         JSONObject draft = activity.manualHistoryDraft;
         title(s("manual_title"));
         text(content, s("manual_help"), 14);
-        button(content, s("back_training"), () -> show(activity.manualReturn));
+        backButton(content, s("back_training"), () -> show(activity.manualReturn));
         LinearLayout info = card(content);
         EditText name = input(info, s("manual_name"), draft.optString("name"), false);
         name.setTag("manual_name");

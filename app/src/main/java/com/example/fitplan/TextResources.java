@@ -266,6 +266,14 @@ final class TextResources {
                 return R.string.my_plan;
             case "new_plan_title":
                 return R.string.new_plan_title;
+            case "copy_from_last":
+                return R.string.copy_from_last;
+            case "copy_from_template":
+                return R.string.copy_from_template;
+            case "no_history":
+                return R.string.no_history;
+            case "no_template":
+                return R.string.no_template;
             case "enter_name":
                 return R.string.enter_name;
             case "empty_plans":
@@ -328,6 +336,10 @@ final class TextResources {
                 return R.string.rest90;
             case "stop_rest":
                 return R.string.stop_rest;
+            case "rest_custom":
+                return R.string.rest_custom;
+            case "rest_custom_seconds":
+                return R.string.rest_custom_seconds;
             case "finish":
                 return R.string.finish;
             case "one_set":

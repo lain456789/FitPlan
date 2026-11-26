@@ -55,7 +55,7 @@ final class RecordsScreen extends Screen {
                 text(content, s("manual_duration_unknown"), 14);
         }
         if (session.optBoolean("abandoned")) text(content, s("abandoned_workout"), 14);
-        button(content, s("back_history"), () -> show("history"));
+        backButton(content, s("back_history"), () -> show("history"));
         text(
                 content,
                 "manual".equals(session.optString("recordSource"))

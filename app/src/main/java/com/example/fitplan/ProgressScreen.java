@@ -23,7 +23,7 @@ final class ProgressScreen extends Screen {
 
     void render() {
         if (activity.progressReturn.equals("home"))
-            button(content, s("back_dashboard"), () -> show("home"));
+            backButton(content, s("back_dashboard"), () -> show("home"));
         else activity.recordTabs();
         title(s("progress_title"));
         text(content, s("progress_scope"), 14);
