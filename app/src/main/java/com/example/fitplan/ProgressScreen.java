@@ -42,19 +42,23 @@ final class ProgressScreen extends Screen {
             text(content, s("progress_no_data"), 16);
             return;
         }
-        List<String> ids = new ArrayList<>(exercises.keySet());
-        String[] names = new String[ids.size()];
+        List<JSONObject> rows = new ArrayList<>(exercises.values());
+        sortExercises(rows);
+        List<String> ids = new ArrayList<>();
+        for (JSONObject row : rows) ids.add(row.optString("exerciseId"));
+        String[] names = new String[rows.size()];
         int selected = 0;
         Map<String, Integer> duplicates = new HashMap<>();
-        for (JSONObject row : exercises.values()) {
+        for (JSONObject row : rows) {
             String name = activity.exerciseName(row);
             duplicates.put(name, duplicates.getOrDefault(name, 0) + 1);
         }
-        for (int i = 0; i < ids.size(); i++) {
-            names[i] = activity.exerciseName(exercises.get(ids.get(i)));
+        for (int i = 0; i < rows.size(); i++) {
+            String id = ids.get(i);
+            names[i] = activity.exerciseName(rows.get(i));
             if (duplicates.get(names[i]) > 1)
-                names[i] += " · " + ids.get(i).substring(0, Math.min(8, ids.get(i).length()));
-            if (ids.get(i).equals(activity.exerciseId)) selected = i;
+                names[i] += " · " + id.substring(0, Math.min(8, id.length()));
+            if (id.equals(activity.exerciseId)) selected = i;
         }
         Spinner pick = select(content, s("choose_exercise"), names, selected);
         LinearLayout results = column();

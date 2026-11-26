@@ -20,6 +20,8 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.List;
+
 abstract class Screen {
     private static final int[] EXERCISE_IMAGES = {
         R.drawable.builtin_0,
@@ -259,6 +261,22 @@ abstract class Screen {
     int exerciseImage(String id) {
         int index = Catalog.builtIn(id);
         return index >= 0 && index < EXERCISE_IMAGES.length ? EXERCISE_IMAGES[index] : 0;
+    }
+
+    /** Fixed order for exercise pickers: by body part, then localized name, then id. */
+    void sortExercises(List<JSONObject> exercises) {
+        exercises.sort(
+                (a, b) -> {
+                    String idA = a.optString("exerciseId", a.optString("id"));
+                    String idB = b.optString("exerciseId", b.optString("id"));
+                    int pa = Catalog.partIndex(Catalog.exercisePart(idA, a.optString("part")));
+                    int pb = Catalog.partIndex(Catalog.exercisePart(idB, b.optString("part")));
+                    if (pa != pb) return Integer.compare(pa, pb);
+                    String na = activity.exerciseName(a);
+                    String nb = activity.exerciseName(b);
+                    int cmp = na.compareToIgnoreCase(nb);
+                    return cmp != 0 ? cmp : idA.compareTo(idB);
+                });
     }
 
     void refreshAtCurrentPosition(String route) {

@@ -218,6 +218,13 @@ final class WeeklyScreen extends Screen {
         if (report.exercises.isEmpty()) text(exercises, s("no_exercise"), 16);
         else {
             List<ReportEngine.ExerciseTrend> all = new ArrayList<>(report.exercises.values());
+            all.sort(
+                    (a, b) -> {
+                        int pa = Catalog.partIndex(Catalog.exercisePart(a.id, ""));
+                        int pb = Catalog.partIndex(Catalog.exercisePart(b.id, ""));
+                        if (pa != pb) return Integer.compare(pa, pb);
+                        return a.name.compareToIgnoreCase(b.name);
+                    });
             String[] labels = new String[all.size()];
             int selected = 0;
             Map<String, Integer> duplicates = new HashMap<>();

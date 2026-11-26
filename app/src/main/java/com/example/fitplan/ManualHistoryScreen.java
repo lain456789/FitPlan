@@ -210,6 +210,9 @@ final class ManualHistoryScreen extends Screen {
             return;
         }
         JSONArray catalogue = store.list("exercise");
+        List<JSONObject> exercises = new ArrayList<>();
+        for (int i = 0; i < catalogue.length(); i++) exercises.add(catalogue.optJSONObject(i));
+        sortExercises(exercises);
         List<JSONObject> matches = new ArrayList<>();
         List<String> labels = new ArrayList<>();
         LinearLayout form = column();
@@ -225,8 +228,7 @@ final class ManualHistoryScreen extends Screen {
                             search.getText().toString().trim().toLowerCase(activity.locale());
                     matches.clear();
                     labels.clear();
-                    for (int i = 0; i < catalogue.length(); i++) {
-                        JSONObject exercise = catalogue.optJSONObject(i);
+                    for (JSONObject exercise : exercises) {
                         String label =
                                 activity.exerciseName(exercise)
                                         + " · "

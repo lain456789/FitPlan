@@ -57,6 +57,12 @@ final class Catalog {
         return "unknown";
     }
 
+    static int partIndex(String value) {
+        String code = partCode(value);
+        for (int i = 0; i < PARTS.length; i++) if (PARTS[i].equals(code)) return i;
+        return PARTS.length;
+    }
+
     static int builtIn(String id) {
         if (!id.startsWith("builtin-")) return -1;
         try {

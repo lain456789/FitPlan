@@ -28,6 +28,7 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,14 +47,15 @@ final class TrainingScreen extends Screen {
         content.addView(modes);
         RadioButton names = mode(modes, s("browse_name"));
         RadioButton muscles = mode(modes, s("browse_muscle"));
-        names.setChecked(true);
+        muscles.setChecked(true);
         LinearLayout namePane = pane(content);
         LinearLayout musclePane = pane(content);
-        musclePane.setVisibility(View.GONE);
-        nameLibrary(namePane);
+        namePane.setVisibility(View.GONE);
+        muscleLibrary(musclePane);
         modes.setOnCheckedChangeListener((group, checked) -> {
             boolean byMuscle = checked == muscles.getId();
             if (byMuscle && musclePane.getChildCount() == 0) muscleLibrary(musclePane);
+            if (!byMuscle && namePane.getChildCount() == 0) nameLibrary(namePane);
             namePane.setVisibility(byMuscle ? View.GONE : View.VISIBLE);
             musclePane.setVisibility(byMuscle ? View.VISIBLE : View.GONE);
         });
@@ -76,10 +78,17 @@ final class TrainingScreen extends Screen {
     }
 
     private void muscleLibrary(LinearLayout pane) {
+        musclePicker(pane, null);
+    }
+
+    private void musclePicker(LinearLayout pane, java.util.function.Consumer<JSONObject> onSelect) {
         MuscleCatalog[] groups = MuscleCatalog.values();
-        String[] options = new String[groups.length + 1];
+        boolean selecting = onSelect != null;
+        String[] options = new String[groups.length + (selecting ? 2 : 1)];
         options[0] = s("map_all");
         for (int i = 0; i < groups.length; i++) options[i + 1] = s("muscle_" + groups[i].key);
+        if (selecting) options[groups.length + 1] = s("custom");
+        int customIndex = groups.length + 1;
         LinearLayout diagram = card(pane);
         LinearLayout controls = pane(pane);
         Spinner picker = select(controls, s("map_pick"), options, 0);
@@ -100,22 +109,35 @@ final class TrainingScreen extends Screen {
         View clear = button(controls, s("map_clear"), () -> picker.setSelection(0));
         LinearLayout results = pane(pane);
         JSONObject[] builtIns = new JSONObject[Catalog.EXERCISES.length];
+        List<JSONObject> customs = new ArrayList<>();
         JSONArray entries = store.list("exercise");
         for (int i = 0; i < entries.length(); i++) {
             JSONObject ex = entries.optJSONObject(i);
             int index = Catalog.builtIn(ex.optString("id"));
             if (index >= 0) builtIns[index] = ex;
+            else customs.add(ex);
         }
+        sortExercises(customs);
         picker.setOnItemSelectedListener(
                 new android.widget.AdapterView.OnItemSelectedListener() {
                     public void onItemSelected(
                             android.widget.AdapterView<?> parent, View view, int pos, long id) {
                         results.removeAllViews();
                         clear.setVisibility(pos == 0 ? View.GONE : View.VISIBLE);
-                        map.highlight(pos == 0 ? "" : groups[pos - 1].key);
+                        map.highlight(
+                                pos == 0 || (selecting && pos == customIndex)
+                                        ? ""
+                                        : groups[pos - 1].key);
                         if (pos == 0) {
                             for (JSONObject ex : builtIns)
-                                if (ex != null) exerciseCard(results, ex);
+                                if (ex != null) exerciseCard(results, ex, onSelect);
+                            return;
+                        }
+                        if (selecting && pos == customIndex) {
+                            text(results, s("custom"), 16);
+                            if (customs.isEmpty()) text(results, s("no_matches"), 16);
+                            else for (JSONObject ex : customs)
+                                exerciseCard(results, ex, onSelect);
                             return;
                         }
                         MuscleCatalog group = groups[pos - 1];
@@ -129,7 +151,7 @@ final class TrainingScreen extends Screen {
                             if (builtIns[index] == null) continue;
                             if (index == 14 || index == 15)
                                 text(results, s(index == 14 ? "map_crunch" : "map_stability"), 14);
-                            exerciseCard(results, builtIns[index]);
+                            exerciseCard(results, builtIns[index], onSelect);
                         }
                         if (group.assisting.length > 0) {
                             LinearLayout extra = new LinearLayout(activity);
@@ -142,7 +164,7 @@ final class TrainingScreen extends Screen {
                                         if (extra.getChildCount() == 0) {
                                             for (int index : group.assisting)
                                                 if (builtIns[index] != null)
-                                                    exerciseCard(extra, builtIns[index]);
+                                                    exerciseCard(extra, builtIns[index], onSelect);
                                         }
                                         extra.setVisibility(
                                                 extra.getVisibility() == View.VISIBLE
@@ -204,9 +226,11 @@ final class TrainingScreen extends Screen {
                 () -> {
                     results.removeAllViews();
                     JSONArray all = store.list("exercise");
+                    List<JSONObject> exercises = new ArrayList<>();
+                    for (int i = 0; i < all.length(); i++) exercises.add(all.optJSONObject(i));
+                    sortExercises(exercises);
                     int count = 0;
-                    for (int i = 0; i < all.length(); i++) {
-                        JSONObject ex = all.optJSONObject(i);
+                    for (JSONObject ex : exercises) {
                         if (!activity.exerciseName(ex)
                                 .toLowerCase(activity.locale())
                                 .contains(
@@ -245,11 +269,56 @@ final class TrainingScreen extends Screen {
     }
 
     private void exerciseCard(LinearLayout results, JSONObject exercise) {
+        exerciseCard(results, exercise, null);
+    }
+
+    private void exerciseCard(
+            LinearLayout results, JSONObject exercise, java.util.function.Consumer<JSONObject> select) {
         String id = exercise.optString("id");
-        LinearLayout labels = illustratedHeader(card(results), id);
+        LinearLayout cardView = card(results);
+        if (select != null) {
+            cardView.setClickable(true);
+            cardView.setOnClickListener(v -> select.accept(exercise));
+        }
+        LinearLayout labels = illustratedHeader(cardView, id);
         text(labels, activity.exerciseName(exercise), 18);
         text(labels, activity.partName(exercise.optString("part")), 14);
         text(labels, equipmentText(id), 14);
+    }
+
+    void pickExercise(JSONObject plan) {
+        LinearLayout form = column();
+        musclePicker(form, ex -> addExercise(plan, ex));
+        ScrollView scroll = new ScrollView(activity);
+        scroll.addView(form);
+        activity.activeDialog =
+                new AlertDialog.Builder(activity)
+                        .setTitle(s("choose_exercise"))
+                        .setView(scroll)
+                        .setNegativeButton(s("cancel"), null)
+                        .create();
+        activity.activeDialog.show();
+    }
+
+    void addExercise(JSONObject plan, JSONObject exercise) {
+        JSONObject row =
+                object(
+                        "exerciseId",
+                        exercise.optString("id"),
+                        "name",
+                        activity.exerciseName(exercise),
+                        "part",
+                        exercise.optString("part"),
+                        "weight",
+                        0,
+                        "sets",
+                        3,
+                        "reps",
+                        10);
+        plan.optJSONArray("rows").put(row);
+        store.save("plan", plan);
+        activity.activeDialog.dismiss();
+        activity.openPlan(plan);
     }
 
     void plans() {
@@ -338,37 +407,7 @@ final class TrainingScreen extends Screen {
                 button(
                         actions,
                         s("add_exercise"),
-                        () -> {
-                            JSONArray catalogue = store.list("exercise");
-                            String[] labels = new String[catalogue.length()];
-                            for (int i = 0; i < labels.length; i++)
-                                labels[i] = activity.exerciseName(catalogue.optJSONObject(i));
-                            new AlertDialog.Builder(activity)
-                                    .setTitle(s("choose_exercise"))
-                                    .setItems(
-                                            labels,
-                                            (d, index) -> {
-                                                JSONObject ex = catalogue.optJSONObject(index);
-                                                JSONObject row =
-                                                        object(
-                                                                "exerciseId",
-                                                                ex.optString("id"),
-                                                                "name",
-                                                                activity.exerciseName(ex),
-                                                                "part",
-                                                                ex.optString("part"),
-                                                                "weight",
-                                                                0,
-                                                                "sets",
-                                                                3,
-                                                                "reps",
-                                                                10);
-                                                plan.optJSONArray("rows").put(row);
-                                                store.save("plan", plan);
-                                                activity.openPlan(plan);
-                                            })
-                                    .show();
-                        });
+                        () -> pickExercise(plan));
         addBtn.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         JSONArray rows = plan.optJSONArray("rows"), history = store.list("history");
         ProgressScreen progress = new ProgressScreen(activity);
