@@ -414,11 +414,17 @@
     <string name="manual_name">Workout name (optional, up to 80 characters)</string>
     <string name="manual_date">Workout date: %1$s</string>
     <string name="manual_time">End time: %1$s</string>
-    <string name="manual_duration">Duration (minutes, optional, 1–1440)</string>
+    <string name="manual_duration">Workout duration</string>
     <string name="manual_actual_only">Actual results only. No original target was supplied, so target completion and progression are not inferred.</string>
     <string name="manual_remove_set">Remove set</string>
     <string name="manual_add_set">Add a performed set</string>
     <string name="manual_remove_exercise_confirm">Remove this exercise and its draft sets?</string>
+    <string name="manual_hours">Hours</string>
+    <string name="manual_minutes">Minutes</string>
+    <string name="manual_date_taken">A workout is already recorded on this day. Please choose another date.</string>
+    <string name="manual_reselect_date">Choose another date</string>
+    <string name="manual_duplicate_exercise">This exercise is already in your workout. Choose another.</string>
+    <string name="manual_pager_position">Exercise %1$d / %2$d · Swipe</string>
     <string name="manual_discard">Discard draft</string>
     <string name="manual_discard_confirm">Discard this entry? Unsaved contents will be cleared.</string>
     <string name="manual_save">Save to history</string>
@@ -432,7 +438,7 @@
     <string name="manual_progress_actual">Actual total reps: %1$d · Performed sets: %2$d</string>
     <string name="manual_invalid_set">Each set needs a weight from 0–1000 kg and a whole number of reps from 1–100.</string>
     <string name="manual_invalid_date">Choose an actual workout date and end time no later than now.</string>
-    <string name="manual_invalid_duration">Leave duration blank or enter whole minutes from 1–1440.</string>
+    <string name="manual_invalid_duration">Enter a valid, positive duration in whole hours or minutes, or leave both fields blank.</string>
     <string name="manual_need_exercise">Add at least one exercise.</string>
     <string name="manual_need_set">Each exercise needs at least one performed set.</string>
     <string name="manual_exercise_limit">A workout can contain up to 30 exercises.</string>
@@ -447,7 +453,7 @@
     <string name="daily_plan_tab">Today</string>
     <string name="my_plans_tab">My plans</string>
     <string name="progress_tab">Progress</string>
-    <string name="back_training">Back to training</string>
+    <string name="back_records">Back to records</string>
     <string name="back_dashboard">Back to home</string>
     <string name="ring_sets_unit">sets</string>
     <string name="ring_today">Today</string>

@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout content;
     android.app.AlertDialog activeDialog;
     String page = "home", detailId = "", metric = "sessions", exerciseId = "";
-    String progressReturn = "history", manualReturn = "dailyPlan";
+    String progressReturn = "history", manualReturn = "history";
     long selectedWeek;
     final Set<String> expandedReportSections = new HashSet<>();
     JSONObject dailyDraft;
@@ -154,7 +154,8 @@ public class MainActivity extends AppCompatActivity {
             page = state.getString("page", "home");
             detailId = state.getString("detail", "");
             progressReturn = state.getString("progressReturn", "history");
-            manualReturn = state.getString("manualReturn", "dailyPlan");
+            manualReturn =
+                    "progress".equals(state.getString("manualReturn")) ? "progress" : "history";
             selectedWeek = state.getLong("week", selectedWeek);
             metric = state.getString("metric", "sessions");
             exerciseId = state.getString("exercise", "");
@@ -520,13 +521,13 @@ public class MainActivity extends AppCompatActivity {
 
     void show(String route) {
         if (route.equals("weekly")) route = "home";
-        if (route.equals("progress") && !page.equals("progress"))
+        if (route.equals("progress") && !page.equals("progress") && !page.equals("manualHistory"))
             progressReturn =
                     page.equals("home")
                             ? "home"
                             : page.equals("historyDetail") ? "historyDetail" : "history";
         if (route.equals("manualHistory") && !page.equals("manualHistory"))
-            manualReturn = page.equals("plans") || page.equals("library") ? page : "dailyPlan";
+            manualReturn = page.equals("progress") ? "progress" : "history";
         captureDraft();
         captureDaily = null;
         timerLabel = null;
@@ -605,6 +606,7 @@ public class MainActivity extends AppCompatActivity {
                                         ? "profile"
                                         : page.equals("history")
                                                         || page.equals("historyDetail")
+                                                        || page.equals("manualHistory")
                                                         || page.equals("progress")
                                                 ? "records"
                                                 : "training";
@@ -636,13 +638,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void trainingTabs() {
-        LinearLayout header = new LinearLayout(this);
-        content.addView(header);
-        TextView label = text(header, s("training"), 20);
-        label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button add = button(header, s("manual_add"), () -> show("manualHistory"));
-        add.setContentDescription(s("manual_title"));
-        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
+        text(content, s("training"), 20);
         tabs(
                 new String[] {"dailyPlan", "plans", "library"},
                 new String[] {"daily_plan_tab", "my_plans_tab", "library"});
@@ -651,6 +647,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void recordTabs() {
+        LinearLayout header = new LinearLayout(this);
+        content.addView(header);
+        TextView label = text(header, s("records"), 20);
+        label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button add = button(header, s("manual_add"), () -> show("manualHistory"));
+        add.setContentDescription(s("manual_title"));
+        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
         tabs(new String[] {"history", "progress"}, new String[] {"history", "progress_tab"});
     }
 

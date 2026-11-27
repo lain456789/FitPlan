@@ -49,8 +49,8 @@ final class TextResources {
                 return R.string.my_plans_tab;
             case "progress_tab":
                 return R.string.progress_tab;
-            case "back_training":
-                return R.string.back_training;
+            case "back_records":
+                return R.string.back_records;
             case "back_dashboard":
                 return R.string.back_dashboard;
             case "set_unrecorded":
@@ -59,6 +59,10 @@ final class TextResources {
                 return R.string.previous_exercise;
             case "next_exercise":
                 return R.string.next_exercise;
+            case "manual_duplicate_exercise":
+                return R.string.manual_duplicate_exercise;
+            case "manual_pager_position":
+                return R.string.manual_pager_position;
             case "exercise_position":
                 return R.string.exercise_position;
             case "no_pending_sets":
@@ -958,6 +962,14 @@ final class TextResources {
                 return R.string.manual_name;
             case "manual_date":
                 return R.string.manual_date;
+            case "manual_hours":
+                return R.string.manual_hours;
+            case "manual_minutes":
+                return R.string.manual_minutes;
+            case "manual_date_taken":
+                return R.string.manual_date_taken;
+            case "manual_reselect_date":
+                return R.string.manual_reselect_date;
             case "manual_time":
                 return R.string.manual_time;
             case "manual_duration":

@@ -10,6 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.Calendar;
 import java.util.UUID;
 
 /** Small local document store. Plans, sessions and check-ins have independent identities. */
@@ -92,6 +93,35 @@ final class Store extends SQLiteOpenHelper {
 
     JSONObject first(String kind) {
         return list(kind).optJSONObject(0);
+    }
+
+    boolean hasHistoryOnDay(long finished) {
+        Calendar selected = Calendar.getInstance();
+        selected.setTimeInMillis(finished);
+        Calendar recorded = (Calendar) selected.clone();
+        JSONArray history = list("history");
+        for (int i = 0; i < history.length(); i++) {
+            long end = history.optJSONObject(i).optLong("finished");
+            if (end <= 0) continue;
+            recorded.setTimeInMillis(end);
+            if (recorded.get(Calendar.YEAR) == selected.get(Calendar.YEAR)
+                    && recorded.get(Calendar.DAY_OF_YEAR) == selected.get(Calendar.DAY_OF_YEAR))
+                return true;
+        }
+        return false;
+    }
+
+    void saveManualHistory(JSONObject session) {
+        SQLiteDatabase db = getWritableDatabase();
+        db.beginTransaction();
+        try {
+            if (hasHistoryOnDay(session.optLong("finished")))
+                throw new ManualHistory.Invalid("manual_date_taken");
+            save("history", session);
+            db.setTransactionSuccessful();
+        } finally {
+            db.endTransaction();
+        }
     }
 
     void delete(String id) {

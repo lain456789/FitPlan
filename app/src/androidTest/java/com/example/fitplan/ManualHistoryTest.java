@@ -11,6 +11,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
@@ -36,6 +38,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -128,7 +131,7 @@ public class ManualHistoryTest {
         put(draft, "finished", 0);
         invalid(draft, "manual_invalid_date");
         put(draft, "finished", now - 60000);
-        for (String duration : new String[] {"0", "1441", "2.5", "-1", "abc"}) {
+        for (String duration : new String[] {"0", "2.5", "-1", "abc"}) {
             put(draft, "duration", duration);
             invalid(draft, "manual_invalid_duration");
         }
@@ -156,6 +159,85 @@ public class ManualHistoryTest {
         assertEquals(0, ManualHistory.log("0", "100", "unknown", now).optDouble("weight"), 0);
         put(draft.optJSONArray("rows").optJSONObject(0), "logs", new JSONArray());
         invalid(draft, "manual_need_set");
+    }
+
+    @Test
+    public void hoursAndMinutesCanBeEnteredIndependentlyOrTogether() {
+        JSONObject draft = draft(now - 60000);
+        for (String[] input :
+                new String[][] {
+                    {"2", "", "120"}, {"", "1441", "1441"}, {"1", "75", "135"}, {"0", "35", "35"}
+                }) {
+            put(draft, "durationHours", input[0]);
+            put(draft, "duration", input[1]);
+            JSONObject session = ManualHistory.build(draft, "Manual test", now);
+            assertTrue(session.optBoolean("durationKnown"));
+            assertEquals(
+                    Long.parseLong(input[2]) * 60000,
+                    session.optLong("finished") - session.optLong("started"));
+        }
+        put(draft, "durationHours", Long.toString(Long.MAX_VALUE));
+        invalid(draft, "manual_invalid_duration");
+        draft.remove("durationHours");
+        put(draft, "duration", "35");
+        JSONObject legacy = ManualHistory.build(draft, "Legacy minutes", now);
+        assertEquals(35 * 60000L, legacy.optLong("finished") - legacy.optLong("started"));
+    }
+
+    @Test
+    public void conflictingDateCanBeReselectedAndIsCheckedAgainOnSave() {
+        TimeZone zone = TimeZone.getDefault();
+        long firstDay = ReportEngine.shiftDays(ReportEngine.dayStart(now, zone), -3650, zone);
+        while (database.hasHistoryOnDay(firstDay)
+                || database.hasHistoryOnDay(ReportEngine.shiftDays(firstDay, 1, zone))) {
+            firstDay = ReportEngine.shiftDays(firstDay, -2, zone);
+        }
+        final long secondDay = ReportEngine.shiftDays(firstDay, 1, zone);
+        Calendar occupied = Calendar.getInstance(zone);
+        occupied.setTimeInMillis(firstDay);
+        JSONObject tracked = object("id", id(), "finished", secondDay - 1);
+        ids.add(tracked.optString("id"));
+        database.save("history", tracked);
+        assertTrue(database.hasHistoryOnDay(firstDay));
+        assertFalse(database.hasHistoryOnDay(secondDay));
+
+        try (ActivityScenario<MainActivity> scenario =
+                ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(a -> {
+                a.manualHistoryDraft = draft(secondDay);
+                a.show("manualHistory");
+                assertTrue(find(a.content, "manual_date").performClick());
+                DatePickerDialog picker = (DatePickerDialog) a.activeDialog;
+                picker.updateDate(
+                        occupied.get(Calendar.YEAR),
+                        occupied.get(Calendar.MONTH),
+                        occupied.get(Calendar.DAY_OF_MONTH));
+                picker.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            });
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            scenario.onActivity(a -> {
+                assertNotNull(find(root(a), a.s("manual_date_taken")));
+                assertEquals(secondDay, a.manualHistoryDraft.optLong("finished"));
+                click(a, "manual_reselect_date");
+            });
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            scenario.onActivity(a -> {
+                DatePickerDialog picker = (DatePickerDialog) a.activeDialog;
+                picker.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            });
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            scenario.onActivity(a -> {
+                assertEquals(secondDay, a.manualHistoryDraft.optLong("finished"));
+                JSONObject lateRecord = object("id", id(), "finished", secondDay + 60000);
+                ids.add(lateRecord.optString("id"));
+                database.save("history", lateRecord);
+                click(a, "manual_save");
+                assertNotNull(find(root(a), a.s("manual_date_taken")));
+                assertNotNull(a.manualHistoryDraft);
+                assertNull(find("history", a.manualHistoryDraft.optString("id")));
+                assertNotNull(find("history", lateRecord.optString("id")));
+            });
+        }
     }
 
     @Test
@@ -245,7 +327,10 @@ public class ManualHistoryTest {
 
     private View find(View root, String text) {
         if (text.equals(root.getTag())
-                || root instanceof TextView && text.contentEquals(((TextView) root).getText()))
+                || text.equals(root.getContentDescription())
+                || root instanceof TextView
+                        && (text.contentEquals(((TextView) root).getText())
+                                || ("← " + text).contentEquals(((TextView) root).getText())))
             return root;
         if (root instanceof ViewGroup)
             for (int i = 0; i < ((ViewGroup) root).getChildCount(); i++) {
@@ -282,10 +367,13 @@ public class ManualHistoryTest {
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(a -> {
-                a.show("dailyPlan");
+                a.show("history");
                 click(a, "manual_add");
                 assertEquals("manualHistory", a.page);
                 ids.add(a.manualHistoryDraft.optString("id"));
+                long finished = now - 86400000L;
+                while (database.hasHistoryOnDay(finished)) finished -= 86400000L;
+                put(a.manualHistoryDraft, "finished", finished);
                 ((EditText) find(a.content, "manual_name")).setText("UI manual history test");
                 ((EditText) find(a.content, "manual_duration")).setText("35");
                 click(a, "add_exercise");
@@ -373,8 +461,8 @@ public class ManualHistoryTest {
                                 .optJSONObject(0)
                                 .optJSONArray("logs")
                                 .length());
-                click(a, "back_training");
-                assertEquals("dailyPlan", a.page);
+                click(a, "back_records");
+                assertEquals("history", a.page);
                 click(a, "manual_add");
             });
             scenario.recreate();
@@ -383,12 +471,19 @@ public class ManualHistoryTest {
                 assertEquals("Draft survives recreation", a.manualHistoryDraft.optString("name"));
                 assertNull(find("history", a.manualHistoryDraft.optString("id")));
                 click(a, "manual_discard");
-                click(a, "confirm");
+                assertNotNull(find(root(a), a.s("manual_discard_confirm")));
+                click(a, "cancel");
+            });
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            scenario.onActivity(a -> {
+                assertEquals("Draft survives recreation", a.manualHistoryDraft.optString("name"));
+                click(a, "manual_discard");
+                click(a, "manual_discard");
             });
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             scenario.onActivity(a -> {
                 assertNull(a.manualHistoryDraft);
-                assertEquals("dailyPlan", a.page);
+                assertEquals("history", a.page);
             });
         }
     }
@@ -421,7 +516,7 @@ public class ManualHistoryTest {
                     .commit();
             try (ActivityScenario<MainActivity> scenario =
                     ActivityScenario.launch(MainActivity.class)) {
-                scenario.onActivity(a -> a.show("dailyPlan"));
+                scenario.onActivity(a -> a.show("history"));
                 InstrumentationRegistry.getInstrumentation().waitForIdleSync();
                 scenario.onActivity(a -> {
                     View add = find(a.content, a.s("manual_add"));
@@ -437,10 +532,23 @@ public class ManualHistoryTest {
                 InstrumentationRegistry.getInstrumentation().waitForIdleSync();
                 scenario.onActivity(a -> {
                     View save = find(a.getWindow().getDecorView(), a.s("manual_save"));
+                    View discard = find(a.getWindow().getDecorView(), a.s("manual_discard"));
                     Rect bounds = new Rect();
                     assertNotNull(save);
+                    assertNotNull(discard);
                     assertTrue(save.getGlobalVisibleRect(bounds));
                     assertTrue(bounds.height() >= a.dp(48));
+                    Rect discardBounds = new Rect();
+                    assertTrue(discard.getGlobalVisibleRect(discardBounds));
+                    assertTrue(discardBounds.height() >= a.dp(48));
+                    assertEquals(bounds.centerY(), discardBounds.centerY());
+                    assertTrue(discardBounds.right < bounds.left);
+                    ViewGroup actions = a.findViewById(R.id.page_actions);
+                    assertEquals(1, actions.getChildCount());
+                    assertEquals(actions.getChildAt(0), save.getParent());
+                    assertEquals(save.getParent(), discard.getParent());
+                    assertNull(find(a.content, "×"));
+                    assertNotNull(find(a.content, a.s("add_exercise")));
                 });
                 screenshot("manual-history-" + lang);
                 scenario.onActivity(a ->

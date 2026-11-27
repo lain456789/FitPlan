@@ -414,11 +414,17 @@
     <string name="manual_name">训练名称（选填，最多 80 字）</string>
     <string name="manual_date">训练日期：%1$s</string>
     <string name="manual_time">结束时间：%1$s</string>
-    <string name="manual_duration">训练时长（分钟，选填，1–1440）</string>
+    <string name="manual_duration">训练时长</string>
     <string name="manual_actual_only">仅记录实际表现，未提供原定目标，不判断达标或触发进阶建议。</string>
     <string name="manual_remove_set">删除此组</string>
     <string name="manual_add_set">添加一组实际记录</string>
     <string name="manual_remove_exercise_confirm">删除这个动作及草稿中的逐组记录？</string>
+    <string name="manual_hours">小时</string>
+    <string name="manual_minutes">分钟</string>
+    <string name="manual_date_taken">这一天已有训练记录，请重新选择训练日期。</string>
+    <string name="manual_reselect_date">重新选择日期</string>
+    <string name="manual_duplicate_exercise">此动作已在补录中，请选择其他动作。</string>
+    <string name="manual_pager_position">动作 %1$d / %2$d · 左右滑动</string>
     <string name="manual_discard">放弃补录草稿</string>
     <string name="manual_discard_confirm">放弃本次补录？尚未保存的内容将被清除。</string>
     <string name="manual_save">保存到历史</string>
@@ -432,7 +438,7 @@
     <string name="manual_progress_actual">实际总次数 %1$d · 已训练 %2$d 组</string>
     <string name="manual_invalid_set">每组需填写 0–1000 kg 的重量和 1–100 的整数次数。</string>
     <string name="manual_invalid_date">请选择不晚于当前时间的实际训练日期和结束时间。</string>
-    <string name="manual_invalid_duration">时长请留空，或填写 1–1440 的整数分钟。</string>
+    <string name="manual_invalid_duration">请用整数填写有效的小时或分钟，总时长须大于零。也可以留空。</string>
     <string name="manual_need_exercise">请至少添加一个训练动作。</string>
     <string name="manual_need_set">每个动作至少需要一组实际训练记录。</string>
     <string name="manual_exercise_limit">一次补录最多添加 30 个动作。</string>
@@ -447,7 +453,7 @@
     <string name="daily_plan_tab">今日计划</string>
     <string name="my_plans_tab">我的计划</string>
     <string name="progress_tab">表现分析</string>
-    <string name="back_training">返回训练</string>
+    <string name="back_records">返回记录</string>
     <string name="back_dashboard">返回首页</string>
     <string name="ring_sets_unit">组</string>
     <string name="ring_today">今日</string>

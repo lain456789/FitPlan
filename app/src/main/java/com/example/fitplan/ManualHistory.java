@@ -32,6 +32,8 @@ final class ManualHistory {
                 "",
                 "finished",
                 now / 60000 * 60000,
+                "durationHours",
+                "",
                 "duration",
                 "",
                 "rows",
@@ -90,21 +92,27 @@ final class ManualHistory {
                 now);
     }
 
+    private static long durationMinutes(JSONObject draft, long finished) {
+        String hoursText = draft.optString("durationHours").trim();
+        String minutesText = draft.optString("duration").trim();
+        if (hoursText.isEmpty() && minutesText.isEmpty()) return 0;
+        try {
+            long hours = hoursText.isEmpty() ? 0 : Long.parseLong(hoursText);
+            long minutes = minutesText.isEmpty() ? 0 : Long.parseLong(minutesText);
+            long total = Math.addExact(Math.multiplyExact(hours, 60L), minutes);
+            if (hours < 0 || minutes < 0 || total <= 0 || total > (finished - 1) / 60000L)
+                throw new Invalid("manual_invalid_duration");
+            return total;
+        } catch (NumberFormatException | ArithmeticException e) {
+            throw new Invalid("manual_invalid_duration");
+        }
+    }
+
     static JSONObject build(JSONObject draft, String fallbackName, long now) {
         long finished = draft.optLong("finished");
         if (finished <= 0 || finished > now) throw new Invalid("manual_invalid_date");
-        String duration = draft.optString("duration").trim();
-        int minutes = 0;
-        if (!duration.isEmpty()) {
-            try {
-                minutes = Integer.parseInt(duration);
-                if (minutes < 1 || minutes > 1440) throw new NumberFormatException();
-            } catch (NumberFormatException e) {
-                throw new Invalid("manual_invalid_duration");
-            }
-        }
+        long minutes = durationMinutes(draft, finished);
         long started = finished - minutes * 60000L;
-        if (started <= 0) throw new Invalid("manual_invalid_date");
         JSONArray input = draft.optJSONArray("rows");
         if (input == null || input.length() == 0) throw new Invalid("manual_need_exercise");
         if (input.length() > MAX_EXERCISES) throw new Invalid("manual_exercise_limit");
@@ -171,7 +179,7 @@ final class ManualHistory {
                 "recordSource",
                 "manual",
                 "durationKnown",
-                !duration.isEmpty(),
+                minutes > 0,
                 "endReason",
                 "recorded",
                 "rows",

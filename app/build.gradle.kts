@@ -31,8 +31,8 @@ android {
         applicationId = "com.example.fitplan"
         minSdk = 24
         targetSdk = 37
-        versionCode = 17
-        versionName = "0.6.7"
+        versionCode = 18
+        versionName = "0.6.8"
 
         buildConfigField("String", "GLM_API_KEY", buildConfigString(localProp("GLM_API_KEY", "")))
         buildConfigField(
@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.constraintlayout)
     implementation(libs.material)
+    implementation(libs.viewpager)
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.ext.junit)
