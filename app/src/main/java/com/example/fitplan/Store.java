@@ -128,6 +128,11 @@ final class Store extends SQLiteOpenHelper {
         getWritableDatabase().delete("documents", "id=?", new String[] {id});
     }
 
+    void deleteCustomExercise(String id) {
+        if (Catalog.builtIn(id) >= 0) throw new IllegalArgumentException("Built-in exercise");
+        getWritableDatabase().delete("documents", "id=? AND kind=?", new String[] {id, "exercise"});
+    }
+
     void finish(JSONObject session) {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransaction();

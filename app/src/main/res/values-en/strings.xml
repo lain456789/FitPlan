@@ -519,7 +519,12 @@
     <string name="exercise_demo">%1$s · Exercise demo</string>
     <string name="demo_close">Close</string>
     <string name="choose_media">Choose photo or GIF (optional)</string>
-    <string name="clear_media">Remove selected image</string>
+    <string name="clear_media">Remove selected photo or GIF</string>
+    <string name="delete_custom_exercise">Delete custom exercise</string>
+    <string name="confirm_delete_custom_exercise">Delete %1$s and its photo or GIF from the exercise library? Existing plans and workout history will be kept.</string>
+    <string name="delete_custom_exercise_failed">Could not delete the exercise. Please try again.</string>
+    <string name="custom_exercise_deleted">Custom exercise deleted.</string>
+    <string name="custom_exercise_media_cleanup_failed">The exercise was removed from the library. Some image files could not be removed.</string>
     <string name="media_failed">Could not save. Check storage or try a smaller valid image.</string>
     <string name="exercise_photo">%1$s · View photo</string>
 </resources>

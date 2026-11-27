@@ -266,7 +266,7 @@ abstract class Screen {
         int index = Catalog.builtIn(id);
         if (index >= 0) return staticOrDemo(index, true);
         CustomMedia files = CustomMedia.existing(activity, id);
-        if (files == null) return null;
+        if (files == null || activity.find("exercise", id) == null) return null;
         ImageView image = new ImageView(activity);
         image.setScaleType(ImageView.ScaleType.FIT_CENTER);
         Glide.with(activity).asBitmap().load(files.thumb).diskCacheStrategy(DiskCacheStrategy.NONE).into(image);

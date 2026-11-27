@@ -519,7 +519,12 @@
     <string name="exercise_demo">%1$s · 动作演示</string>
     <string name="demo_close">关闭</string>
     <string name="choose_media">选择照片或 GIF（可选）</string>
-    <string name="clear_media">移除已选图片</string>
+    <string name="clear_media">移除已选照片或 GIF</string>
+    <string name="delete_custom_exercise">删除自定义动作</string>
+    <string name="confirm_delete_custom_exercise">从动作库删除「%1$s」及其照片或 GIF？已有计划和训练记录会保留。</string>
+    <string name="delete_custom_exercise_failed">删除动作失败，请重试。</string>
+    <string name="custom_exercise_deleted">已删除自定义动作。</string>
+    <string name="custom_exercise_media_cleanup_failed">动作已从动作库删除，部分图片文件未能清理。</string>
     <string name="media_failed">保存失败。请检查存储空间，或尝试较小的有效图片。</string>
     <string name="exercise_photo">%1$s · 查看图片</string>
 </resources>

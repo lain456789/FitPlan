@@ -30,9 +30,18 @@ final class CustomMedia {
     }
 
     static CustomMedia existing(Context context, String id) {
+        CustomMedia files = savedFiles(context, id);
+        return files != null && files.thumb.isFile() && (files.photo.isFile() || files.gif.isFile())
+                ? files
+                : null;
+    }
+
+    static CustomMedia savedFiles(Context context, String id) {
         try {
             CustomMedia files = new CustomMedia(context, id);
-            return files.thumb.isFile() ? files : null;
+            return files.photo.exists() || files.gif.exists() || files.thumb.exists()
+                    ? files
+                    : null;
         } catch (IllegalArgumentException ignored) {
             return null;
         }
@@ -135,9 +144,14 @@ final class CustomMedia {
         }
     }
 
-    void discard() {
-        photo.delete();
-        gif.delete();
-        thumb.delete();
+    boolean discard() {
+        boolean photoRemoved = deleteIfPresent(photo);
+        boolean gifRemoved = deleteIfPresent(gif);
+        boolean thumbnailRemoved = deleteIfPresent(thumb);
+        return photoRemoved && gifRemoved && thumbnailRemoved;
+    }
+
+    private static boolean deleteIfPresent(File file) {
+        return !file.exists() || file.delete();
     }
 }

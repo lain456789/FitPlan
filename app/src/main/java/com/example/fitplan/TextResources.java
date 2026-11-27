@@ -21,6 +21,16 @@ final class TextResources {
                 return R.string.choose_media;
             case "clear_media":
                 return R.string.clear_media;
+            case "delete_custom_exercise":
+                return R.string.delete_custom_exercise;
+            case "confirm_delete_custom_exercise":
+                return R.string.confirm_delete_custom_exercise;
+            case "delete_custom_exercise_failed":
+                return R.string.delete_custom_exercise_failed;
+            case "custom_exercise_deleted":
+                return R.string.custom_exercise_deleted;
+            case "custom_exercise_media_cleanup_failed":
+                return R.string.custom_exercise_media_cleanup_failed;
             case "media_failed":
                 return R.string.media_failed;
             case "exercise_photo":

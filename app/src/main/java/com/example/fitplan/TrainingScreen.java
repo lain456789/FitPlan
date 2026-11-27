@@ -19,6 +19,7 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -45,6 +46,8 @@ final class TrainingScreen extends Screen {
     private static final int LONG_REST_SECONDS = 90;
     private static final int MAX_REST_SECONDS = 3600;
     private static final int PLAN_THUMBNAIL_HEIGHT_DP = 160;
+    private Runnable refreshMuscleLibrary;
+    private Runnable refreshNameLibrary;
 
     TrainingScreen(MainActivity activity) {
         super(activity);
@@ -126,90 +129,93 @@ final class TrainingScreen extends Screen {
         text(diagram, s("map_faces"), 14).setGravity(Gravity.CENTER);
         View clear = button(controls, s("map_clear"), () -> picker.setSelection(0));
         LinearLayout results = pane(pane);
-        JSONObject[] builtIns = new JSONObject[Catalog.EXERCISES.length];
-        List<JSONObject> customs = new ArrayList<>();
-        JSONArray entries = store.list("exercise");
-        for (int i = 0; i < entries.length(); i++) {
-            JSONObject ex = entries.optJSONObject(i);
-            int index = Catalog.builtIn(ex.optString("id"));
-            if (index >= 0) builtIns[index] = ex;
-            else customs.add(ex);
-        }
-        sortExercises(customs);
-        picker.setOnItemSelectedListener(
-                new android.widget.AdapterView.OnItemSelectedListener() {
-                    public void onItemSelected(
-                            android.widget.AdapterView<?> parent, View view, int pos, long id) {
-                        results.removeAllViews();
-                        clear.setVisibility(pos == 0 ? View.GONE : View.VISIBLE);
-                        map.highlight(
-                                pos == 0 || pos == customIndex
-                                        ? ""
-                                        : groups[pos - 1].key);
-                        if (pos == 0) {
-                            for (JSONObject ex : builtIns)
-                                if (ex != null) exerciseCard(results, ex, onSelect);
-                            if (!customs.isEmpty()) text(results, s("custom"), 16);
-                            for (JSONObject ex : customs) exerciseCard(results, ex, onSelect);
-                            return;
-                        }
-                        if (pos == customIndex) {
-                            text(results, s("custom"), 16);
-                            if (customs.isEmpty()) text(results, s("no_matches"), 16);
-                            else for (JSONObject ex : customs)
-                                exerciseCard(results, ex, onSelect);
-                            return;
-                        }
-                        MuscleCatalog group = groups[pos - 1];
-                        int primaryCount = group.primary.length;
-                        for (JSONObject ex : customs)
-                            if (group.key.equals(ex.optString("muscle"))) primaryCount++;
-                        text(
-                                results,
-                                primaryCount == 0
-                                        ? s("map_empty")
-                                        : s("map_primary", primaryCount),
-                                16);
-                        for (int index : group.primary) {
-                            if (builtIns[index] == null) continue;
-                            if (index == 14 || index == 15)
-                                text(results, s(index == 14 ? "map_crunch" : "map_stability"), 14);
-                            exerciseCard(results, builtIns[index], onSelect);
-                        }
-                        boolean relatedHeading = false;
-                        for (JSONObject ex : customs) {
-                            if (group.key.equals(ex.optString("muscle"))) exerciseCard(results, ex, onSelect);
-                        }
-                        for (JSONObject ex : customs) {
-                            if (!ex.optString("muscle").isEmpty()
-                                    || !group.part.equals(Catalog.partCode(ex.optString("part")))) continue;
-                            if (!relatedHeading) text(results, s("related_custom", activity.partName(group.part)), 16);
-                            relatedHeading = true;
+        Runnable render =
+                () -> {
+                    int pos = picker.getSelectedItemPosition();
+                    JSONObject[] builtIns = new JSONObject[Catalog.EXERCISES.length];
+                    List<JSONObject> customs = new ArrayList<>();
+                    JSONArray entries = store.list("exercise");
+                    for (int i = 0; i < entries.length(); i++) {
+                        JSONObject ex = entries.optJSONObject(i);
+                        int index = Catalog.builtIn(ex.optString("id"));
+                        if (index >= 0) builtIns[index] = ex;
+                        else customs.add(ex);
+                    }
+                    sortExercises(customs);
+                    results.removeAllViews();
+                    clear.setVisibility(pos == 0 ? View.GONE : View.VISIBLE);
+                    map.highlight(pos == 0 || pos == customIndex ? "" : groups[pos - 1].key);
+                    if (pos == 0) {
+                        for (JSONObject ex : builtIns)
+                            if (ex != null) exerciseCard(results, ex, onSelect);
+                        if (!customs.isEmpty()) text(results, s("custom"), 16);
+                        for (JSONObject ex : customs) exerciseCard(results, ex, onSelect);
+                        return;
+                    }
+                    if (pos == customIndex) {
+                        text(results, s("custom"), 16);
+                        if (customs.isEmpty()) text(results, s("no_matches"), 16);
+                        else for (JSONObject ex : customs) exerciseCard(results, ex, onSelect);
+                        return;
+                    }
+                    MuscleCatalog group = groups[pos - 1];
+                    int primaryCount = group.primary.length;
+                    for (JSONObject ex : customs)
+                        if (group.key.equals(ex.optString("muscle"))) primaryCount++;
+                    text(
+                            results,
+                            primaryCount == 0 ? s("map_empty") : s("map_primary", primaryCount),
+                            16);
+                    for (int index : group.primary) {
+                        if (builtIns[index] == null) continue;
+                        if (index == 14 || index == 15)
+                            text(results, s(index == 14 ? "map_crunch" : "map_stability"), 14);
+                        exerciseCard(results, builtIns[index], onSelect);
+                    }
+                    boolean relatedHeading = false;
+                    for (JSONObject ex : customs) {
+                        if (group.key.equals(ex.optString("muscle")))
                             exerciseCard(results, ex, onSelect);
-                        }
-                        if (group.assisting.length > 0) {
-                            LinearLayout extra = new LinearLayout(activity);
-                            extra.setOrientation(LinearLayout.VERTICAL);
-                            extra.setVisibility(View.GONE);
-                            button(
-                                    results,
-                                    s("map_secondary", group.assisting.length),
-                                    () -> {
-                                        if (extra.getChildCount() == 0) {
-                                            for (int index : group.assisting)
-                                                if (builtIns[index] != null)
-                                                    exerciseCard(extra, builtIns[index], onSelect);
-                                        }
-                                        extra.setVisibility(
-                                                extra.getVisibility() == View.VISIBLE
-                                                        ? View.GONE
-                                                        : View.VISIBLE);
-                                    });
-                            results.addView(extra);
-                        }
+                    }
+                    for (JSONObject ex : customs) {
+                        if (!ex.optString("muscle").isEmpty()
+                                || !group.part.equals(Catalog.partCode(ex.optString("part"))))
+                            continue;
+                        if (!relatedHeading)
+                            text(results, s("related_custom", activity.partName(group.part)), 16);
+                        relatedHeading = true;
+                        exerciseCard(results, ex, onSelect);
+                    }
+                    if (group.assisting.length > 0) {
+                        LinearLayout extra = new LinearLayout(activity);
+                        extra.setOrientation(LinearLayout.VERTICAL);
+                        extra.setVisibility(View.GONE);
+                        button(
+                                results,
+                                s("map_secondary", group.assisting.length),
+                                () -> {
+                                    if (extra.getChildCount() == 0) {
+                                        for (int index : group.assisting)
+                                            if (builtIns[index] != null)
+                                                exerciseCard(extra, builtIns[index], onSelect);
+                                    }
+                                    extra.setVisibility(
+                                            extra.getVisibility() == View.VISIBLE
+                                                    ? View.GONE
+                                                    : View.VISIBLE);
+                                });
+                        results.addView(extra);
+                    }
+                };
+        if (onSelect == null) refreshMuscleLibrary = render;
+        picker.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
+                    public void onItemSelected(
+                            AdapterView<?> parent, View view, int position, long id) {
+                        render.run();
                     }
 
-                    public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+                    public void onNothingSelected(AdapterView<?> parent) {}
                 });
     }
 
@@ -275,6 +281,7 @@ final class TrainingScreen extends Screen {
 
                     public void onNothingSelected(android.widget.AdapterView<?> p) {}
                 });
+        refreshNameLibrary = render;
         render.run();
     }
 
@@ -283,17 +290,48 @@ final class TrainingScreen extends Screen {
     }
 
     private void exerciseCard(
-            LinearLayout results, JSONObject exercise, java.util.function.Consumer<JSONObject> select) {
+            LinearLayout results,
+            JSONObject exercise,
+            java.util.function.Consumer<JSONObject> select) {
         String id = exercise.optString("id");
         LinearLayout cardView = card(results);
         if (select != null) {
             cardView.setClickable(true);
             cardView.setOnClickListener(v -> select.accept(exercise));
         }
-        LinearLayout labels = headerWithImage(cardView, exerciseThumbnail(id, activity.exerciseName(exercise)));
-        text(labels, activity.exerciseName(exercise), 18);
+        String label = activity.exerciseName(exercise);
+        View thumbnail = exerciseThumbnail(id, label);
+        LinearLayout header = new LinearLayout(activity);
+        cardView.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout labels = headerWithImage(header, thumbnail);
+        text(labels, label, 18);
         text(labels, activity.partName(exercise.optString("part")), 14);
-        text(labels, Catalog.builtIn(id) >= 0 ? equipmentText(id) : customEquipmentText(exercise), 14);
+        text(
+                labels,
+                Catalog.builtIn(id) >= 0 ? equipmentText(id) : customEquipmentText(exercise),
+                14);
+        if (select == null && Catalog.builtIn(id) < 0)
+            button(
+                    cardView,
+                    s("delete_custom_exercise"),
+                    () ->
+                            confirm(
+                                    s("confirm_delete_custom_exercise", label),
+                                    () -> deleteCustomExercise(id)));
+    }
+
+    private void deleteCustomExercise(String id) {
+        try {
+            store.deleteCustomExercise(id);
+        } catch (SQLiteException e) {
+            toast(s("delete_custom_exercise_failed"));
+            return;
+        }
+        CustomMedia files = CustomMedia.savedFiles(activity, id);
+        boolean cleared = files == null || files.discard();
+        if (refreshMuscleLibrary != null) refreshMuscleLibrary.run();
+        if (refreshNameLibrary != null) refreshNameLibrary.run();
+        toast(s(cleared ? "custom_exercise_deleted" : "custom_exercise_media_cleanup_failed"));
     }
 
     void pickExercise(JSONObject plan) {
