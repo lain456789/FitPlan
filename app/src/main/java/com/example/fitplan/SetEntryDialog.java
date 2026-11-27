@@ -33,7 +33,7 @@ final class SetEntryDialog extends Screen {
                 form,
                 row.optBoolean("actualOnly")
                         ? s("manual_actual_only")
-                        : s("feedback_help", row.optInt("reps")),
+                        : s("feedback_help", TrainingFeedback.targetReps(row, log)),
                 14);
         String initialReps =
                 !active && !log.optBoolean("done") && !log.has("feedbackVersion")
@@ -86,7 +86,7 @@ final class SetEntryDialog extends Screen {
                     try {
                         belowTarget =
                                 Integer.parseInt(reps.getText().toString().trim())
-                                        < row.optInt("reps");
+                                        < TrainingFeedback.targetReps(row, log);
                     } catch (NumberFormatException ignored) {
                         // Numeric validation remains in the save action.
                     }

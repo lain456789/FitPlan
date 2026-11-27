@@ -154,7 +154,8 @@ public final class CoachContextBuilder {
             if (targetReps <= 0) return 0;
             int count = 0;
             for (CoachModels.SetLog log : logs) {
-                if (log.isPerformed() && log.reps >= targetReps) {
+                if (log.isPerformed()
+                        && log.reps >= (log.targetReps > 0 ? log.targetReps : targetReps)) {
                     count++;
                 }
             }
@@ -522,7 +523,7 @@ public final class CoachContextBuilder {
                         if ("hard".equals(log.effort)) {
                             hardSets++;
                         }
-                        if (log.reps < s.targetReps) {
+                        if (log.reps < (log.targetReps > 0 ? log.targetReps : s.targetReps)) {
                             missedSets++;
                         }
                     } else if (!log.skipped) {
@@ -644,6 +645,8 @@ public final class CoachContextBuilder {
                                 .append("[")
                                 .append(log.effort)
                                 .append("]");
+                        if (log.targetReps > 0 && log.targetReps != row.targetReps)
+                            sb.append("(target_reps=").append(log.targetReps).append(")");
                         String reason = log.effectiveReason(w.endReason);
                         if (!"none".equals(reason) && !"unknown".equals(reason)) {
                             sb.append("(").append(reason).append(")");

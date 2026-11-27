@@ -18,15 +18,28 @@ public final class ProgressEngine {
         public final int reps, effort;
         public final boolean done, skipped;
         public final String reason;
+        public final int targetReps;
 
         public SetResult(
                 double weight, int reps, boolean done, boolean skipped, int effort, String reason) {
+            this(weight, reps, done, skipped, effort, reason, 0);
+        }
+
+        SetResult(
+                double weight,
+                int reps,
+                boolean done,
+                boolean skipped,
+                int effort,
+                String reason,
+                int targetReps) {
             this.weight = weight;
             this.reps = reps;
             this.done = done;
             this.skipped = skipped;
             this.effort = effort;
             this.reason = reason;
+            this.targetReps = targetReps;
         }
     }
 
@@ -71,7 +84,8 @@ public final class ProgressEngine {
         public int met() {
             if (targetReps <= 0) return 0;
             int n = 0;
-            for (SetResult s : sets) if (s.done && s.reps >= targetReps) n++;
+            for (SetResult s : sets)
+                if (s.done && s.reps >= (s.targetReps > 0 ? s.targetReps : targetReps)) n++;
             return n;
         }
 

@@ -87,8 +87,10 @@ final class TextResources {
                 return R.string.next_exercise;
             case "manual_duplicate_exercise":
                 return R.string.manual_duplicate_exercise;
-            case "manual_pager_position":
-                return R.string.manual_pager_position;
+            case "plan_duplicate_exercise":
+                return R.string.plan_duplicate_exercise;
+            case "exercise_pager_position":
+                return R.string.exercise_pager_position;
             case "exercise_position":
                 return R.string.exercise_position;
             case "no_pending_sets":
@@ -360,10 +362,12 @@ final class TextResources {
                 return R.string.logging_help;
             case "rest_timer":
                 return R.string.rest_timer;
-            case "rest60":
-                return R.string.rest60;
-            case "rest90":
-                return R.string.rest90;
+            case "rest_start":
+                return R.string.rest_start;
+            case "rest_adjust":
+                return R.string.rest_adjust;
+            case "rest_option_seconds":
+                return R.string.rest_option_seconds;
             case "stop_rest":
                 return R.string.stop_rest;
             case "rest_custom":
@@ -410,6 +414,34 @@ final class TextResources {
                 return R.string.history_title;
             case "empty_history":
                 return R.string.empty_history;
+            case "history_date_filter":
+                return R.string.history_date_filter;
+            case "history_all_dates":
+                return R.string.history_all_dates;
+            case "history_last_seven_days":
+                return R.string.history_last_seven_days;
+            case "history_this_month":
+                return R.string.history_this_month;
+            case "history_custom_range":
+                return R.string.history_custom_range;
+            case "history_range_value":
+                return R.string.history_range_value;
+            case "history_start_date":
+                return R.string.history_start_date;
+            case "history_end_date":
+                return R.string.history_end_date;
+            case "history_apply_dates":
+                return R.string.history_apply_dates;
+            case "history_invalid_range":
+                return R.string.history_invalid_range;
+            case "empty_history_range":
+                return R.string.empty_history_range;
+            case "history_month_pattern":
+                return R.string.history_month_pattern;
+            case "history_month_heading":
+                return R.string.history_month_heading;
+            case "history_month_heading_one":
+                return R.string.history_month_heading_one;
             case "history_line":
                 return R.string.history_line;
             case "correct_record":
@@ -610,6 +642,40 @@ final class TextResources {
                 return R.string.remaining_estimate_note;
             case "shorten_remaining":
                 return R.string.shorten_remaining;
+            case "adjust_exercise":
+                return R.string.adjust_exercise;
+            case "edit_pending_sets":
+                return R.string.edit_pending_sets;
+            case "skip_remaining_sets":
+                return R.string.skip_remaining_sets;
+            case "skip_sets_confirmation":
+                return R.string.skip_sets_confirmation;
+            case "skip_reason_optional":
+                return R.string.skip_reason_optional;
+            case "confirm_skip_sets":
+                return R.string.confirm_skip_sets;
+            case "skipped_sets_status":
+                return R.string.skipped_sets_status;
+            case "skip_reason_value":
+                return R.string.skip_reason_value;
+            case "skip_sets_change":
+                return R.string.skip_sets_change;
+            case "skip_sets_audit":
+                return R.string.skip_sets_audit;
+            case "set_user_skipped":
+                return R.string.set_user_skipped;
+            case "pending_sets_label":
+                return R.string.pending_sets_label;
+            case "pending_prescription":
+                return R.string.pending_prescription;
+            case "pending_sets_unchanged":
+                return R.string.pending_sets_unchanged;
+            case "set_adjustment_line":
+                return R.string.set_adjustment_line;
+            case "set_adjustment_audit":
+                return R.string.set_adjustment_audit;
+            case "set_manually_cancelled":
+                return R.string.set_manually_cancelled;
             case "remaining_minutes":
                 return R.string.remaining_minutes;
             case "preview_adjustment":
@@ -1048,8 +1114,10 @@ final class TextResources {
                 return R.string.manual_name_limit;
             case "complete_set":
                 return R.string.complete_set;
-            case "all_sets_done":
-                return R.string.all_sets_done;
+            case "workout_set_progress":
+                return R.string.workout_set_progress;
+            case "workout_exercise_done":
+                return R.string.workout_exercise_done;
             case "move_left":
                 return R.string.move_left;
             case "move_right":

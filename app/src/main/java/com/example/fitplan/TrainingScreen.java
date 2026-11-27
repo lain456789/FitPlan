@@ -6,9 +6,15 @@ import static com.example.fitplan.Store.object;
 import static com.example.fitplan.Store.put;
 
 import android.app.AlertDialog;
+import android.content.Context;
+import android.content.res.ColorStateList;
+import android.database.sqlite.SQLiteException;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -34,6 +40,12 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 final class TrainingScreen extends Screen {
+    static final String REST_SECONDS_PREFERENCE = "workoutRestSeconds";
+    private static final int DEFAULT_REST_SECONDS = 60;
+    private static final int LONG_REST_SECONDS = 90;
+    private static final int MAX_REST_SECONDS = 3600;
+    private static final int PLAN_THUMBNAIL_HEIGHT_DP = 160;
+
     TrainingScreen(MainActivity activity) {
         super(activity);
     }
@@ -299,10 +311,19 @@ final class TrainingScreen extends Screen {
     }
 
     void addExercise(JSONObject plan, JSONObject exercise) {
+        String exerciseId = exercise.optString("id");
+        JSONArray rows = plan.optJSONArray("rows");
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject existing = rows.optJSONObject(i);
+            if (existing != null && exerciseId.equals(existing.optString("exerciseId"))) {
+                toast(s("plan_duplicate_exercise"));
+                return;
+            }
+        }
         JSONObject row =
                 object(
                         "exerciseId",
-                        exercise.optString("id"),
+                        exerciseId,
                         "name",
                         activity.exerciseName(exercise),
                         "part",
@@ -313,7 +334,7 @@ final class TrainingScreen extends Screen {
                         3,
                         "reps",
                         10);
-        plan.optJSONArray("rows").put(row);
+        rows.put(row);
         store.save("plan", plan);
         activity.activeDialog.dismiss();
         activity.openPlan(plan);
@@ -515,9 +536,12 @@ final class TrainingScreen extends Screen {
             LinearLayout.LayoutParams cardLayout = new LinearLayout.LayoutParams(cardWidth, -1);
             cardLayout.setMarginEnd(cardGap);
             track.addView(c, cardLayout);
-            View thumbnail = exerciseThumbnail(row.optString("exerciseId"), activity.exerciseName(row));
+            View thumbnail =
+                    exerciseThumbnail(row.optString("exerciseId"), activity.exerciseName(row));
             if (thumbnail != null) {
-                c.addView(thumbnail, new LinearLayout.LayoutParams(-1, 0, 1));
+                c.addView(
+                        thumbnail,
+                        new LinearLayout.LayoutParams(-1, activity.dp(PLAN_THUMBNAIL_HEIGHT_DP)));
             }
             LinearLayout header = pane(c);
             text(header, activity.exerciseName(row), 18);
@@ -861,88 +885,131 @@ final class TrainingScreen extends Screen {
         show("workout");
     }
 
-    private void workoutCards(JSONObject session, LinearLayout parent) {
+    private void workoutCards(JSONObject session) {
         JSONArray rows = session.optJSONArray("rows");
-        HorizontalScrollView strip = new HorizontalScrollView(activity);
-        strip.setHorizontalScrollBarEnabled(false);
-        strip.setClipChildren(false);
-        strip.setClipToPadding(false);
-        parent.addView(strip, new LinearLayout.LayoutParams(-1, 0, 1));
-        LinearLayout track = new LinearLayout(activity);
-        track.setOrientation(LinearLayout.HORIZONTAL);
-        track.setClipChildren(false);
-        track.setClipToPadding(false);
-        track.setPadding(0, activity.dp(4), 0, activity.dp(8));
-        strip.addView(track, new LinearLayout.LayoutParams(-2, -1));
-        int cardWidth = Math.round(activity.getResources().getDisplayMetrics().widthPixels * 0.86f);
-        int visible = 0;
-        for (int i = 0; i < rows.length(); i++) {
-            final int rowIndex = i;
-            JSONObject row = rows.optJSONObject(i);
-            int remaining = WorkoutAdjustments.pendingRow(row);
-            if (remaining == 0) continue;
-            visible++;
-            LinearLayout c = new LinearLayout(activity);
-            c.setOrientation(LinearLayout.HORIZONTAL);
-            c.setBackground(activity.shape(MainActivity.CARD, 24));
-            c.setPadding(activity.dp(16), activity.dp(12), activity.dp(16), activity.dp(12));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(cardWidth, -1);
-            lp.setMarginEnd(activity.dp(12));
-            track.addView(c, lp);
-            LinearLayout left = new LinearLayout(activity);
-            left.setOrientation(LinearLayout.VERTICAL);
-            c.addView(left, new LinearLayout.LayoutParams(0, -1, 1));
-            TextView name = text(left, activity.exerciseName(row), 18);
-            name.setTypeface(null, Typeface.BOLD);
-            if (Catalog.builtIn(row.optString("exerciseId")) < 0)
-                text(left, equipmentText(row.optString("exerciseId")), 14);
+        if (rows == null || rows.length() == 0) return;
+        String id = session.optString("id");
+        if (!id.equals(activity.workoutSessionId)) {
+            activity.workoutSessionId = id;
+            activity.workoutExerciseIndex = session.optInt("displayRow");
+        }
+        if (rows.length() == 1) {
+            workoutCard(content, session, 0);
+            return;
+        }
+        ExercisePager pager =
+                new ExercisePager(
+                        activity,
+                        rows.length(),
+                        (page, index) -> workoutCard(page, session, index));
+        pager.attach(
+                content,
+                this,
+                "workout_exercise",
+                activity.workoutExerciseIndex,
+                index -> activity.workoutExerciseIndex = index);
+    }
+
+    private void workoutCard(LinearLayout parent, JSONObject session, int rowIndex) {
+        JSONObject row = session.optJSONArray("rows").optJSONObject(rowIndex);
+        String exerciseId = row.optString("exerciseId");
+        String name = activity.exerciseName(row);
+        LinearLayout card = card(parent);
+        LinearLayout header = new LinearLayout(activity);
+        card.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout details = headerWithImage(header, exerciseThumbnail(exerciseId, name));
+        text(details, name, 18).setTypeface(null, Typeface.BOLD);
+        if (Catalog.builtIn(exerciseId) < 0) text(details, equipmentText(exerciseId), 14);
+        int targetSets = row.optInt("sets");
+        int pending = WorkoutAdjustments.pendingRow(row);
+        boolean adjusted = row.optBoolean("pendingEdited");
+        JSONArray logs = row.optJSONArray("logs");
+        if (adjusted && pending > 0) {
+            JSONObject next = logs.optJSONObject(WorkoutAdjustments.firstPendingSet(row));
             text(
-                    left,
+                    details,
                     s(
-                            "prescription",
-                            num(row.optDouble("weight")),
-                            row.optInt("sets"),
-                            row.optInt("reps")),
+                            "pending_prescription",
+                            num(next.optDouble("weight")),
+                            pending,
+                            TrainingFeedback.targetReps(row, next)),
                     14);
-            left.addView(new View(activity), new LinearLayout.LayoutParams(-1, 0, 1));
-            Button complete =
-                    button(
-                            left,
-                            s("complete_set", row.optInt("sets") - remaining),
-                            () -> completeNextSet(session, rowIndex));
-            complete.setTextSize(12);
-            complete.setMinHeight(activity.dp(32));
-            complete.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
-            View thumbnail = exerciseThumbnail(row.optString("exerciseId"), activity.exerciseName(row));
-            if (thumbnail != null) {
-                c.addView(thumbnail, new LinearLayout.LayoutParams(0, -1, 1));
+        } else if (!adjusted) {
+            text(
+                    details,
+                    s("prescription", num(row.optDouble("weight")), targetSets, row.optInt("reps")),
+                    14);
+        }
+        int recordedSets = 0;
+        int skippedSets = 0;
+        String skipReason = "unknown";
+        if (logs != null) {
+            for (int i = 0; i < logs.length(); i++) {
+                JSONObject log = logs.optJSONObject(i);
+                if (log == null) continue;
+                if (log.optBoolean("done")) recordedSets++;
+                else if (log.optBoolean("skipped") && "user".equals(log.optString("skipReason"))) {
+                    skippedSets++;
+                    skipReason = TrainingFeedback.reason(log, session);
+                }
             }
         }
-        if (visible == 0) text(parent, s("all_sets_done"), 16);
+        text(details, s("workout_set_progress", recordedSets, targetSets), 14);
+        if (pending > 0) {
+            LinearLayout actions = new LinearLayout(activity);
+            card.addView(actions);
+            Button complete =
+                    button(actions, s("complete_set"), () -> completeNextSet(session, rowIndex));
+            complete.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+            Button adjust =
+                    button(
+                            actions,
+                            s("adjust_exercise"),
+                            () -> chooseExerciseAdjustment(session, rowIndex));
+            LinearLayout.LayoutParams adjustParams = new LinearLayout.LayoutParams(0, -2, 1);
+            adjustParams.setMarginStart(activity.dp(8));
+            adjust.setLayoutParams(adjustParams);
+        } else if (row.optBoolean("retired")) {
+            text(details, s("replacement_retired"), 14);
+        } else if (skippedSets > 0) {
+            text(details, s("skipped_sets_status", skippedSets), 14);
+            showSkipReason(details, skipReason);
+        } else {
+            boolean completed = targetSets > 0 && recordedSets >= targetSets;
+            String status = completed ? "workout_exercise_done" : "no_pending_sets";
+            TextView statusLabel = text(details, s(status), 14);
+            if (completed) statusLabel.setTextColor(MainActivity.ACCENT);
+        }
+        if ((adjusted || row.optBoolean("retired") || skippedSets > 0) && logs != null) {
+            for (int i = 0; i < logs.length(); i++) {
+                JSONObject log = logs.optJSONObject(i);
+                if (log != null && log.optBoolean("done")) {
+                    text(
+                            card,
+                            s("log_line", i + 1, s("done"), actualWeight(log), log.optInt("reps")),
+                            14);
+                }
+            }
+        }
     }
 
     private void completeNextSet(JSONObject session, int rowIndex) {
         JSONObject row = session.optJSONArray("rows").optJSONObject(rowIndex);
         JSONArray logs = row.optJSONArray("logs");
-        int logIndex = -1;
-        for (int j = 0; j < logs.length(); j++) {
-            if (WorkoutAdjustments.isPending(logs.optJSONObject(j))) {
-                logIndex = j;
-                break;
-            }
-        }
+        int logIndex = WorkoutAdjustments.firstPendingSet(row);
         if (logIndex < 0) {
             refreshAtCurrentPosition("workout");
             return;
         }
+        JSONObject log = logs.optJSONObject(logIndex);
         try {
             JSONObject updated =
                     TrainingFeedback.record(
                             session,
                             rowIndex,
                             logIndex,
-                            row.optDouble("weight"),
-                            row.optInt("reps"),
+                            log.optDouble("weight", row.optDouble("weight")),
+                            TrainingFeedback.targetReps(row, log),
                             true,
                             "appropriate",
                             "none",
@@ -969,88 +1036,9 @@ final class TrainingScreen extends Screen {
             button(content, s("choose_plan"), () -> show("plans"));
             return;
         }
-        LinearLayout cardsArea = new LinearLayout(activity);
-        cardsArea.setOrientation(LinearLayout.VERTICAL);
-        content.addView(cardsArea, new LinearLayout.LayoutParams(-1, 0, 1));
-        workoutCards(session, cardsArea);
-        LinearLayout timer = card(content);
-        LinearLayout.LayoutParams timerLp = (LinearLayout.LayoutParams) timer.getLayoutParams();
-        timerLp.height = 0;
-        timerLp.weight = 1;
-        LinearLayout times = new LinearLayout(activity);
-        times.setOrientation(LinearLayout.HORIZONTAL);
-        timer.addView(times, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout elapsedBox = new LinearLayout(activity);
-        elapsedBox.setOrientation(LinearLayout.VERTICAL);
-        elapsedBox.setGravity(Gravity.CENTER);
-        times.addView(elapsedBox, new LinearLayout.LayoutParams(0, -2, 1));
-        text(elapsedBox, s("workout_elapsed_label"), 12);
-        activity.elapsedLabel = text(elapsedBox, s("workout_elapsed", "0:00"), 18);
-        LinearLayout restBox = new LinearLayout(activity);
-        restBox.setOrientation(LinearLayout.VERTICAL);
-        restBox.setGravity(Gravity.CENTER);
-        times.addView(restBox, new LinearLayout.LayoutParams(0, -2, 1));
-        text(restBox, s("rest_timer"), 12);
-        activity.timerLabel = text(restBox, "0:00", 18);
-        LinearLayout restGrid = new LinearLayout(activity);
-        restGrid.setOrientation(LinearLayout.VERTICAL);
-        timer.addView(restGrid, new LinearLayout.LayoutParams(-1, -2));
-        LinearLayout restRow1 = new LinearLayout(activity);
-        restRow1.setOrientation(LinearLayout.HORIZONTAL);
-        restGrid.addView(restRow1, new LinearLayout.LayoutParams(-1, -2));
-        Button b60 =
-                button(
-                        restRow1,
-                        s("rest60"),
-                        () -> {
-                            put(session, "restUntil", System.currentTimeMillis() + 60000);
-                            store.save("active", session);
-                        });
-        b60.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button b90 =
-                button(
-                        restRow1,
-                        s("rest90"),
-                        () -> {
-                            put(session, "restUntil", System.currentTimeMillis() + 90000);
-                            store.save("active", session);
-                        });
-        b90.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        LinearLayout restRow2 = new LinearLayout(activity);
-        restRow2.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams row2Lp = new LinearLayout.LayoutParams(-1, -2);
-        row2Lp.setMargins(0, activity.dp(8), 0, 0);
-        restGrid.addView(restRow2, row2Lp);
-        Button bCustom =
-                button(
-                        restRow2,
-                        s("rest_custom"),
-                        () -> {
-                            LinearLayout form = column();
-                            EditText seconds = input(form, s("rest_custom_seconds"), "", true);
-                            dialog(
-                                    s("rest_custom"),
-                                    form,
-                                    () -> {
-                                        int secs = integer(seconds, 1, 3600);
-                                        put(session, "restUntil", System.currentTimeMillis() + secs * 1000L);
-                                        store.save("active", session);
-                                    });
-                        });
-        bCustom.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button bStop =
-                button(
-                        restRow2,
-                        s("stop_rest"),
-                        () -> {
-                            put(session, "restUntil", 0);
-                            store.save("active", session);
-                        });
-        bStop.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        LinearLayout bottom = new LinearLayout(activity);
-        bottom.setOrientation(LinearLayout.VERTICAL);
-        content.addView(bottom, new LinearLayout.LayoutParams(-1, 0, 1));
-        LinearLayout adjustment = card(bottom);
+        workoutCards(session);
+        workoutTimers(session);
+        LinearLayout adjustment = card(content);
         TextView summary = text(adjustment, "", 13);
         Button shorten =
                 button(adjustment, s("shorten_remaining"), () -> shortenRemaining(session));
@@ -1071,10 +1059,10 @@ final class TrainingScreen extends Screen {
                     none.setVisibility(pending == 0 ? View.VISIBLE : View.GONE);
                 };
         refreshSummary.run();
-        adjustmentHistory(session, bottom);
+        adjustmentHistory(session, content);
         LinearLayout endButtons = new LinearLayout(activity);
         endButtons.setOrientation(LinearLayout.HORIZONTAL);
-        bottom.addView(endButtons, new LinearLayout.LayoutParams(-1, -2));
+        content.addView(endButtons, new LinearLayout.LayoutParams(-1, -2));
         Button finish =
                 button(
                         endButtons,
@@ -1124,6 +1112,122 @@ final class TrainingScreen extends Screen {
                                     });
                         });
         discard.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+    }
+
+    private void workoutTimers(JSONObject session) {
+        LinearLayout timer = card(content);
+        LinearLayout times = new LinearLayout(activity);
+        times.setOrientation(LinearLayout.HORIZONTAL);
+        timer.addView(times, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout elapsedBox = new LinearLayout(activity);
+        elapsedBox.setOrientation(LinearLayout.VERTICAL);
+        elapsedBox.setGravity(Gravity.CENTER);
+        times.addView(elapsedBox, new LinearLayout.LayoutParams(0, -2, 1));
+        text(elapsedBox, s("workout_elapsed_label"), 12).setPadding(0, 0, 0, 0);
+        activity.elapsedLabel = text(elapsedBox, s("workout_elapsed", "0:00"), 18);
+        LinearLayout restBox = new LinearLayout(activity);
+        restBox.setOrientation(LinearLayout.VERTICAL);
+        restBox.setGravity(Gravity.CENTER);
+        times.addView(restBox, new LinearLayout.LayoutParams(0, -2, 1));
+        text(restBox, s("rest_timer"), 12).setPadding(0, 0, 0, 0);
+        activity.timerLabel = text(restBox, "", 18);
+        LinearLayout idleActions = new LinearLayout(activity);
+        timer.addView(idleActions, new LinearLayout.LayoutParams(-1, -2));
+        Button start =
+                button(
+                        idleActions,
+                        s("rest_start", restSeconds()),
+                        () -> setRestTimer(session, restSeconds()));
+        start.setTextColor(MainActivity.BG);
+        start.setBackgroundTintList(ColorStateList.valueOf(MainActivity.ACCENT));
+        start.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button adjust = button(idleActions, s("rest_adjust"), () -> chooseRestDuration(start));
+        LinearLayout.LayoutParams adjustParams = new LinearLayout.LayoutParams(-2, -2);
+        adjustParams.setMarginStart(activity.dp(8));
+        adjust.setLayoutParams(adjustParams);
+        Button stop = button(timer, s("stop_rest"), () -> setRestTimer(session, 0));
+        activity.updateRestControls =
+                resting -> {
+                    idleActions.setVisibility(resting ? View.GONE : View.VISIBLE);
+                    stop.setVisibility(resting ? View.VISIBLE : View.GONE);
+                };
+        activity.updateWorkoutTimers(session);
+    }
+
+    private int restSeconds() {
+        return activity.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+                .getInt(REST_SECONDS_PREFERENCE, DEFAULT_REST_SECONDS);
+    }
+
+    private void chooseRestDuration(Button start) {
+        int seconds = restSeconds();
+        String[] choices = {
+            s("rest_option_seconds", DEFAULT_REST_SECONDS),
+            s("rest_option_seconds", LONG_REST_SECONDS),
+            s("rest_custom")
+        };
+        int selected = seconds == DEFAULT_REST_SECONDS ? 0 : seconds == LONG_REST_SECONDS ? 1 : 2;
+        activity.activeDialog =
+                new AlertDialog.Builder(activity)
+                        .setTitle(s("rest_custom_seconds"))
+                        .setSingleChoiceItems(
+                                choices,
+                                selected,
+                                (dialog, which) -> {
+                                    dialog.dismiss();
+                                    if (which == 2) {
+                                        LinearLayout form = column();
+                                        EditText input =
+                                                input(
+                                                        form,
+                                                        s("rest_custom_seconds"),
+                                                        String.valueOf(seconds),
+                                                        true);
+                                        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+                                        dialog(
+                                                s("rest_custom"),
+                                                form,
+                                                () ->
+                                                        saveRestDuration(
+                                                                start,
+                                                                integer(
+                                                                        input,
+                                                                        1,
+                                                                        MAX_REST_SECONDS)));
+                                    } else {
+                                        saveRestDuration(
+                                                start,
+                                                which == 0
+                                                        ? DEFAULT_REST_SECONDS
+                                                        : LONG_REST_SECONDS);
+                                    }
+                                })
+                        .setNegativeButton(s("cancel"), null)
+                        .show();
+    }
+
+    private void saveRestDuration(Button start, int seconds) {
+        activity.getSharedPreferences("preferences", Context.MODE_PRIVATE)
+                .edit()
+                .putInt(REST_SECONDS_PREFERENCE, seconds)
+                .apply();
+        start.setText(s("rest_start", seconds));
+    }
+
+    private void setRestTimer(JSONObject session, int seconds) {
+        long restUntil = seconds == 0 ? 0 : System.currentTimeMillis() + seconds * 1000L;
+        JSONObject updated = copy(session);
+        put(updated, "restUntil", restUntil);
+        try {
+            store.saveSessionEdit("active", session, updated, false);
+            put(session, "restUntil", restUntil);
+            activity.updateWorkoutTimers(session);
+        } catch (Store.StaleWorkout e) {
+            refreshAtCurrentPosition("workout");
+            toast(s("feedback_stale"));
+        } catch (SQLiteException e) {
+            toast(s("feedback_save_error"));
+        }
     }
 
     void finishWorkout(JSONObject session) {
@@ -1216,27 +1320,168 @@ final class TrainingScreen extends Screen {
                 });
     }
 
-    void replaceRemaining(JSONObject session, int rowIndex) {
+    private void chooseExerciseAdjustment(JSONObject session, int rowIndex) {
+        LinearLayout options = column();
+        ScrollView scroll = new ScrollView(activity);
+        scroll.addView(options);
+        AlertDialog dialog =
+                new AlertDialog.Builder(activity)
+                        .setTitle(s("adjust_exercise"))
+                        .setView(scroll)
+                        .setNegativeButton(s("cancel"), null)
+                        .create();
+        adjustmentButton(
+                options, dialog, "edit_pending_sets", () -> editPendingSets(session, rowIndex));
+        adjustmentButton(
+                options, dialog, "replace_remaining", () -> replaceRemaining(session, rowIndex));
+        adjustmentButton(
+                options, dialog, "skip_remaining_sets", () -> skipPendingSets(session, rowIndex));
+        activity.activeDialog = dialog;
+        dialog.show();
+    }
+
+    private void adjustmentButton(
+            LinearLayout options, AlertDialog dialog, String key, Runnable action) {
+        Button choice =
+                button(
+                        options,
+                        s(key),
+                        () -> {
+                            dialog.dismiss();
+                            action.run();
+                        });
+        choice.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        choice.setTextColor(MainActivity.FG);
+        choice.setTextSize(16);
+        choice.setMinHeight(activity.dp(54));
+        choice.setPadding(activity.dp(14), activity.dp(8), activity.dp(14), activity.dp(8));
+        choice.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0, 0, R.drawable.ic_action_chevron, 0);
+        choice.setCompoundDrawablePadding(activity.dp(10));
+        GradientDrawable surface = activity.shape(Color.rgb(43, 52, 39), 14);
+        surface.setStroke(activity.dp(1), Color.rgb(126, 153, 99));
+        choice.setBackgroundTintList(null);
+        choice.setBackground(new RippleDrawable(ColorStateList.valueOf(0x44B8F261), surface, null));
+        LinearLayout.LayoutParams layout = (LinearLayout.LayoutParams) choice.getLayoutParams();
+        layout.bottomMargin = activity.dp(8);
+    }
+
+    private void skipPendingSets(JSONObject session, int rowIndex) {
         JSONObject row = session.optJSONArray("rows").optJSONObject(rowIndex);
-        String exercise = row.optString("exerciseId");
-        if (Catalog.builtIn(exercise) < 0) {
-            toast(s("replace_no_candidates"));
+        LinearLayout form = column();
+        text(
+                form,
+                s(
+                        "skip_sets_confirmation",
+                        activity.exerciseName(row),
+                        WorkoutAdjustments.pendingRow(row)),
+                16);
+        String[] labels = new String[TrainingFeedback.REASONS.length];
+        for (int i = 0; i < labels.length; i++)
+            labels[i] = s("cause_" + TrainingFeedback.REASONS[i]);
+        Spinner reason = select(form, s("skip_reason_optional"), labels, 0);
+        dialog(
+                s("skip_remaining_sets"),
+                form,
+                s("confirm_skip_sets"),
+                () -> {
+                    WorkoutAdjustments.Preview preview;
+                    try {
+                        preview =
+                                WorkoutAdjustments.skipPending(
+                                        session,
+                                        rowIndex,
+                                        TrainingFeedback.REASONS[reason.getSelectedItemPosition()],
+                                        System.currentTimeMillis());
+                    } catch (WorkoutAdjustments.Invalid e) {
+                        throw new IllegalArgumentException(s(e.key));
+                    }
+                    applyWorkoutAdjustment(preview);
+                });
+    }
+
+    private void showSkipReason(LinearLayout parent, String reason) {
+        if (!"unknown".equals(reason))
+            text(parent, s("skip_reason_value", s("cause_" + reason)), 14);
+    }
+
+    private void editPendingSets(JSONObject session, int rowIndex) {
+        JSONObject row = session.optJSONArray("rows").optJSONObject(rowIndex);
+        int first = WorkoutAdjustments.firstPendingSet(row);
+        if (first < 0) {
+            toast(s("adjust_no_pending"));
             return;
         }
-        String[] required = Catalog.equipment(exercise);
-        if (Catalog.equipmentKnown(exercise) && required.length == 0) {
+        JSONObject next = row.optJSONArray("logs").optJSONObject(first);
+        LinearLayout form = column();
+        EditText weight =
+                input(
+                        form,
+                        s("weight_label"),
+                        next.optString("weight", row.optString("weight")),
+                        true);
+        EditText reps =
+                input(
+                        form,
+                        s("reps_label"),
+                        String.valueOf(TrainingFeedback.targetReps(row, next)),
+                        true);
+        EditText sets =
+                input(
+                        form,
+                        s("pending_sets_label"),
+                        String.valueOf(WorkoutAdjustments.pendingRow(row)),
+                        true);
+        reps.setInputType(InputType.TYPE_CLASS_NUMBER);
+        sets.setInputType(InputType.TYPE_CLASS_NUMBER);
+        dialog(
+                s("edit_pending_sets"),
+                form,
+                s("preview_adjustment"),
+                () -> {
+                    double selectedWeight = number(weight, 0, 1000);
+                    int selectedReps = integer(reps, 1, 100);
+                    int selectedSets = integer(sets, 1, WorkoutAdjustments.maxPendingSets(row));
+                    try {
+                        WorkoutAdjustments.Preview preview =
+                                WorkoutAdjustments.editPending(
+                                        session,
+                                        rowIndex,
+                                        selectedWeight,
+                                        selectedReps,
+                                        selectedSets,
+                                        System.currentTimeMillis());
+                        if (preview.changed == 0) toast(s("pending_sets_unchanged"));
+                        else showAdjustmentPreview(preview);
+                    } catch (WorkoutAdjustments.Invalid e) {
+                        throw new IllegalArgumentException(s(e.key));
+                    }
+                });
+    }
+
+    void replaceRemaining(JSONObject session, int rowIndex) {
+        JSONObject row = session.optJSONArray("rows").optJSONObject(rowIndex);
+        JSONObject exercise = activity.find("exercise", row.optString("exerciseId"));
+        String[] required = WorkoutAdjustments.equipmentFor(exercise == null ? row : exercise);
+        if (required != null && required.length == 0) {
             toast(s("replace_no_equipment"));
             return;
         }
-        String[] equipment = required.length == 0 ? Catalog.EQUIPMENT : required;
+        String[] equipment = required == null ? Catalog.EQUIPMENT : required;
         String[] labels = new String[equipment.length + 1];
         labels[0] = s("equipment_select");
-        for (int i = 0; i < equipment.length; i++) labels[i + 1] = s("eq_" + equipment[i]);
+        for (int i = 0; i < equipment.length; i++) {
+            String code = equipment[i];
+            labels[i + 1] =
+                    code.startsWith(WorkoutAdjustments.CUSTOM_EQUIPMENT_PREFIX)
+                            ? code.substring(WorkoutAdjustments.CUSTOM_EQUIPMENT_PREFIX.length())
+                            : s("eq_" + code);
+        }
         LinearLayout form = column();
         text(form, activity.exerciseName(row), 20);
         text(form, s("replacement_notice"), 14);
         Spinner unavailable =
-                select(form, s("unavailable_equipment"), labels, required.length == 0 ? 0 : 1);
+                select(form, s("unavailable_equipment"), labels, required == null ? 0 : 1);
         dialog(
                 s("replace_remaining"),
                 form,
@@ -1321,7 +1566,24 @@ final class TrainingScreen extends Screen {
                                 change.optInt("before"),
                                 change.optInt("after")),
                         16);
-            else {
+            else if (type.equals("sets")) {
+                text(
+                        parent,
+                        s(
+                                "set_adjustment_line",
+                                activity.exerciseName(change),
+                                change.optInt("before"),
+                                change.optInt("after"),
+                                num(change.optDouble("weight")),
+                                change.optInt("reps")),
+                        16);
+            } else if (type.equals("skip")) {
+                text(
+                        parent,
+                        s("skip_sets_change", activity.exerciseName(change), change.optInt("sets")),
+                        16);
+                showSkipReason(parent, change.optString("reason", "unknown"));
+            } else {
                 JSONObject target =
                         object(
                                 "exerciseId",
@@ -1355,36 +1617,29 @@ final class TrainingScreen extends Screen {
                             (preview.estimatedSeconds + 59) / 60),
                     16);
             if (preview.afterPending == 0) text(form, s("adjust_nothing_left"), 14);
-        } else text(form, s("replacement_weight_notice"), 14);
+        } else if (preview.type.equals("equipment")) text(form, s("replacement_weight_notice"), 14);
         describeChanges(form, preview.type, preview.changes);
-        ScrollView scroll = new ScrollView(activity);
-        scroll.addView(form);
-        AlertDialog d =
-                new AlertDialog.Builder(activity)
-                        .setTitle(s("adjustment_preview"))
-                        .setView(scroll)
-                        .setNegativeButton(s("cancel"), null)
-                        .setPositiveButton(s("apply_adjustment"), null)
-                        .create();
-        activity.activeDialog = d;
-        d.setOnShowListener(v ->
-                d.getButton(AlertDialog.BUTTON_POSITIVE)
-                        .setOnClickListener(w -> {
-                            try {
-                                store.applyAdjustment(preview);
-                                d.dismiss();
-                                show("workout");
-                            } catch (Store.StaleWorkout e) {
-                                d.dismiss();
-                                toast(s("adjust_stale"));
-                                show("workout");
-                            } catch (WorkoutAdjustments.Invalid e) {
-                                toast(s(e.key));
-                            } catch (android.database.sqlite.SQLiteException e) {
-                                toast(s("adjust_save_error"));
-                            }
-                        }));
-        d.show();
+        dialog(
+                s("adjustment_preview"),
+                form,
+                s("apply_adjustment"),
+                () -> applyWorkoutAdjustment(preview));
+    }
+
+    private void applyWorkoutAdjustment(WorkoutAdjustments.Preview preview) {
+        try {
+            store.applyAdjustment(preview);
+            if (preview.type.equals("equipment"))
+                activity.workoutExerciseIndex = preview.after.optInt("displayRow");
+            refreshAtCurrentPosition("workout");
+        } catch (Store.StaleWorkout e) {
+            toast(s("adjust_stale"));
+            show("workout");
+        } catch (WorkoutAdjustments.Invalid e) {
+            throw new IllegalArgumentException(s(e.key));
+        } catch (SQLiteException e) {
+            throw new IllegalArgumentException(s("adjust_save_error"));
+        }
     }
 
     void adjustmentHistory(JSONObject session, LinearLayout parent) {
@@ -1408,7 +1663,13 @@ final class TrainingScreen extends Screen {
                                                 date(event.optLong("at")),
                                                 event.optInt("minutes"),
                                                 event.optInt("removed"))
-                                        : s("equipment_audit", date(event.optLong("at"))),
+                                        : s(
+                                                type.equals("sets")
+                                                        ? "set_adjustment_audit"
+                                                        : type.equals("skip")
+                                                                ? "skip_sets_audit"
+                                                                : "equipment_audit",
+                                                date(event.optLong("at"))),
                                 16);
                         describeChanges(all, type, event.optJSONArray("changes"));
                     }

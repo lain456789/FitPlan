@@ -16,6 +16,7 @@ public final class CoachModels {
         public final String effort;
         public final String incompleteReason;
         public final String skipReason;
+        public final int targetReps;
 
         public SetLog(
                 double weight,
@@ -25,6 +26,18 @@ public final class CoachModels {
                 String effort,
                 String incompleteReason,
                 String skipReason) {
+            this(weight, reps, done, skipped, effort, incompleteReason, skipReason, 0);
+        }
+
+        SetLog(
+                double weight,
+                int reps,
+                boolean done,
+                boolean skipped,
+                String effort,
+                String incompleteReason,
+                String skipReason,
+                int targetReps) {
             this.weight = weight;
             this.reps = reps;
             this.done = done;
@@ -35,6 +48,7 @@ public final class CoachModels {
                             ? "unknown"
                             : incompleteReason;
             this.skipReason = skipReason == null ? "" : skipReason;
+            this.targetReps = targetReps;
         }
 
         public boolean isPerformed() {
@@ -43,7 +57,10 @@ public final class CoachModels {
 
         public String effectiveReason(String sessionEndReason) {
             if (skipped) {
-                return "equipment".equals(skipReason) ? "equipment" : "time";
+                if ("user".equals(skipReason)) return incompleteReason;
+                return "manual".equals(skipReason)
+                        ? "unknown"
+                        : "equipment".equals(skipReason) ? "equipment" : "time";
             }
             if ("none".equals(incompleteReason)) {
                 return "none";
@@ -110,7 +127,7 @@ public final class CoachModels {
                 return true;
             }
             for (SetLog log : logs) {
-                if (log.skipped) {
+                if (log.skipped || log.targetReps > 0) {
                     return true;
                 }
             }

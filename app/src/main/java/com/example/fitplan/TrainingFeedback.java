@@ -42,13 +42,22 @@ final class TrainingFeedback {
     }
 
     static String reason(JSONObject log, JSONObject session) {
-        if (log.optBoolean("skipped"))
-            return "equipment".equals(log.optString("skipReason")) ? "equipment" : "time";
+        if (log.optBoolean("skipped")) {
+            String reason = log.optString("skipReason");
+            if ("user".equals(reason)) return log.optString("incompleteReason", "unknown");
+            return "manual".equals(reason)
+                    ? "unknown"
+                    : "equipment".equals(reason) ? "equipment" : "time";
+        }
         String reason = log.optString("incompleteReason", "unknown");
         if (reason.equals("none")) return "none";
         if (!log.optBoolean("done") && reason.equals("unknown"))
             reason = session.optString("endReason", "unknown");
         return Arrays.asList(REASONS).contains(reason) ? reason : "unknown";
+    }
+
+    static int targetReps(JSONObject row, JSONObject log) {
+        return log.optInt("targetReps", row.optInt("reps"));
     }
 
     static JSONObject record(
@@ -82,7 +91,7 @@ final class TrainingFeedback {
         if (log.optBoolean("skipped") && !log.optBoolean("done"))
             throw new Invalid("feedback_cancelled");
         if ((done && reps == 0) || (!done && reps > 0)) throw new Invalid("feedback_done_reps");
-        boolean missed = !done || reps < row.optInt("reps");
+        boolean missed = !done || reps < targetReps(row, log);
         if (missed && (!Arrays.asList(REASONS).contains(reason) || reason.equals("unknown")))
             throw new Invalid("feedback_reason_required");
         put(log, "weight", weight);

@@ -22,9 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
-import android.widget.TextView;
-
-import androidx.viewpager.widget.ViewPager;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -205,57 +202,14 @@ final class ManualHistoryScreen extends Screen {
             return;
         }
 
-        LinearLayout navigation = new LinearLayout(activity);
-        navigation.setGravity(Gravity.CENTER_VERTICAL);
-        section.addView(navigation);
-        ManualExercisePager pager =
-                new ManualExercisePager(activity, count, (page, i) -> exerciseCard(page, draft, i));
-        pager.setTag("manual_exercise_pager");
-        Button previous =
-                pageArrow(
-                        navigation,
-                        "‹",
-                        "previous_exercise",
-                        () -> pager.setCurrentItem(pager.getCurrentItem() - 1, true));
-        TextView position = text(navigation, "", 14);
-        position.setTag("manual_exercise_position");
-        position.setGravity(Gravity.CENTER);
-        position.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button next =
-                pageArrow(
-                        navigation,
-                        "›",
-                        "next_exercise",
-                        () -> pager.setCurrentItem(pager.getCurrentItem() + 1, true));
-        section.addView(pager, new LinearLayout.LayoutParams(-1, -2));
-
-        int selected = Math.max(0, Math.min(draft.optInt("exercisePage"), count - 1));
-        ViewPager.SimpleOnPageChangeListener listener =
-                new ViewPager.SimpleOnPageChangeListener() {
-                    @Override
-                    public void onPageSelected(int index) {
-                        put(draft, "exercisePage", index);
-                        position.setText(s("manual_pager_position", index + 1, count));
-                        previous.setEnabled(index > 0);
-                        next.setEnabled(index < count - 1);
-                        previous.setAlpha(previous.isEnabled() ? 1f : .35f);
-                        next.setAlpha(next.isEnabled() ? 1f : .35f);
-                        pager.requestLayout();
-                    }
-                };
-        pager.setCurrentItem(selected, false);
-        listener.onPageSelected(selected);
-        pager.addOnPageChangeListener(listener);
-    }
-
-    private Button pageArrow(
-            LinearLayout navigation, String label, String description, Runnable action) {
-        Button arrow = button(navigation, label, action);
-        arrow.setContentDescription(s(description));
-        arrow.setPadding(0, 0, 0, 0);
-        arrow.setTextSize(22);
-        arrow.setLayoutParams(new LinearLayout.LayoutParams(activity.dp(48), activity.dp(48)));
-        return arrow;
+        ExercisePager pager =
+                new ExercisePager(activity, count, (page, i) -> exerciseCard(page, draft, i));
+        pager.attach(
+                section,
+                this,
+                "manual_exercise",
+                draft.optInt("exercisePage"),
+                index -> put(draft, "exercisePage", index));
     }
 
     private void exerciseCard(LinearLayout parent, JSONObject draft, int rowIndex) {

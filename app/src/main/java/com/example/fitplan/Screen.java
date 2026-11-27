@@ -4,8 +4,8 @@ import static com.example.fitplan.Store.object;
 
 import android.app.AlertDialog;
 import android.graphics.Typeface;
-import android.text.InputType;
 import android.net.Uri;
+import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -24,6 +24,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.gif.GifDrawable;
 import com.bumptech.glide.request.target.ImageViewTarget;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -492,14 +493,25 @@ abstract class Screen {
             final int index = j;
             JSONObject log = logs.optJSONObject(j);
             if (log.optBoolean("skipped") && !log.optBoolean("done")) {
-                text(
-                        exerciseCard,
-                        s(
-                                "equipment".equals(log.optString("skipReason"))
-                                        ? "set_replaced"
-                                        : "set_time_cancelled",
-                                j + 1),
-                        14);
+                String reason = log.optString("skipReason");
+                String status;
+                switch (reason) {
+                    case "user":
+                        status = "set_user_skipped";
+                        break;
+                    case "manual":
+                        status = "set_manually_cancelled";
+                        break;
+                    case "equipment":
+                        status = "set_replaced";
+                        break;
+                    default:
+                        status = "set_time_cancelled";
+                }
+                text(exerciseCard, s(status, j + 1), 14);
+                String cause = TrainingFeedback.reason(log, session);
+                if ("user".equals(reason) && !"unknown".equals(cause))
+                    text(exerciseCard, s("skip_reason_value", s("cause_" + cause)), 14);
                 continue;
             }
             if (!active && session.optBoolean("abandoned") && WorkoutAdjustments.isPending(log)) {

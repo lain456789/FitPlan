@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -62,12 +63,18 @@ public class MainActivity extends AppCompatActivity {
     String progressReturn = "history", manualReturn = "history";
     long selectedWeek;
     final Set<String> expandedReportSections = new HashSet<>();
+    final Bundle historyMonthExpansion = new Bundle();
+    HistoryReader.DateFilter historyDateFilter = HistoryReader.DateFilter.ALL;
+    long historyRangeStart, historyRangeEnd;
     JSONObject dailyDraft;
     JSONObject manualHistoryDraft;
+    String workoutSessionId = "";
+    int workoutExerciseIndex;
     Runnable captureDaily;
     TextView timerLabel;
     TextView elapsedLabel;
-    int lastRestLeft = -1;
+    Consumer<Boolean> updateRestControls;
+    private long lastRunningRestUntil;
     final List<CoachModels.ChatMessage> coachMessages = new ArrayList<>();
     boolean coachProfileExpanded = false;
     boolean coachSending = false;
@@ -82,42 +89,30 @@ public class MainActivity extends AppCompatActivity {
     private final Runnable ticker =
             new Runnable() {
                 public void run() {
-                    JSONObject active = store.first("active");
-                    if (timerLabel != null) {
-                        long restUntil = active == null ? 0 : active.optLong("restUntil");
-                        long left =
-                                active == null
-                                        ? 0
-                                        : Math.max(
-                                                0,
-                                                (restUntil - System.currentTimeMillis() + 999)
-                                                        / 1000);
-                        timerLabel.setText(
-                                left > 0
-                                        ? s(
-                                                "rest_left",
-                                                String.format(
-                                                        locale(), "%d:%02d", left / 60, left % 60))
-                                        : s("rest_done"));
-                        // 休息倒计时归零且计时器未被手动停止时震动一下。
-                        if (lastRestLeft > 0 && left == 0 && restUntil > 0) vibrate();
-                        lastRestLeft = (int) left;
-                    }
-                    if (elapsedLabel != null && active != null) {
-                        long elapsed =
-                                Math.max(0, System.currentTimeMillis() - active.optLong("started"));
-                        elapsedLabel.setText(
-                                s(
-                                        "workout_elapsed",
-                                        String.format(
-                                                locale(),
-                                                "%d:%02d",
-                                                elapsed / 60000,
-                                                (elapsed / 1000) % 60)));
-                    }
+                    if (timerLabel != null) updateWorkoutTimers(store.first("active"));
                     handler.postDelayed(this, 1000);
                 }
             };
+
+    void updateWorkoutTimers(JSONObject session) {
+        if (session == null || timerLabel == null) return;
+        long now = System.currentTimeMillis();
+        long restUntil = session.optLong("restUntil");
+        long left = Math.max(0, (restUntil - now + 999) / 1000);
+        boolean resting = left > 0;
+        timerLabel.setText(
+                resting
+                        ? s("rest_left", String.format(locale(), "%d:%02d", left / 60, left % 60))
+                        : s("rest_done"));
+        updateRestControls.accept(resting);
+        if (!resting && restUntil > 0 && restUntil == lastRunningRestUntil) vibrate();
+        lastRunningRestUntil = resting ? restUntil : 0;
+        long elapsed = Math.max(0, (now - session.optLong("started")) / 1000);
+        elapsedLabel.setText(
+                s(
+                        "workout_elapsed",
+                        String.format(locale(), "%d:%02d", elapsed / 60, elapsed % 60)));
+    }
 
     @Override
     protected void onCreate(Bundle state) {
@@ -127,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
         WindowCompat.enableEdgeToEdge(getWindow());
         setContentView(R.layout.activity_main);
         View brand = findViewById(R.id.app_brand);
-        LockableScrollView scroll = findViewById(R.id.scroller);
+        ScrollView scroll = findViewById(R.id.scroller);
         scroll.setOnScrollChangeListener((v, x, y, oldX, oldY) -> updateBrand(brand, y));
         brand.addOnLayoutChangeListener(
                 (v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
@@ -153,6 +148,8 @@ public class MainActivity extends AppCompatActivity {
         if (state != null) {
             page = state.getString("page", "home");
             detailId = state.getString("detail", "");
+            workoutSessionId = state.getString("workoutSessionId", "");
+            workoutExerciseIndex = state.getInt("workoutExerciseIndex");
             progressReturn = state.getString("progressReturn", "history");
             manualReturn =
                     "progress".equals(state.getString("manualReturn")) ? "progress" : "history";
@@ -161,6 +158,12 @@ public class MainActivity extends AppCompatActivity {
             exerciseId = state.getString("exercise", "");
             ArrayList<String> expanded = state.getStringArrayList("expandedReportSections");
             if (expanded != null) expandedReportSections.addAll(expanded);
+            Bundle months = state.getBundle("historyMonthExpansion");
+            if (months != null) historyMonthExpansion.putAll(months);
+            historyDateFilter =
+                    HistoryReader.DateFilter.valueOf(state.getString("historyDateFilter", "ALL"));
+            historyRangeStart = state.getLong("historyRangeStart");
+            historyRangeEnd = state.getLong("historyRangeEnd");
             try {
                 String draft = state.getString("draft");
                 if (draft != null) dailyDraft = new JSONObject(draft);
@@ -212,6 +215,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle state) {
         captureDraft();
         state.putString("page", page);
+        state.putString("workoutSessionId", workoutSessionId);
+        state.putInt("workoutExerciseIndex", workoutExerciseIndex);
         state.putString("detail", detailId);
         state.putString("progressReturn", progressReturn);
         state.putString("manualReturn", manualReturn);
@@ -219,6 +224,10 @@ public class MainActivity extends AppCompatActivity {
         state.putString("metric", metric);
         state.putString("exercise", exerciseId);
         state.putStringArrayList("expandedReportSections", new ArrayList<>(expandedReportSections));
+        state.putBundle("historyMonthExpansion", new Bundle(historyMonthExpansion));
+        state.putString("historyDateFilter", historyDateFilter.name());
+        state.putLong("historyRangeStart", historyRangeStart);
+        state.putLong("historyRangeEnd", historyRangeEnd);
         if (dailyDraft != null) state.putString("draft", dailyDraft.toString());
         if (manualHistoryDraft != null)
             state.putString("manualHistoryDraft", manualHistoryDraft.toString());
@@ -532,6 +541,7 @@ public class MainActivity extends AppCompatActivity {
         captureDaily = null;
         timerLabel = null;
         elapsedLabel = null;
+        updateRestControls = null;
         if (!route.equals("coach")) clearCoachSession();
         generation++;
         page = route;
@@ -541,8 +551,7 @@ public class MainActivity extends AppCompatActivity {
         homeActions.setVisibility(View.GONE);
         ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE))
                 .hideSoftInputFromWindow(content.getWindowToken(), 0);
-        LockableScrollView scroller = (LockableScrollView) findViewById(R.id.scroller);
-        scroller.setScrollable(!route.equals("workout"));
+        ScrollView scroller = findViewById(R.id.scroller);
         scroller.scrollTo(0, 0);
         renderNavigation();
         switch (route) {

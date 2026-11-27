@@ -1,10 +1,19 @@
 package com.example.fitplan;
 
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.swipeLeft;
+import static androidx.test.espresso.action.ViewActions.swipeRight;
+import static androidx.test.espresso.assertion.ViewAssertions.matches;
+import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.withTagValue;
+import static androidx.test.espresso.matcher.ViewMatchers.withText;
+
 import static com.example.fitplan.Store.copy;
 import static com.example.fitplan.Store.id;
 import static com.example.fitplan.Store.object;
 import static com.example.fitplan.Store.put;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -436,12 +445,12 @@ public class WorkoutAdjustmentTest {
         JSONObject session = fixture();
         List<JSONObject> alternatives =
                 WorkoutAdjustments.alternatives(session, 0, "bench", database.list("exercise"));
-        assertEquals(1, alternatives.size());
+        assertEquals(2, alternatives.size());
         assertEquals("builtin-17", alternatives.get(0).optString("id"));
         put(session, "unavailableEquipment", new JSONArray().put("dumbbell"));
         alternatives =
                 WorkoutAdjustments.alternatives(session, 0, "barbell", database.list("exercise"));
-        assertEquals(1, alternatives.size());
+        assertEquals(2, alternatives.size());
         try {
             WorkoutAdjustments.replace(
                     session,
@@ -467,9 +476,17 @@ public class WorkoutAdjustmentTest {
         }
         JSONObject incline = copy(session);
         put(incline.optJSONArray("rows").optJSONObject(0), "exerciseId", "builtin-1");
-        assertTrue(
+        assertEquals(
+                2,
                 WorkoutAdjustments.alternatives(incline, 0, "bench", database.list("exercise"))
-                        .isEmpty());
+                        .size());
+        JSONObject curls = copy(session);
+        put(curls.optJSONArray("rows").optJSONObject(0), "exerciseId", "builtin-12");
+        put(curls.optJSONArray("rows").optJSONObject(0), "part", "arms");
+        alternatives =
+                WorkoutAdjustments.alternatives(curls, 0, "dumbbell", database.list("exercise"));
+        assertEquals(1, alternatives.size());
+        assertEquals("builtin-20", alternatives.get(0).optString("id"));
     }
 
     @Test
@@ -543,13 +560,150 @@ public class WorkoutAdjustmentTest {
     }
 
     @Test
+    public void editingRemainingSetsUpdatesOnlyPendingLogsAndKeepsTheirOwnTargets() {
+        JSONObject session = fixture();
+        String completed = firstLog(session).toString();
+        try (ActivityScenario<MainActivity> scenario =
+                ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(a -> a.show("workout"));
+            idle();
+            scenario.onActivity(a -> {
+                click(a, a.s("adjust_exercise"));
+                click(a, a.s("edit_pending_sets"));
+            });
+            idle();
+            scenario.onActivity(a -> {
+                List<EditText> fields =
+                        collect(a.activeDialog.getWindow().getDecorView(), EditText.class);
+                fields.get(0).setText("32.5");
+                fields.get(1).setText("6");
+                fields.get(2).setText("1");
+                click(a, a.s("preview_adjustment"));
+            });
+            idle();
+            assertEquals(session.toString(), find("active", session.optString("id")).toString());
+            scenario.onActivity(a -> click(a, a.s("apply_adjustment")));
+            idle();
+            JSONObject reduced = find("active", session.optString("id"));
+            JSONObject row = reduced.optJSONArray("rows").optJSONObject(0);
+            assertEquals(1, WorkoutAdjustments.pendingRow(row));
+            assertEquals(2, row.optInt("sets"));
+            JSONObject increased =
+                    WorkoutAdjustments.editPending(
+                                    reduced, 0, 32.5, 6, 3, System.currentTimeMillis())
+                            .after;
+            assertEquals(
+                    3,
+                    WorkoutAdjustments.pendingRow(increased.optJSONArray("rows").optJSONObject(0)));
+            assertEquals(completed, firstLog(increased).toString());
+            scenario.onActivity(a -> click(a, a.s("complete_set")));
+            idle();
+            JSONObject recorded = find("active", session.optString("id"));
+            assertEquals(completed, firstLog(recorded).toString());
+            row = recorded.optJSONArray("rows").optJSONObject(0);
+            JSONObject newResult = row.optJSONArray("logs").optJSONObject(1);
+            assertTrue(newResult.optBoolean("done"));
+            assertEquals(32.5, newResult.optDouble("weight"), 0);
+            assertEquals(6, newResult.optInt("reps"));
+            assertEquals(
+                    1,
+                    ProgressReader.samples(new JSONArray().put(recorded), "builtin-0")
+                            .get(0)
+                            .met());
+        }
+    }
+
+    @Test
+    public void skippingRemainingSetsAcceptsNoReasonAndOnlyAffectsTheChosenExercise() {
+        JSONObject session = fixture();
+        String id = session.optString("id");
+        String completed = firstLog(session).toString();
+        String otherLogs =
+                session.optJSONArray("rows").optJSONObject(1).optJSONArray("logs").toString();
+        WorkoutAdjustments.Preview preview =
+                WorkoutAdjustments.skipPending(session, 0, "unknown", System.currentTimeMillis());
+        assertEquals(session.toString(), find("active", id).toString());
+        database.applyAdjustment(preview);
+        JSONObject saved = find("active", id);
+        JSONObject exercise = saved.optJSONArray("rows").optJSONObject(0);
+        JSONObject skipped = exercise.optJSONArray("logs").optJSONObject(1);
+        assertTrue(skipped.optBoolean("skipped"));
+        assertFalse(skipped.optBoolean("done"));
+        assertFalse(skipped.has("incompleteReason"));
+        assertEquals("unknown", TrainingFeedback.reason(skipped, saved));
+        assertEquals(completed, firstLog(saved).toString());
+        assertEquals(0, WorkoutAdjustments.pendingRow(exercise));
+        assertEquals(
+                otherLogs,
+                saved.optJSONArray("rows").optJSONObject(1).optJSONArray("logs").toString());
+    }
+
+    @Test
+    public void skippingFromTheWorkoutMenuSupportsCancelReasonAndReview() {
+        JSONObject session = fixture();
+        String id = session.optString("id");
+        String completed = firstLog(session).toString();
+        try (ActivityScenario<MainActivity> scenario =
+                ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(a -> a.show("workout"));
+            idle();
+            scenario.onActivity(a -> {
+                click(a, a.s("adjust_exercise"));
+                click(a, a.s("skip_remaining_sets"));
+            });
+            idle();
+            scenario.onActivity(a -> click(a, a.s("cancel")));
+            idle();
+            assertEquals(session.toString(), find("active", id).toString());
+
+            scenario.onActivity(a -> {
+                click(a, a.s("adjust_exercise"));
+                click(a, a.s("skip_remaining_sets"));
+            });
+            idle();
+            scenario.onActivity(a -> {
+                collect(a.activeDialog.getWindow().getDecorView(), Spinner.class)
+                        .get(0)
+                        .setSelection(2);
+                click(a, a.s("confirm_skip_sets"));
+            });
+            idle();
+            JSONObject saved = find("active", id);
+            JSONObject skipped =
+                    saved.optJSONArray("rows")
+                            .optJSONObject(0)
+                            .optJSONArray("logs")
+                            .optJSONObject(1);
+            assertEquals("equipment", TrainingFeedback.reason(skipped, saved));
+            assertEquals(
+                    "skip", saved.optJSONArray("adjustments").optJSONObject(0).optString("type"));
+            assertEquals(completed, firstLog(saved).toString());
+            assertEquals(2, WorkoutAdjustments.pending(saved));
+            onView(withText("已跳过剩余 2 组")).check(matches(isDisplayed()));
+            onView(withTagValue(is((Object) "workout_exercise_pager"))).perform(swipeLeft());
+            onView(withTagValue(is((Object) "workout_exercise_pager"))).perform(swipeRight());
+            onView(withText("已跳过剩余 2 组")).check(matches(isDisplayed()));
+            onView(withText("跳过原因 · 器械原因")).check(matches(isDisplayed()));
+
+            JSONObject finished =
+                    TrainingFeedback.finish(saved, "time", System.currentTimeMillis());
+            database.saveSessionEdit("active", saved, finished, true);
+            scenario.onActivity(a -> a.openHistory(finished));
+            onView(withText("第 2 组 · 已跳过")).check(matches(withText("第 2 组 · 已跳过")));
+            assertEquals(completed, firstLog(find("history", id)).toString());
+        }
+    }
+
+    @Test
     public void replacementUiRequiresNewWeightAndCanRecordAndFinishAfterApplying() {
         JSONObject session = fixture();
         String completed = firstLog(session).toString();
         try (ActivityScenario<MainActivity> scenario =
                 ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(a -> a.show("workout"));
+            idle();
             scenario.onActivity(a -> {
-                a.show("workout");
+                click(a, a.s("adjust_exercise"));
                 click(a, a.s("replace_remaining"));
             });
             idle();
@@ -581,9 +735,12 @@ public class WorkoutAdjustmentTest {
             screenshot("replacement-preview");
             scenario.onActivity(a -> click(a, a.s("apply_adjustment")));
             idle();
-            scenario.onActivity(a -> click(a, a.s("record_set", 1)));
-            idle();
-            scenario.onActivity(a -> click(a, a.s("save")));
+            onView(withText("动作 2 / 3 · 左右滑动")).check(matches(isDisplayed()));
+            onView(withTagValue(is((Object) "workout_exercise_pager"))).perform(swipeRight());
+            onView(withText("动作 1 / 3 · 左右滑动")).check(matches(isDisplayed()));
+            onView(withTagValue(is((Object) "workout_exercise_pager"))).perform(swipeLeft());
+            onView(withText("动作 2 / 3 · 左右滑动")).check(matches(isDisplayed()));
+            scenario.onActivity(a -> click(a, a.s("complete_set")));
             idle();
             JSONObject recorded = find("active", session.optString("id"));
             assertEquals(completed, firstLog(recorded).toString());

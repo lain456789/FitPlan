@@ -19,6 +19,9 @@ import java.util.TreeSet;
 
 /** Proposals are copies. Nothing is persisted until Store.applyAdjustment confirms the base. */
 final class WorkoutAdjustments {
+    private static final int MAX_SETS = 20;
+    static final String CUSTOM_EQUIPMENT_PREFIX = "other:";
+
     static final class Invalid extends IllegalArgumentException {
         final String key;
 
@@ -74,6 +77,17 @@ final class WorkoutAdjustments {
             for (int i = 0; i < logs.length(); i++)
                 if (logs.optJSONObject(i) != null && isPending(logs.optJSONObject(i))) total++;
         return total;
+    }
+
+    static int firstPendingSet(JSONObject row) {
+        JSONArray logs = row.optJSONArray("logs");
+        if (logs != null) {
+            for (int i = 0; i < logs.length(); i++) {
+                JSONObject log = logs.optJSONObject(i);
+                if (log != null && isPending(log)) return i;
+            }
+        }
+        return -1;
     }
 
     static int pending(JSONObject session) {
@@ -136,6 +150,187 @@ final class WorkoutAdjustments {
         put(change, "at", now);
         put(change, "id", id());
         next.optJSONArray("adjustments").put(change);
+    }
+
+    static int maxPendingSets(JSONObject row) {
+        JSONArray logs = row.optJSONArray("logs");
+        int recorded = 0;
+        for (int i = 0; i < logs.length(); i++) {
+            JSONObject log = logs.optJSONObject(i);
+            if (log.optBoolean("done") || log.optBoolean("resolved")) recorded++;
+        }
+        return Math.max(0, MAX_SETS - recorded);
+    }
+
+    static Preview editPending(
+            JSONObject session, int rowIndex, double weight, int reps, int sets, long now) {
+        JSONObject next = prepare(session);
+        JSONObject row = next.optJSONArray("rows").optJSONObject(rowIndex);
+        if (row == null
+                || !Double.isFinite(weight)
+                || weight < 0
+                || weight > 1000
+                || reps < 1
+                || reps > 100
+                || sets < 1
+                || sets > maxPendingSets(row)) throw new Invalid("adjust_invalid");
+        int before = pendingRow(row);
+        if (before == 0) throw new Invalid("adjust_no_pending");
+
+        JSONArray logs = row.optJSONArray("logs");
+        JSONArray updated = new JSONArray();
+        int toKeep = Math.min(before, sets);
+        int toAdd = Math.max(0, sets - before);
+        boolean changed = before != sets;
+        int targetSets = sets;
+        for (int i = 0; i < logs.length(); i++) {
+            JSONObject log = logs.optJSONObject(i);
+            if (isPending(log)) {
+                if (toKeep > 0) {
+                    toKeep--;
+                    if (Double.compare(log.optDouble("weight", row.optDouble("weight")), weight)
+                                    != 0
+                            || TrainingFeedback.targetReps(row, log) != reps) {
+                        setPendingTarget(log, weight, reps);
+                        changed = true;
+                    }
+                } else {
+                    put(log, "skipped", true);
+                    put(log, "skipReason", "manual");
+                }
+            } else if (toAdd > 0
+                    && log.optBoolean("skipped")
+                    && !log.optBoolean("done")
+                    && !log.optBoolean("resolved")
+                    && "manual".equals(log.optString("skipReason"))) {
+                log = newPendingSet(weight, reps);
+                toAdd--;
+            } else if (!log.optBoolean("skipped") || log.optBoolean("done")) {
+                targetSets++;
+            }
+            updated.put(log);
+        }
+        while (toAdd > 0) {
+            updated.put(newPendingSet(weight, reps));
+            toAdd--;
+        }
+        if (!changed)
+            return new Preview(
+                    session, next, "sets", new JSONArray(), 0, estimateSeconds(next, now));
+        put(row, "logs", updated);
+        put(row, "sets", targetSets);
+        put(row, "pendingEdited", true);
+        JSONArray changes =
+                new JSONArray()
+                        .put(
+                                object(
+                                        "exerciseId",
+                                        row.optString("exerciseId"),
+                                        "name",
+                                        row.optString("name"),
+                                        "before",
+                                        before,
+                                        "after",
+                                        sets,
+                                        "weight",
+                                        weight,
+                                        "reps",
+                                        reps));
+        event(next, object("type", "sets", "changes", arrayCopy(changes)), now);
+        return new Preview(session, next, "sets", changes, 1, estimateSeconds(next, now));
+    }
+
+    private static JSONObject newPendingSet(double weight, int reps) {
+        return object("weight", weight, "reps", reps, "targetReps", reps, "done", false);
+    }
+
+    private static void setPendingTarget(JSONObject log, double weight, int reps) {
+        put(log, "weight", weight);
+        put(log, "reps", reps);
+        put(log, "targetReps", reps);
+    }
+
+    static Preview skipPending(JSONObject session, int rowIndex, String reason, long now) {
+        if (!Arrays.asList(TrainingFeedback.REASONS).contains(reason))
+            throw new Invalid("adjust_invalid");
+        JSONObject next = prepare(session);
+        JSONObject row = next.optJSONArray("rows").optJSONObject(rowIndex);
+        if (row == null) throw new Invalid("adjust_invalid");
+        JSONArray logs = row.optJSONArray("logs");
+        int skipped = 0;
+        for (int i = 0; i < logs.length(); i++) {
+            JSONObject log = logs.optJSONObject(i);
+            if (!isPending(log)) continue;
+            put(log, "skipped", true);
+            put(log, "skipReason", "user");
+            if (!"unknown".equals(reason)) put(log, "incompleteReason", reason);
+            skipped++;
+        }
+        if (skipped == 0) throw new Invalid("adjust_no_pending");
+        JSONArray changes =
+                new JSONArray()
+                        .put(
+                                object(
+                                        "exerciseId",
+                                        row.optString("exerciseId"),
+                                        "name",
+                                        row.optString("name"),
+                                        "sets",
+                                        skipped,
+                                        "reason",
+                                        reason));
+        event(next, object("type", "skip", "changes", arrayCopy(changes)), now);
+        return new Preview(session, next, "skip", changes, skipped, estimateSeconds(next, now));
+    }
+
+    static String[] equipmentFor(JSONObject exercise) {
+        String id = exercise.optString("id", exercise.optString("exerciseId"));
+        if (Catalog.builtIn(id) >= 0)
+            return Catalog.equipmentKnown(id) ? Catalog.equipment(id) : null;
+        JSONArray equipment = exercise.optJSONArray("equipment");
+        if (equipment == null) return null;
+        List<String> codes = new ArrayList<>();
+        for (int i = 0; i < equipment.length(); i++) codes.add(equipment.optString(i));
+        String other = exercise.optString("otherEquipment").trim();
+        if (!other.isEmpty()) codes.add(CUSTOM_EQUIPMENT_PREFIX + other);
+        return codes.toArray(new String[0]);
+    }
+
+    private static boolean canReplace(JSONObject source, JSONObject target, Set<String> blocked) {
+        String sourceId = source.optString("exerciseId");
+        String targetId = target.optString("id");
+        String part = Catalog.exercisePart(sourceId, source.optString("part"));
+        if (targetId.isEmpty()
+                || sourceId.equals(targetId)
+                || part.equals("unknown")
+                || !part.equals(Catalog.exercisePart(targetId, target.optString("part"))))
+            return false;
+        int sourceIndex = Catalog.builtIn(sourceId), targetIndex = Catalog.builtIn(targetId);
+        String sourceMuscle = source.optString("muscle"), targetMuscle = target.optString("muscle");
+        boolean sourceHasMuscle = sourceIndex >= 0 || !sourceMuscle.isEmpty();
+        boolean targetHasMuscle = targetIndex >= 0 || !targetMuscle.isEmpty();
+        if (sourceHasMuscle && targetHasMuscle) {
+            boolean sameMuscle = false;
+            for (MuscleCatalog group : MuscleCatalog.values()) {
+                if (!group.part.equals(part)) continue;
+                if (matchesMuscle(group, sourceIndex, sourceMuscle)
+                        && matchesMuscle(group, targetIndex, targetMuscle)) {
+                    sameMuscle = true;
+                    break;
+                }
+            }
+            if (!sameMuscle) return false;
+        }
+        String[] equipment = equipmentFor(target);
+        if (equipment == null) return false;
+        for (String item : equipment) if (blocked.contains(item)) return false;
+        return true;
+    }
+
+    private static boolean matchesMuscle(MuscleCatalog group, int builtIn, String muscle) {
+        if (builtIn < 0) return group.key.equals(muscle);
+        for (int index : group.primary) if (builtIn == index) return true;
+        return false;
     }
 
     static Preview shorten(JSONObject session, int minutes, long now) {
@@ -202,7 +397,8 @@ final class WorkoutAdjustments {
     }
 
     static Set<String> blocked(JSONObject session, String newlyUnavailable) {
-        if (!Arrays.asList(Catalog.EQUIPMENT).contains(newlyUnavailable))
+        if (!Arrays.asList(Catalog.EQUIPMENT).contains(newlyUnavailable)
+                && !newlyUnavailable.startsWith(CUSTOM_EQUIPMENT_PREFIX))
             throw new Invalid("replace_equipment_required");
         Set<String> blocked = new TreeSet<>();
         JSONArray previous = session.optJSONArray("unavailableEquipment");
@@ -220,13 +416,33 @@ final class WorkoutAdjustments {
         JSONObject source = rows.optJSONObject(rowIndex);
         if (pendingRow(source) == 0) throw new Invalid("adjust_no_pending");
         Set<String> blocked = blocked(session, unavailable);
+        JSONObject sourceExercise = copy(source);
+        if (sourceExercise.optString("muscle").isEmpty()) {
+            for (int i = 0; i < catalogue.length(); i++) {
+                JSONObject entry = catalogue.optJSONObject(i);
+                if (entry != null && source.optString("exerciseId").equals(entry.optString("id"))) {
+                    put(sourceExercise, "muscle", entry.optString("muscle"));
+                    break;
+                }
+            }
+        }
         List<JSONObject> result = new ArrayList<>();
         for (int i = 0; i < catalogue.length(); i++) {
             JSONObject target = catalogue.optJSONObject(i);
-            if (Catalog.canReplace(source.optString("exerciseId"), target.optString("id"), blocked))
-                result.add(target);
+            if (target != null && canReplace(sourceExercise, target, blocked)) result.add(target);
         }
-        result.sort(Comparator.comparingInt(ex -> Catalog.builtIn(ex.optString("id"))));
+        result.sort(
+                Comparator.<JSONObject>comparingInt(ex ->
+                                Catalog.canReplace(
+                                                source.optString("exerciseId"),
+                                                ex.optString("id"),
+                                                blocked)
+                                        ? 0
+                                        : 1)
+                        .thenComparingInt(ex ->
+                                Catalog.builtIn(ex.optString("id")) < 0
+                                        ? Catalog.EXERCISES.length
+                                        : Catalog.builtIn(ex.optString("id"))));
         return result;
     }
 
@@ -248,8 +464,7 @@ final class WorkoutAdjustments {
         if (count == 0) throw new Invalid("adjust_no_pending");
         Set<String> blocked = blocked(session, unavailable);
         String targetId = target.optString("id");
-        if (!Catalog.canReplace(source.optString("exerciseId"), targetId, blocked))
-            throw new Invalid("replace_no_candidates");
+        if (!canReplace(source, target, blocked)) throw new Invalid("replace_no_candidates");
         JSONArray logs = source.optJSONArray("logs");
         for (int i = 0; i < logs.length(); i++)
             if (isPending(logs.optJSONObject(i))) {
@@ -269,9 +484,11 @@ final class WorkoutAdjustments {
                         "exerciseId",
                         targetId,
                         "name",
-                        Catalog.EXERCISES[builtin][0],
+                        builtin >= 0 ? Catalog.EXERCISES[builtin][0] : target.optString("name"),
                         "part",
-                        Catalog.EXERCISES[builtin][1],
+                        Catalog.exercisePart(targetId, target.optString("part")),
+                        "muscle",
+                        target.optString("muscle"),
                         "sets",
                         count,
                         "reps",

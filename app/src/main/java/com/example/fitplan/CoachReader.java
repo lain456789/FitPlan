@@ -131,7 +131,8 @@ final class CoachReader {
                                         l.optBoolean("skipped", false),
                                         l.optString("effort", "unknown"),
                                         l.optString("incompleteReason", "unknown"),
-                                        l.optString("skipReason", "")));
+                                        l.optString("skipReason", ""),
+                                        l.optInt("targetReps")));
                     }
                 }
                 rows.add(

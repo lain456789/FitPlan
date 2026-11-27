@@ -1,11 +1,28 @@
 package com.example.fitplan;
 
+import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.graphics.Typeface;
+import android.graphics.drawable.RotateDrawable;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import androidx.core.view.ViewCompat;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.function.LongConsumer;
 
 final class RecordsScreen extends Screen {
     RecordsScreen(MainActivity activity) {
@@ -14,36 +31,215 @@ final class RecordsScreen extends Screen {
 
     void history() {
         activity.recordTabs();
-        title(s("history_title"));
-        List<JSONObject> sessions = HistoryReader.sorted(store.list("history"));
-        button(content, s("progress_title"), () -> show("progress"));
-        if (sessions.size() == 0) text(content, s("empty_history"), 16);
-        for (int i = 0; i < sessions.size(); i++) {
-            JSONObject session = sessions.get(i);
-            LinearLayout c = card(content);
-            text(c, activity.planName(session), 20);
-            if ("manual".equals(session.optString("recordSource"))) text(c, s("manual_source"), 14);
-            if (session.optBoolean("abandoned")) text(c, s("abandoned_workout"), 14);
-            text(
-                    c,
-                    s(
-                            "history_line",
-                            date(session.optLong("finished")),
-                            performedSets(session),
-                            num(volume(session))),
-                    14);
-            button(c, s("correct_record"), () -> activity.openHistory(session));
-            button(
-                    c,
-                    s("delete_record"),
-                    () ->
-                            confirm(
-                                    s("delete_record_confirm"),
-                                    () -> {
-                                        store.delete(session.optString("id"));
-                                        show("history");
-                                    }));
+        LinearLayout heading = new LinearLayout(activity);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        content.addView(heading);
+        TextView title = text(heading, s("history_title"), 24);
+        title.setTypeface(null, Typeface.BOLD);
+        title.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button dates = button(heading, s("history_date_filter"), this::chooseDateFilter);
+        dates.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
+        dates.setMinHeight(activity.dp(48));
+        HistoryReader.DateFilter filter = activity.historyDateFilter;
+        if (filter != HistoryReader.DateFilter.ALL) {
+            String selected =
+                    filter == HistoryReader.DateFilter.CUSTOM
+                            ? s(
+                                    "history_range_value",
+                                    dayLabel(activity.historyRangeStart),
+                                    dayLabel(activity.historyRangeEnd))
+                            : s(filter.label);
+            text(content, selected, 14);
         }
+        button(content, s("progress_title"), () -> show("progress"));
+        Map<Long, List<JSONObject>> months =
+                HistoryReader.byMonth(
+                        store.list("history"),
+                        filter,
+                        activity.historyRangeStart,
+                        activity.historyRangeEnd,
+                        System.currentTimeMillis(),
+                        TimeZone.getDefault());
+        if (months.isEmpty()) {
+            text(
+                    content,
+                    s(
+                            filter == HistoryReader.DateFilter.ALL
+                                    ? "empty_history"
+                                    : "empty_history_range"),
+                    16);
+            return;
+        }
+        SimpleDateFormat monthLabel =
+                new SimpleDateFormat(s("history_month_pattern"), activity.locale());
+        boolean latest = true;
+        for (Map.Entry<Long, List<JSONObject>> month : months.entrySet()) {
+            renderMonth(
+                    month.getKey(),
+                    monthLabel.format(new Date(month.getKey())),
+                    month.getValue(),
+                    latest);
+            latest = false;
+        }
+    }
+
+    private void renderMonth(long month, String label, List<JSONObject> sessions, boolean latest) {
+        String key = Long.toString(month);
+        LinearLayout group = new LinearLayout(activity);
+        group.setOrientation(LinearLayout.VERTICAL);
+        content.addView(group, new LinearLayout.LayoutParams(-1, -2));
+        RotateDrawable arrow = new RotateDrawable();
+        arrow.setDrawable(activity.getDrawable(R.drawable.ic_report_expand));
+        arrow.setFromDegrees(0);
+        arrow.setToDegrees(180);
+        String heading =
+                s(
+                        sessions.size() == 1
+                                ? "history_month_heading_one"
+                                : "history_month_heading",
+                        label,
+                        sessions.size());
+        Button header = button(group, heading, () -> {});
+        header.setMinHeight(activity.dp(48));
+        header.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        header.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, arrow, null);
+        header.setCompoundDrawablePadding(activity.dp(8));
+        LinearLayout records = new LinearLayout(activity);
+        records.setOrientation(LinearLayout.VERTICAL);
+        group.addView(records, new LinearLayout.LayoutParams(-1, -2));
+        Runnable update =
+                () -> {
+                    boolean expanded = activity.historyMonthExpansion.getBoolean(key, latest);
+                    records.setVisibility(expanded ? View.VISIBLE : View.GONE);
+                    if (expanded) {
+                        for (JSONObject session : sessions) historyCard(records, session);
+                    } else {
+                        records.removeAllViews();
+                    }
+                    arrow.setLevel(expanded ? 10000 : 0);
+                    ViewCompat.setStateDescription(
+                            header, s(expanded ? "section_expanded" : "section_collapsed"));
+                };
+        header.setOnClickListener(view -> {
+            boolean expanded = activity.historyMonthExpansion.getBoolean(key, latest);
+            activity.historyMonthExpansion.putBoolean(key, !expanded);
+            update.run();
+        });
+        update.run();
+    }
+
+    private void historyCard(LinearLayout parent, JSONObject session) {
+        LinearLayout c = card(parent);
+        text(c, activity.planName(session), 20);
+        if ("manual".equals(session.optString("recordSource"))) text(c, s("manual_source"), 14);
+        if (session.optBoolean("abandoned")) text(c, s("abandoned_workout"), 14);
+        text(
+                c,
+                s(
+                        "history_line",
+                        date(session.optLong("finished")),
+                        performedSets(session),
+                        num(volume(session))),
+                14);
+        button(c, s("correct_record"), () -> activity.openHistory(session));
+        button(
+                c,
+                s("delete_record"),
+                () ->
+                        confirm(
+                                s("delete_record_confirm"),
+                                () -> {
+                                    store.delete(session.optString("id"));
+                                    refreshAtCurrentPosition("history");
+                                }));
+    }
+
+    private void chooseDateFilter() {
+        HistoryReader.DateFilter[] filters = HistoryReader.DateFilter.values();
+        String[] options = new String[filters.length];
+        for (int i = 0; i < filters.length; i++) options[i] = s(filters[i].label);
+        activity.activeDialog =
+                new AlertDialog.Builder(activity)
+                        .setTitle(s("history_date_filter"))
+                        .setSingleChoiceItems(
+                                options,
+                                activity.historyDateFilter.ordinal(),
+                                (dialog, index) -> {
+                                    dialog.dismiss();
+                                    HistoryReader.DateFilter selected = filters[index];
+                                    if (selected == HistoryReader.DateFilter.CUSTOM)
+                                        chooseDateRange();
+                                    else applyDateFilter(selected);
+                                })
+                        .setNegativeButton(s("cancel"), null)
+                        .show();
+    }
+
+    private void chooseDateRange() {
+        long today = ReportEngine.dayStart(System.currentTimeMillis(), TimeZone.getDefault());
+        long[] range = {
+            activity.historyRangeStart == 0 ? today : activity.historyRangeStart,
+            activity.historyRangeEnd == 0 ? today : activity.historyRangeEnd
+        };
+        LinearLayout form = column();
+        addRangeDateButton(form, range, 0, "history_start_date");
+        addRangeDateButton(form, range, 1, "history_end_date");
+        dialog(
+                s("history_custom_range"),
+                form,
+                s("history_apply_dates"),
+                () -> {
+                    if (range[0] > range[1])
+                        throw new IllegalArgumentException(s("history_invalid_range"));
+                    activity.historyRangeStart = range[0];
+                    activity.historyRangeEnd = range[1];
+                    applyDateFilter(HistoryReader.DateFilter.CUSTOM);
+                });
+    }
+
+    private void addRangeDateButton(LinearLayout form, long[] range, int index, String label) {
+        Button date = button(form, s(label, dayLabel(range[index])), () -> {});
+        date.setOnClickListener(view ->
+                pickDate(
+                        range[index],
+                        picked -> {
+                            range[index] = picked;
+                            date.setText(s(label, dayLabel(picked)));
+                        }));
+    }
+
+    private void pickDate(long initial, LongConsumer onSelected) {
+        Calendar date = Calendar.getInstance();
+        date.setTimeInMillis(initial);
+        AlertDialog parent = activity.activeDialog;
+        DatePickerDialog picker =
+                new DatePickerDialog(
+                        activity,
+                        (view, year, month, day) -> {
+                            date.clear();
+                            date.set(year, month, day);
+                            onSelected.accept(date.getTimeInMillis());
+                        },
+                        date.get(Calendar.YEAR),
+                        date.get(Calendar.MONTH),
+                        date.get(Calendar.DAY_OF_MONTH));
+        picker.getDatePicker().setMaxDate(System.currentTimeMillis());
+        picker.setOnDismissListener(dialog -> {
+            if (activity.activeDialog == picker) activity.activeDialog = parent;
+        });
+        activity.activeDialog = picker;
+        picker.show();
+    }
+
+    private void applyDateFilter(HistoryReader.DateFilter filter) {
+        activity.historyDateFilter = filter;
+        activity.historyMonthExpansion.clear();
+        show("history");
+    }
+
+    private String dayLabel(long date) {
+        return DateFormat.getDateInstance(DateFormat.MEDIUM, activity.locale())
+                .format(new Date(date));
     }
 
     void historyDetail(JSONObject session) {

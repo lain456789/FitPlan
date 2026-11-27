@@ -29,7 +29,10 @@ final class ProgressReader {
                 if (row == null || !exerciseId.equals(row.optString("exerciseId"))) continue;
                 JSONArray logs = row.optJSONArray("logs");
                 if (logs == null) continue;
-                boolean adjusted = row.optBoolean("retired") || row.has("replacementOf");
+                boolean adjusted =
+                        row.optBoolean("retired")
+                                || row.has("replacementOf")
+                                || row.optBoolean("pendingEdited");
                 List<ProgressEngine.SetResult> data = new ArrayList<>();
                 for (int s = 0; s < logs.length(); s++) {
                     JSONObject log = logs.optJSONObject(s);
@@ -48,7 +51,8 @@ final class ProgressReader {
                                     log.optBoolean("done"),
                                     log.optBoolean("skipped"),
                                     Math.max(0, effort),
-                                    TrainingFeedback.reason(log, session)));
+                                    TrainingFeedback.reason(log, session),
+                                    log.optInt("targetReps")));
                 }
                 result.add(
                         new ProgressEngine.Sample(
