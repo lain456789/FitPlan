@@ -5,18 +5,25 @@ import static com.example.fitplan.Store.object;
 import android.app.AlertDialog;
 import android.graphics.Typeface;
 import android.text.InputType;
+import android.net.Uri;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
+import com.bumptech.glide.request.target.ImageViewTarget;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -54,6 +61,15 @@ abstract class Screen {
         R.drawable.builtin_27,
         R.drawable.builtin_28,
         R.drawable.builtin_29
+    };
+
+    private static final int[] DEMOS = {
+        R.raw.demo_0, R.raw.demo_1, R.raw.demo_2, R.raw.demo_3, R.raw.demo_4,
+        R.raw.demo_5, R.raw.demo_6, R.raw.demo_7, R.raw.demo_8, R.raw.demo_9,
+        R.raw.demo_10, R.raw.demo_11, R.raw.demo_12, R.raw.demo_13, R.raw.demo_14,
+        R.raw.demo_15, R.raw.demo_16, R.raw.demo_17, R.raw.demo_18, R.raw.demo_19,
+        R.raw.demo_20, R.raw.demo_21, R.raw.demo_22, R.raw.demo_23, R.raw.demo_24,
+        R.raw.demo_25, R.raw.demo_26, R.raw.demo_27, R.raw.demo_28, R.raw.demo_29
     };
 
     final MainActivity activity;
@@ -242,29 +258,108 @@ abstract class Screen {
 
     LinearLayout illustratedHeader(LinearLayout item, String id) {
         int index = Catalog.builtIn(id);
+        return headerWithImage(item, index >= 0 ? staticOrDemo(index, false) : null);
+    }
+
+    View exerciseThumbnail(String id, String name) {
+        int index = Catalog.builtIn(id);
+        if (index >= 0) return staticOrDemo(index, true);
+        CustomMedia files = CustomMedia.existing(activity, id);
+        if (files == null) return null;
+        ImageView image = new ImageView(activity);
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        Glide.with(activity).asBitmap().load(files.thumb).diskCacheStrategy(DiskCacheStrategy.NONE).into(image);
+        boolean animated = files.gif.isFile();
+        return clickableThumbnail(image, animated, s(animated ? "exercise_demo" : "exercise_photo", name),
+                () -> showCustomMedia(files, animated, name));
+    }
+
+    private void showCustomMedia(CustomMedia files, boolean animated, String name) {
+        ImageView full = new ImageView(activity);
+        full.setAdjustViewBounds(true);
+        full.setMinimumHeight(activity.dp(240));
+        full.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle(name).setView(full)
+                .setPositiveButton(s("demo_close"), null).create();
+        dialog.setOnDismissListener(d -> Glide.with(activity.getApplicationContext()).clear(full));
+        dialog.show();
+        if (animated) {
+            Glide.with(activity).asGif().load(files.gif).override(1024, 1024)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE).into(new ImageViewTarget<GifDrawable>(full) {
+                        @Override protected void setResource(GifDrawable gif) {
+                            if (gif != null) gif.setLoopCount(GifDrawable.LOOP_FOREVER);
+                            full.setImageDrawable(gif);
+                        }
+                    });
+        } else {
+            Glide.with(activity).asBitmap().load(files.photo).override(1280, 1280)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE).into(full);
+        }
+    }
+
+    LinearLayout headerWithImage(LinearLayout item, View thumbnail) {
         LinearLayout labels = item;
-        if (index >= 0 && index < EXERCISE_IMAGES.length) {
+        if (thumbnail != null) {
             item.setOrientation(LinearLayout.HORIZONTAL);
             item.setGravity(Gravity.CENTER_VERTICAL);
             labels = new LinearLayout(activity);
             labels.setOrientation(LinearLayout.VERTICAL);
             item.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
 
-            ImageView image = new ImageView(activity);
-            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            image.setImageResource(EXERCISE_IMAGES[index]);
-            image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             int size = activity.dp(96);
             LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(size, size);
             layout.setMarginStart(activity.dp(8));
-            item.addView(image, layout);
+            item.addView(thumbnail, layout);
         }
         return labels;
     }
 
-    int exerciseImage(String id) {
-        int index = Catalog.builtIn(id);
-        return index >= 0 && index < EXERCISE_IMAGES.length ? EXERCISE_IMAGES[index] : 0;
+    private View clickableThumbnail(ImageView image, boolean animated, String title, Runnable open) {
+        FrameLayout frame = new FrameLayout(activity);
+        frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
+        if (animated) {
+            TextView badge = new TextView(activity);
+            badge.setText("▶");
+            badge.setTextSize(12);
+            badge.setTextColor(0xFFFFFFFF);
+            badge.setGravity(Gravity.CENTER);
+            badge.setBackground(activity.shape(0xCC262A30, 16));
+            badge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            int size = activity.dp(24);
+            frame.addView(badge, new FrameLayout.LayoutParams(size, size, Gravity.BOTTOM | Gravity.END));
+        }
+        frame.setContentDescription(title);
+        frame.setFocusable(true);
+        frame.setOnClickListener(v -> open.run());
+        return frame;
+    }
+
+    private View staticOrDemo(int index, boolean preview) {
+        ImageView image = new ImageView(activity);
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        image.setImageResource(EXERCISE_IMAGES[index]);
+        image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        String title = s("exercise_demo", s("ex" + index));
+        return preview ? clickableThumbnail(image, true, title, () -> showDemo(index, title)) : image;
+    }
+
+    private void showDemo(int index, String title) {
+        FrameLayout stage = new FrameLayout(activity);
+        VideoView video = new VideoView(activity);
+        stage.addView(video, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER));
+        AlertDialog dialog = new AlertDialog.Builder(activity)
+                .setTitle(title)
+                .setView(stage)
+                .setPositiveButton(s("demo_close"), null)
+                .create();
+        dialog.setOnDismissListener(d -> video.stopPlayback());
+        video.setOnPreparedListener(player -> {
+            player.setVolume(0f, 0f);
+            player.setLooping(true);
+        });
+        dialog.show();
+        video.setVideoURI(Uri.parse("android.resource://" + activity.getPackageName() + "/" + DEMOS[index]));
+        video.start();
     }
 
     /** Fixed order for exercise pickers: by body part, then localized name, then id. */

@@ -482,4 +482,10 @@
     <string name="section_collapsed">Collapsed</string>
     <string name="daily_minutes_max">Available time cannot exceed 180 minutes.</string>
     <string name="daily_minutes_invalid">Enter a whole number from 10 to 180 minutes.</string>
+    <string name="exercise_demo">%1$s · Exercise demo</string>
+    <string name="demo_close">Close</string>
+    <string name="choose_media">Choose photo or GIF (optional)</string>
+    <string name="clear_media">Remove selected image</string>
+    <string name="media_failed">Could not save. Check storage or try a smaller valid image.</string>
+    <string name="exercise_photo">%1$s · View photo</string>
 </resources>

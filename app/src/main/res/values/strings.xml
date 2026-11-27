@@ -482,4 +482,10 @@
     <string name="section_collapsed">已收起</string>
     <string name="daily_minutes_max">可用时间不能超过 180 分钟，请修改后再生成计划。</string>
     <string name="daily_minutes_invalid">请填写 10–180 范围内的整数分钟数。</string>
+    <string name="exercise_demo">%1$s · 动作演示</string>
+    <string name="demo_close">关闭</string>
+    <string name="choose_media">选择照片或 GIF（可选）</string>
+    <string name="clear_media">移除已选图片</string>
+    <string name="media_failed">保存失败。请检查存储空间，或尝试较小的有效图片。</string>
+    <string name="exercise_photo">%1$s · 查看图片</string>
 </resources>

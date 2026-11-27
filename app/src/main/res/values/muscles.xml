@@ -3,10 +3,10 @@
     <string name="browse_muscle">按肌群</string>
     <string name="map_faces">正面　　　　　背面</string>
     <string name="map_pick">点击人体图或选择肌群</string>
-    <string name="map_all">全部内置动作</string>
+    <string name="map_all">全部动作</string>
     <string name="map_primary">主要训练 · %1$d 个动作</string>
     <string name="map_secondary">协同参与 · %1$d 个动作</string>
-    <string name="map_empty">暂无以此肌群为主要目标的内置动作</string>
+    <string name="map_empty">暂无明确以此肌群为主要目标的动作</string>
     <string name="map_clear">清除选择</string>
     <string name="map_crunch">躯干屈曲</string>
     <string name="map_stability">核心稳定</string>
@@ -30,4 +30,11 @@
     <string name="muscle_serratus">前锯肌</string>
     <string name="muscle_hip">髋屈肌</string>
     <string name="muscle_lower_back">下背</string>
+    <string name="specific_muscle">目标肌群（可选）</string>
+    <string name="part_only">只记录训练部位</string>
+    <string name="choose_equipment">选择器械（可选）</string>
+    <string name="chosen_equipment">所需器械：%1$s</string>
+    <string name="other_equipment">其他器械</string>
+    <string name="other_equipment_name">请输入器械名称</string>
+    <string name="related_custom">同部位自定义动作 · %1$s</string>
 </resources>

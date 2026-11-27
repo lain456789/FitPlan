@@ -17,7 +17,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -41,7 +40,15 @@ final class TrainingScreen extends Screen {
 
     void exercises() {
         activity.trainingTabs();
-        title(s("library"));
+        LinearLayout heading = new LinearLayout(activity);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        content.addView(heading);
+        TextView title = text(heading, s("library"), 27);
+        title.setTypeface(null, Typeface.BOLD);
+        title.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        Button add = button(heading, s("add_custom"), () ->
+                new CustomExerciseDialog().show(activity.getSupportFragmentManager(), "customExercise"));
+        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
         RadioGroup modes = new RadioGroup(activity);
         modes.setOrientation(LinearLayout.HORIZONTAL);
         content.addView(modes);
@@ -83,11 +90,10 @@ final class TrainingScreen extends Screen {
 
     private void musclePicker(LinearLayout pane, java.util.function.Consumer<JSONObject> onSelect) {
         MuscleCatalog[] groups = MuscleCatalog.values();
-        boolean selecting = onSelect != null;
-        String[] options = new String[groups.length + (selecting ? 2 : 1)];
+        String[] options = new String[groups.length + 2];
         options[0] = s("map_all");
         for (int i = 0; i < groups.length; i++) options[i + 1] = s("muscle_" + groups[i].key);
-        if (selecting) options[groups.length + 1] = s("custom");
+        options[groups.length + 1] = s("custom");
         int customIndex = groups.length + 1;
         LinearLayout diagram = card(pane);
         LinearLayout controls = pane(pane);
@@ -125,15 +131,17 @@ final class TrainingScreen extends Screen {
                         results.removeAllViews();
                         clear.setVisibility(pos == 0 ? View.GONE : View.VISIBLE);
                         map.highlight(
-                                pos == 0 || (selecting && pos == customIndex)
+                                pos == 0 || pos == customIndex
                                         ? ""
                                         : groups[pos - 1].key);
                         if (pos == 0) {
                             for (JSONObject ex : builtIns)
                                 if (ex != null) exerciseCard(results, ex, onSelect);
+                            if (!customs.isEmpty()) text(results, s("custom"), 16);
+                            for (JSONObject ex : customs) exerciseCard(results, ex, onSelect);
                             return;
                         }
-                        if (selecting && pos == customIndex) {
+                        if (pos == customIndex) {
                             text(results, s("custom"), 16);
                             if (customs.isEmpty()) text(results, s("no_matches"), 16);
                             else for (JSONObject ex : customs)
@@ -141,17 +149,31 @@ final class TrainingScreen extends Screen {
                             return;
                         }
                         MuscleCatalog group = groups[pos - 1];
+                        int primaryCount = group.primary.length;
+                        for (JSONObject ex : customs)
+                            if (group.key.equals(ex.optString("muscle"))) primaryCount++;
                         text(
                                 results,
-                                group.primary.length == 0
+                                primaryCount == 0
                                         ? s("map_empty")
-                                        : s("map_primary", group.primary.length),
+                                        : s("map_primary", primaryCount),
                                 16);
                         for (int index : group.primary) {
                             if (builtIns[index] == null) continue;
                             if (index == 14 || index == 15)
                                 text(results, s(index == 14 ? "map_crunch" : "map_stability"), 14);
                             exerciseCard(results, builtIns[index], onSelect);
+                        }
+                        boolean relatedHeading = false;
+                        for (JSONObject ex : customs) {
+                            if (group.key.equals(ex.optString("muscle"))) exerciseCard(results, ex, onSelect);
+                        }
+                        for (JSONObject ex : customs) {
+                            if (!ex.optString("muscle").isEmpty()
+                                    || !group.part.equals(Catalog.partCode(ex.optString("part")))) continue;
+                            if (!relatedHeading) text(results, s("related_custom", activity.partName(group.part)), 16);
+                            relatedHeading = true;
+                            exerciseCard(results, ex, onSelect);
                         }
                         if (group.assisting.length > 0) {
                             LinearLayout extra = new LinearLayout(activity);
@@ -196,30 +218,6 @@ final class TrainingScreen extends Screen {
                             s("core")
                         },
                         0);
-        button(
-                pane,
-                s("add_custom"),
-                () -> {
-                    LinearLayout form = column();
-                    EditText name = input(form, s("exercise_name"), "", false);
-                    Spinner part = select(form, s("part"), activity.partLabels(), 0);
-                    dialog(
-                            s("custom"),
-                            form,
-                            () -> {
-                                String n = name.getText().toString().trim();
-                                if (n.isEmpty())
-                                    throw new IllegalArgumentException(s("name_required"));
-                                store.save(
-                                        "exercise",
-                                        object(
-                                                "name",
-                                                n,
-                                                "part",
-                                                PARTS[part.getSelectedItemPosition()]));
-                                show("library");
-                            });
-                });
         LinearLayout results = column();
         pane.addView(results);
         Runnable render =
@@ -280,10 +278,10 @@ final class TrainingScreen extends Screen {
             cardView.setClickable(true);
             cardView.setOnClickListener(v -> select.accept(exercise));
         }
-        LinearLayout labels = illustratedHeader(cardView, id);
+        LinearLayout labels = headerWithImage(cardView, exerciseThumbnail(id, activity.exerciseName(exercise)));
         text(labels, activity.exerciseName(exercise), 18);
         text(labels, activity.partName(exercise.optString("part")), 14);
-        text(labels, equipmentText(id), 14);
+        text(labels, Catalog.builtIn(id) >= 0 ? equipmentText(id) : customEquipmentText(exercise), 14);
     }
 
     void pickExercise(JSONObject plan) {
@@ -517,16 +515,14 @@ final class TrainingScreen extends Screen {
             LinearLayout.LayoutParams cardLayout = new LinearLayout.LayoutParams(cardWidth, -1);
             cardLayout.setMarginEnd(cardGap);
             track.addView(c, cardLayout);
-            int imageRes = exerciseImage(row.optString("exerciseId"));
-            if (imageRes != 0) {
-                ImageView hero = new ImageView(activity);
-                hero.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                hero.setImageResource(imageRes);
-                hero.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-                c.addView(hero, new LinearLayout.LayoutParams(-1, 0, 1));
+            View thumbnail = exerciseThumbnail(row.optString("exerciseId"), activity.exerciseName(row));
+            if (thumbnail != null) {
+                c.addView(thumbnail, new LinearLayout.LayoutParams(-1, 0, 1));
             }
             LinearLayout header = pane(c);
             text(header, activity.exerciseName(row), 18);
+            if (Catalog.builtIn(row.optString("exerciseId")) < 0)
+                text(header, equipmentText(row.optString("exerciseId")), 14);
             LinearLayout sliders = pane(c);
             LinearLayout details = pane(c);
             LinearLayout confirmation = pane(c);
@@ -898,6 +894,8 @@ final class TrainingScreen extends Screen {
             c.addView(left, new LinearLayout.LayoutParams(0, -1, 1));
             TextView name = text(left, activity.exerciseName(row), 18);
             name.setTypeface(null, Typeface.BOLD);
+            if (Catalog.builtIn(row.optString("exerciseId")) < 0)
+                text(left, equipmentText(row.optString("exerciseId")), 14);
             text(
                     left,
                     s(
@@ -915,12 +913,10 @@ final class TrainingScreen extends Screen {
             complete.setTextSize(12);
             complete.setMinHeight(activity.dp(32));
             complete.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
-            int imgRes = exerciseImage(row.optString("exerciseId"));
-            ImageView image = new ImageView(activity);
-            image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            if (imgRes != 0) image.setImageResource(imgRes);
-            image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            c.addView(image, new LinearLayout.LayoutParams(0, -1, 1));
+            View thumbnail = exerciseThumbnail(row.optString("exerciseId"), activity.exerciseName(row));
+            if (thumbnail != null) {
+                c.addView(thumbnail, new LinearLayout.LayoutParams(0, -1, 1));
+            }
         }
         if (visible == 0) text(parent, s("all_sets_done"), 16);
     }
@@ -1168,9 +1164,22 @@ final class TrainingScreen extends Screen {
     }
 
     String equipmentText(String exercise) {
+        if (Catalog.builtIn(exercise) < 0) return customEquipmentText(activity.find("exercise", exercise));
         if (!Catalog.equipmentKnown(exercise)) return s("equipment_unspecified");
         StringJoiner labels = new StringJoiner(" / ");
         for (String item : Catalog.equipment(exercise)) labels.add(s("eq_" + item));
+        return labels.length() == 0 ? s("equipment_none") : labels.toString();
+    }
+
+    String customEquipmentText(JSONObject exercise) {
+        JSONArray codes = exercise == null ? null : exercise.optJSONArray("equipment");
+        if (codes == null) return s("equipment_unspecified");
+        StringJoiner labels = new StringJoiner(" / ");
+        for (String code : Catalog.EQUIPMENT)
+            for (int i = 0; i < codes.length(); i++)
+                if (code.equals(codes.optString(i))) { labels.add(s("eq_" + code)); break; }
+        String other = exercise.optString("otherEquipment").trim();
+        if (!other.isEmpty()) labels.add(other);
         return labels.length() == 0 ? s("equipment_none") : labels.toString();
     }
 

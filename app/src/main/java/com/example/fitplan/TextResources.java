@@ -3,6 +3,32 @@ package com.example.fitplan;
 final class TextResources {
     static int id(String key) {
         switch (key) {
+            case "specific_muscle":
+                return R.string.specific_muscle;
+            case "part_only":
+                return R.string.part_only;
+            case "choose_equipment":
+                return R.string.choose_equipment;
+            case "chosen_equipment":
+                return R.string.chosen_equipment;
+            case "other_equipment":
+                return R.string.other_equipment;
+            case "other_equipment_name":
+                return R.string.other_equipment_name;
+            case "related_custom":
+                return R.string.related_custom;
+            case "choose_media":
+                return R.string.choose_media;
+            case "clear_media":
+                return R.string.clear_media;
+            case "media_failed":
+                return R.string.media_failed;
+            case "exercise_photo":
+                return R.string.exercise_photo;
+            case "exercise_demo":
+                return R.string.exercise_demo;
+            case "demo_close":
+                return R.string.demo_close;
             case "completed_exercises":
                 return R.string.completed_exercises;
             case "ring_exercises_unit":

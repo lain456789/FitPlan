@@ -3,10 +3,10 @@
     <string name="browse_muscle">By muscle</string>
     <string name="map_faces">Front　　　　　Back</string>
     <string name="map_pick">Tap the diagram or select a muscle</string>
-    <string name="map_all">All built-in exercises</string>
+    <string name="map_all">All exercises</string>
     <string name="map_primary">Primary exercises · %1$d</string>
     <string name="map_secondary">Assisting exercises · %1$d</string>
-    <string name="map_empty">No built-in exercises primarily target this muscle</string>
+    <string name="map_empty">No exercises specifically target this muscle</string>
     <string name="map_clear">Clear selection</string>
     <string name="map_crunch">Trunk flexion</string>
     <string name="map_stability">Core stability</string>
@@ -30,4 +30,11 @@
     <string name="muscle_serratus">Serratus anterior</string>
     <string name="muscle_hip">Hip flexors</string>
     <string name="muscle_lower_back">Lower back</string>
+    <string name="specific_muscle">Target muscle (optional)</string>
+    <string name="part_only">Body region only</string>
+    <string name="choose_equipment">Choose equipment (optional)</string>
+    <string name="chosen_equipment">Equipment: %1$s</string>
+    <string name="other_equipment">Other equipment</string>
+    <string name="other_equipment_name">Enter the equipment name</string>
+    <string name="related_custom">Custom exercises in this region · %1$s</string>
 </resources>
