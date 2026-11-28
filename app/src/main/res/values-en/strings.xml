@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">FitPlan</string>
+    <string name="welcome_tagline">Train Smart · Stay Strong</string>
     <string name="home">Home</string>
     <string name="training">Train</string>
     <string name="records">Records</string>
@@ -198,7 +199,7 @@
     <string name="definitions">How statistics work</string>
     <string name="definitions_text">Performed sets and actual reps count, including sets below target. Records with no performed sets are excluded from the workout count. A set meets its target when actual reps reach the target. Volume = weight × actual reps. Bodyweight sets and reps still count. Duration includes rest and time outside the app. Weeks run Monday–Sunday in your local time zone, based on workout finish time. Editing or deleting history recalculates reports.</string>
     <string name="privacy">Workout records stay on this device with no account or cloud sync. Only when you send a prompt in AI Coach are your local training summary and profile sent to your selected AI model provider.</string>
-    <string name="version">v0.7.0</string>
+    <string name="version">v0.7.1</string>
     <string name="back_label">Back</string>
     <string name="ex0">Barbell bench press</string>
     <string name="ex1">Incline dumbbell press</string>

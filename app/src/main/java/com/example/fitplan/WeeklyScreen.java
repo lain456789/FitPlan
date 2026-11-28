@@ -201,7 +201,7 @@ final class WeeklyScreen extends Screen {
                 s("sessions"),
                 num(r.sessions),
                 compactDelta(r.sessions, p.sessions),
-                UiKit.RING_MOVE,
+                UiKit.CHART_AMBER,
                 true);
         tile(row, s("days"), num(r.days), compactDelta(r.days, p.days), UiKit.RING_EXERCISE, false);
 
@@ -212,14 +212,14 @@ final class WeeklyScreen extends Screen {
                 s("completed_sets"),
                 num(r.sets),
                 compactDelta(r.sets, p.sets),
-                UiKit.RING_STAND,
+                UiKit.RING_MOVE,
                 true);
         tile(
                 row2,
                 s("duration"),
                 num(r.duration / 60000.0) + " " + s("minutes_unit"),
                 compactDelta(r.duration / 60000.0, p.duration / 60000.0),
-                UiKit.CHART_AMBER,
+                UiKit.RING_STAND,
                 false);
 
         LinearLayout parts = section(content, "part_chart");

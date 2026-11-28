@@ -861,11 +861,14 @@ final class TrainingScreen extends Screen {
         LinearLayout line = pane(card);
         line.setOrientation(LinearLayout.HORIZONTAL);
         line.setGravity(Gravity.CENTER_VERTICAL);
+        line.setPadding(0, activity.dp(4), 0, activity.dp(4));
         TextView labelView = new TextView(activity);
         labelView.setText(label);
         labelView.setTextSize(14);
         labelView.setTextColor(MainActivity.MUTED);
-        line.addView(labelView, new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams lblLp = new LinearLayout.LayoutParams(0, -2, 1);
+        lblLp.setMarginEnd(activity.dp(8));
+        line.addView(labelView, lblLp);
         TextView minus = stepperButton(line, "\u2212");
         TextView number = stepperNumber(line);
         TextView plus = stepperButton(line, "+");
@@ -909,27 +912,27 @@ final class TrainingScreen extends Screen {
     private TextView stepperButton(LinearLayout parent, String glyph) {
         TextView b = new TextView(activity);
         b.setText(glyph);
-        b.setTextSize(20);
+        b.setTextSize(18);
         b.setTextColor(MainActivity.FG);
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
-        b.setBackground(UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER, 20));
-        parent.addView(b, new LinearLayout.LayoutParams(activity.dp(40), activity.dp(40)));
+        b.setBackground(UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER, 16));
+        parent.addView(b, new LinearLayout.LayoutParams(activity.dp(32), activity.dp(32)));
         return b;
     }
 
     private TextView stepperNumber(LinearLayout parent) {
         TextView b = new TextView(activity);
-        b.setTextSize(17);
+        b.setTextSize(15);
         b.setTextColor(MainActivity.ACCENT);
         b.setTypeface(null, Typeface.BOLD);
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
-        b.setBackground(UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER, 20));
+        b.setBackground(UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER, 16));
         LinearLayout.LayoutParams lp =
-                new LinearLayout.LayoutParams(activity.dp(64), activity.dp(40));
-        lp.setMarginStart(activity.dp(8));
-        lp.setMarginEnd(activity.dp(8));
+                new LinearLayout.LayoutParams(activity.dp(54), activity.dp(32));
+        lp.setMarginStart(activity.dp(6));
+        lp.setMarginEnd(activity.dp(6));
         parent.addView(b, lp);
         return b;
     }

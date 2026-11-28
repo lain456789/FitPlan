@@ -31,8 +31,8 @@ android {
         applicationId = "com.example.fitplan"
         minSdk = 24
         targetSdk = 37
-        versionCode = 21
-        versionName = "0.7.0"
+        versionCode = 22
+        versionName = "0.7.1"
 
         buildConfigField("String", "GLM_API_KEY", buildConfigString(localProp("GLM_API_KEY", "")))
         buildConfigField(

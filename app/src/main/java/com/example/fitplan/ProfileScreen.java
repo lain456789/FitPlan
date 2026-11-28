@@ -54,19 +54,19 @@ final class ProfileScreen extends Screen {
                 metricsRow,
                 String.valueOf(summary.totalSessions),
                 s("profile_stat_sessions"),
-                UiKit.RING_MOVE,
+                UiKit.CHART_AMBER,
                 true);
         addMetricTile(
                 metricsRow,
                 String.valueOf(summary.totalPerformedSets),
                 s("profile_stat_sets"),
-                UiKit.RING_EXERCISE,
+                UiKit.RING_MOVE,
                 true);
         addMetricTile(
                 metricsRow,
                 String.valueOf(summary.totalCheckins),
                 s("profile_stat_checkins"),
-                UiKit.RING_STAND,
+                UiKit.RING_EXERCISE,
                 false);
 
         UiKit.divider(activity, c);

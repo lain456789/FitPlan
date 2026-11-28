@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">FitPlan</string>
+    <string name="welcome_tagline">Train Smart · Stay Strong</string>
     <string name="home">首页</string>
     <string name="training">训练</string>
     <string name="records">记录</string>
@@ -198,7 +199,7 @@
     <string name="definitions">统计口径</string>
     <string name="definitions_text">只统计已训练组及其实际次数，未达目标的已训练组也会计入；零已训练组的记录不计训练次数。达标组是实际次数达到目标的已训练组。训练量 = 重量 × 实际次数，自重动作仍计入组数和次数。训练时长包含休息及离开应用时间。自然周为本地时间周一至周日，按训练结束时间归属；历史修改或删除后重新计算。</string>
     <string name="privacy">训练记录保存在本机，不使用账号或云同步；仅在「AI 教练」主动发送提问时，将本地训练摘要与档案发送至你选择的 AI 模型服务生成建议。</string>
-    <string name="version">v0.7.0</string>
+    <string name="version">v0.7.1</string>
     <string name="back_label">返回</string>
     <string name="ex0">杠铃卧推</string>
     <string name="ex1">哑铃上斜卧推</string>
