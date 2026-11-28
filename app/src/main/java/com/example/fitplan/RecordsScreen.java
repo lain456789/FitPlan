@@ -34,12 +34,18 @@ final class RecordsScreen extends Screen {
         LinearLayout heading = new LinearLayout(activity);
         heading.setGravity(Gravity.CENTER_VERTICAL);
         content.addView(heading);
-        TextView title = text(heading, s("history_title"), 24);
+        TextView title = text(heading, s("history_title"), 22);
         title.setTypeface(null, Typeface.BOLD);
         title.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button dates = button(heading, s("history_date_filter"), this::chooseDateFilter);
+        Button dates =
+                UiKit.secondaryButton(
+                        activity,
+                        heading,
+                        s("history_date_filter"),
+                        R.drawable.ic_calendar,
+                        this::chooseDateFilter);
         dates.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
-        dates.setMinHeight(activity.dp(48));
+        dates.setMinHeight(activity.dp(42));
         HistoryReader.DateFilter filter = activity.historyDateFilter;
         if (filter != HistoryReader.DateFilter.ALL) {
             String selected =
@@ -49,9 +55,8 @@ final class RecordsScreen extends Screen {
                                     dayLabel(activity.historyRangeStart),
                                     dayLabel(activity.historyRangeEnd))
                             : s(filter.label);
-            text(content, selected, 14);
+            text(content, selected, 13);
         }
-        button(content, s("progress_title"), () -> show("progress"));
         Map<Long, List<JSONObject>> months =
                 HistoryReader.byMonth(
                         store.list("history"),
@@ -100,7 +105,12 @@ final class RecordsScreen extends Screen {
                         label,
                         sessions.size());
         Button header = button(group, heading, () -> {});
-        header.setMinHeight(activity.dp(48));
+        header.setBackground(null);
+        header.setTextSize(16);
+        header.setTypeface(null, Typeface.BOLD);
+        header.setTextColor(MainActivity.FG);
+        header.setPadding(activity.dp(4), activity.dp(8), activity.dp(4), activity.dp(6));
+        header.setMinHeight(activity.dp(42));
         header.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         header.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, arrow, null);
         header.setCompoundDrawablePadding(activity.dp(8));
@@ -130,20 +140,57 @@ final class RecordsScreen extends Screen {
 
     private void historyCard(LinearLayout parent, JSONObject session) {
         LinearLayout c = card(parent);
-        text(c, activity.planName(session), 20);
-        if ("manual".equals(session.optString("recordSource"))) text(c, s("manual_source"), 14);
-        if (session.optBoolean("abandoned")) text(c, s("abandoned_workout"), 14);
-        text(
-                c,
-                s(
-                        "history_line",
-                        date(session.optLong("finished")),
-                        performedSets(session),
-                        num(volume(session))),
-                14);
-        button(c, s("correct_record"), () -> activity.openHistory(session));
-        button(
-                c,
+        c.setOnClickListener(v -> activity.openHistory(session));
+
+        TextView dateEyebrow = new TextView(activity);
+        dateEyebrow.setText(date(session.optLong("finished")));
+        dateEyebrow.setTextSize(12);
+        dateEyebrow.setTextColor(MainActivity.MUTED);
+        c.addView(dateEyebrow);
+
+        TextView nameView = text(c, activity.planName(session), 18);
+        nameView.setTypeface(null, Typeface.BOLD);
+        nameView.setPadding(0, activity.dp(2), 0, activity.dp(4));
+
+        LinearLayout badges = new LinearLayout(activity);
+        badges.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(-1, -2);
+        bLp.bottomMargin = activity.dp(8);
+        c.addView(badges, bLp);
+
+        UiKit.badge(
+                activity,
+                badges,
+                performedSets(session) + " " + s("ring_sets_unit"),
+                UiKit.RING_MOVE);
+        UiKit.badge(
+                activity,
+                badges,
+                num(volume(session)) + " " + s("volume_unit"),
+                UiKit.RING_EXERCISE);
+        if ("manual".equals(session.optString("recordSource"))) {
+            UiKit.badge(activity, badges, s("manual_source"), UiKit.RING_STAND);
+        }
+        if (session.optBoolean("abandoned")) {
+            UiKit.badge(activity, badges, s("abandoned_workout"), UiKit.CHART_AMBER);
+        }
+
+        // Keep correct_record directly inside card for clean tap + test compatibility; circular
+        // trash beside it
+        Button edit = editButton(c, s("correct_record"), () -> activity.openHistory(session));
+        LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(-1, -2);
+        editLp.topMargin = activity.dp(2);
+        edit.setLayoutParams(editLp);
+
+        LinearLayout footer = new LinearLayout(activity);
+        footer.setOrientation(LinearLayout.HORIZONTAL);
+        footer.setGravity(Gravity.END);
+        LinearLayout.LayoutParams fLp = new LinearLayout.LayoutParams(-1, -2);
+        fLp.topMargin = activity.dp(6);
+        c.addView(footer, fLp);
+        UiKit.iconDeleteButton(
+                activity,
+                footer,
                 s("delete_record"),
                 () ->
                         confirm(
@@ -244,6 +291,7 @@ final class RecordsScreen extends Screen {
 
     void historyDetail(JSONObject session) {
         content.removeAllViews();
+        backButton(content, s("back_history"), () -> show("history"));
         title(activity.planName(session));
         if ("manual".equals(session.optString("recordSource"))) {
             text(content, s("manual_source"), 14);
@@ -251,7 +299,6 @@ final class RecordsScreen extends Screen {
                 text(content, s("manual_duration_unknown"), 14);
         }
         if (session.optBoolean("abandoned")) text(content, s("abandoned_workout"), 14);
-        backButton(content, s("back_history"), () -> show("history"));
         text(
                 content,
                 "manual".equals(session.optString("recordSource"))

@@ -12,16 +12,21 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.NoRouteToHostException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-/** Zero-dependency Java HTTP client for Zhipu BigModel (GLM) with proactive offline detection. */
+/**
+ * Zero-dependency Java HTTP client for OpenAI-compatible Chat Completions endpoints (Zhipu GLM,
+ * DeepSeek, Qwen, OpenAI, and custom endpoints) with proactive offline detection.
+ */
 final class GlmClient {
     private static final int CONNECT_TIMEOUT_MS = 15_000;
     private static final int READ_TIMEOUT_MS = 60_000;
+    private static final int PING_READ_TIMEOUT_MS = 20_000;
     private static final String SKILL_ASSET = "coach_skill.md";
 
     private GlmClient() {}
@@ -69,19 +74,34 @@ final class GlmClient {
             String trainingContext,
             List<CoachModels.ChatMessage> history,
             String userMessage) {
+        String requestBody =
+                GlmProtocol.buildRequestBody(
+                        model, skillMarkdown, trainingContext, history, userMessage);
+        return postJson(context, apiKey, endpoint, requestBody, READ_TIMEOUT_MS);
+    }
+
+    static GlmProtocol.GlmResult testConnection(
+            Context context, String apiKey, String endpoint, String model) {
+        String requestBody = GlmProtocol.buildPingRequestBody(model);
+        return postJson(context, apiKey, endpoint, requestBody, PING_READ_TIMEOUT_MS);
+    }
+
+    private static GlmProtocol.GlmResult postJson(
+            Context context,
+            String apiKey,
+            String endpoint,
+            String requestBody,
+            int readTimeoutMs) {
         if (!isNetworkAvailable(context)) {
             return GlmProtocol.GlmResult.error("offline", "No active internet connection");
         }
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            return GlmProtocol.GlmResult.error("missing_key", "GLM_API_KEY is empty");
+            return GlmProtocol.GlmResult.error("missing_key", "API key is empty");
         }
         String targetUrl =
                 endpoint == null || endpoint.trim().isEmpty()
-                        ? "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+                        ? CoachApiConfig.DEFAULT_GLM_ENDPOINT
                         : endpoint.trim();
-        String requestBody =
-                GlmProtocol.buildRequestBody(
-                        model, skillMarkdown, trainingContext, history, userMessage);
 
         HttpURLConnection conn = null;
         try {
@@ -89,7 +109,7 @@ final class GlmClient {
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
-            conn.setReadTimeout(READ_TIMEOUT_MS);
+            conn.setReadTimeout(readTimeoutMs);
             conn.setDoOutput(true);
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
             conn.setRequestProperty("Accept", "application/json");
@@ -106,6 +126,10 @@ final class GlmClient {
                     status >= 200 && status < 300 ? conn.getInputStream() : conn.getErrorStream();
             String body = stream == null ? "" : readAll(stream);
             return GlmProtocol.parseResponse(status, body);
+        } catch (MalformedURLException | IllegalArgumentException e) {
+            return GlmProtocol.GlmResult.error(
+                    "invalid_endpoint",
+                    e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
         } catch (UnknownHostException | ConnectException | NoRouteToHostException e) {
             return GlmProtocol.GlmResult.error(
                     "offline",

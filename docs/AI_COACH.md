@@ -1,8 +1,8 @@
-# v0.6.0 AI 健身教练设计与实现记录
+# AI 健身教练与「我的」页面设计与实现记录（v0.6.0 → v0.7.0）
 
 ## 1. 功能定位与导航入口
 
-在 FitPlan 底部导航栏新增第 5 个入口 **「AI 教练 / Coach」**（首页 / 训练 / 记录 / AI 教练 / 我的），直接读取本机 SQLite（`fitplan.db`）中的真实训练记录、每日状态、动作库和个人训练档案，结合循证训练 Skill 调用智谱 GLM API 提供个性化训练建议。
+在 FitPlan 底部导航栏第 4 个入口提供 **「AI 教练 / Coach」**（首页 / 训练 / 记录 / AI 教练 / 我的），直接读取本机 SQLite（`fitplan.db`）中的真实训练记录、每日状态、动作库和个人训练档案，结合循证训练 Skill 调用用户选定的 OpenAI 兼容大模型提供个性化训练建议。
 
 - 其他四个入口（首页、训练、记录、我的）继续保持完全离线可用。
 - 对话记录仅保存在当前页面内存中，切换标签或退出应用后自动清空。
@@ -13,7 +13,7 @@
 ## 2. 本地数据读取与确定性计算
 
 不改动原有 `documents` 表结构与既有记录格式：
-- `CoachReader` 读取 `history`、`checkin`、`exercise` 以及新增的 `profile`（个人训练档案：目标、训练年限、体重、每周天数、可用器械、伤病禁忌）。
+- `CoachReader` 读取 `history`、`checkin`、`exercise` 以及 `profile`（个人训练档案：目标、训练年限、体重、每周天数、可用器械、伤病禁忌）。
 - `CoachContextBuilder` 在本地纯 Java 计算并生成结构化上下文 `USER_TRAINING_CONTEXT`：
   1. 近 8 周自然周（周一至周日）训练次数、天数、已训练组数、训练量、各部位组数与推拉/上下肢比例。
   2. 每个动作的近期走势、吃力占比、未达标组数、不适（`discomfort`）记录、停滞判定与可进阶判定。
@@ -23,21 +23,33 @@
 
 ---
 
-## 3. Skill 准则与协议实现
+## 3. v0.7.0 升级内容
 
-- Skill 文件位于 `app/src/main/assets/coach_skill.md`，运行时由 `GlmClient` 读取并作为系统提示词，覆盖训练诊断、动作进度与停滞排查、恢复与减载、1 周计划编排、器械替换、循证营养与作息原则，强制要求标注数据/原则依据、禁止编造缺失记录，并对疼痛/不适执行安全红线提醒。
-- `GlmProtocol` / `GlmClient` 使用纯 Java `HttpURLConnection`（非流式，60 秒超时，零新增第三方依赖），最多携带最近 10 轮内存多轮历史。
-- `MarkdownParser` / `MarkdownFormatter` 以纯 Java 渲染标题、加粗、列表、行内代码与分隔线，复用 FitPlan 深色主题配色。
+1. **可视化 API Key 与多服务商模型选择（`CoachApiConfig` + `CoachApiDialog`）**
+   - 内置预设服务商：**智谱 GLM（默认）**、**DeepSeek**、**通义千问 Qwen**、**OpenAI**，以及 **自定义 OpenAI 兼容接口**。
+   - 预设服务商自动填充官方 Endpoint 与推荐模型快捷标签，用户只需选择厂商并粘贴 API Key 即可使用；默认智谱 GLM 留空时回落使用构建期注入的 `BuildConfig.GLM_API_KEY`。
+   - 支持密码掩码显隐切换、弹窗内一键「测试连接」（返回耗时 ms 或具体报错）与「恢复默认」。
+   - 用户自定义 Key 仅保存在本机私有 `SharedPreferences("coach_api_config", MODE_PRIVATE)`，并在 `backup_rules.xml` 与 `data_extraction_rules.xml` 中显式排除云备份与设备传输。
+2. **教练形象与动态头像框（`CoachAvatarView`）**
+   - 内置原创 AI 健身教练形象图（`drawable-nodpi/coach_avatar_default.jpg`），搭配双层荧光绿圆形头像框与在线/思考/离线状态指示点，呈现在教练头部卡片、每条教练消息气泡左侧及「我的」设置卡片中。
+   - 点击头像支持通过系统 `PickVisualMedia` 从相册更换本机自定义教练头像或一键恢复默认。
+3. **预设问题下移至输入框正上方**
+   - 将 4 枚快捷预设问题芯片从对话顶部下移至底部固定区 `R.id.page_actions` 中、紧贴提问框正上方（所有对话最下面），方便长对话单手点选。
+4. **「我的」页面整合个人数据与地球仪/国旗语言切换（`ProfileScreen` + `ProfileSummary`）**
+   - 顶部整合**个人训练概况**（累计训练次数、完成组数、打卡数）与**最近身体状态快照**（睡眠/饮食/酸痛，一键跳转更新）。
+   - 将原位于 AI 教练页的完整**训练档案**表单迁移整合至「我的」页，AI 教练顶部精简为一行可点击的档案摘要条，两者共享同一张 SQLite `profile` 表。
+   - 新增「AI 教练与模型配置」卡片，集中展示当前服务商、模型、掩码 Key 状态与头像设置入口。
+   - 语言切换改为自定义矢量**中国国旗 / 英文旗帜 / 地球仪** 3 枚横向可视化选项，点击即刻生效；统计口径说明改为可折叠卡片。
 
 ---
 
-## 4. 本地配置（GLM API Key）
+## 4. 构建期默认配置（`local.properties`）
 
-在项目根目录（已 gitignore）的 `local.properties` 中配置：
+在项目根目录（已 gitignore）的 `local.properties` 中可选配置内置默认智谱 Key：
 
 ```properties
 GLM_API_KEY=你的智谱API_Key
 GLM_MODEL=glm-4-flash
 ```
 
-未配置 Key 时应用正常启动并在发送时提示配置方法，不会崩溃。公开提交的代码与文档不包含真实 API Key。
+未配置构建期 Key 时应用仍正常启动，用户可直接在 App 内「AI 教练」顶部模型胶囊或「我的 → AI 教练与模型配置」中可视化填写任意兼容服务商的 API Key。公开提交的代码与文档不包含真实 API Key。

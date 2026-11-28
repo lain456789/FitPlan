@@ -5,7 +5,6 @@ import static com.example.fitplan.Store.put;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
-import android.content.res.ColorStateList;
 import android.database.sqlite.SQLiteException;
 import android.graphics.Rect;
 import android.text.Editable;
@@ -43,15 +42,17 @@ final class ManualHistoryScreen extends Screen {
         if (activity.manualHistoryDraft == null)
             activity.manualHistoryDraft = ManualHistory.draft(System.currentTimeMillis());
         JSONObject draft = activity.manualHistoryDraft;
+        backButton(content, s("back_records"), () -> show(activity.manualReturn));
         title(s("manual_title"));
         text(content, s("manual_help"), 14);
-        backButton(content, s("back_records"), () -> show(activity.manualReturn));
         LinearLayout info = card(content);
         EditText name = input(info, s("manual_name"), draft.optString("name"), false);
         name.setTag("manual_name");
         name.setFilters(new InputFilter[] {new InputFilter.LengthFilter(80)});
         bind(name, draft, "name");
-        Button date = button(info, "", () -> chooseDate(draft));
+        Button date =
+                UiKit.secondaryButton(
+                        activity, info, "", R.drawable.ic_calendar, () -> chooseDate(draft));
         date.setTag("manual_date");
         date.setText(
                 s(
@@ -72,21 +73,20 @@ final class ManualHistoryScreen extends Screen {
         text(info, s("manual_actual_only"), 14);
 
         renderExercises(draft);
-        button(content, s("add_exercise"), () -> chooseExercise(draft));
+        addButton(content, s("add_exercise"), true, () -> chooseExercise(draft));
         LinearLayout actions = activity.findViewById(R.id.page_actions);
         actions.setVisibility(View.VISIBLE);
         LinearLayout actionRow = new LinearLayout(activity);
         actionRow.setGravity(Gravity.CENTER_VERTICAL);
         actionRow.setBaselineAligned(false);
         actions.addView(actionRow, new LinearLayout.LayoutParams(-1, -2));
-        Button discard = button(actionRow, s("manual_discard"), this::confirmDiscardDraft);
+        Button discard =
+                deleteButton(actionRow, s("manual_discard"), false, this::confirmDiscardDraft);
         discard.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button save = button(actionRow, s("manual_save"), () -> save(draft));
+        Button save = primaryButton(actionRow, s("manual_save"), () -> save(draft));
         LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(0, -2, 1);
         saveParams.setMarginStart(activity.dp(8));
         save.setLayoutParams(saveParams);
-        save.setTextColor(MainActivity.BG);
-        save.setBackgroundTintList(ColorStateList.valueOf(MainActivity.ACCENT));
     }
 
     private void confirmDiscardDraft() {
@@ -238,28 +238,33 @@ final class ManualHistoryScreen extends Screen {
                     16);
             LinearLayout controls = new LinearLayout(activity);
             item.addView(controls);
-            Button edit = button(controls, s("edit_set", j + 1), () -> editSet(row, setIndex));
-            edit.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+            Button edit = editButton(controls, s("edit_set", j + 1), () -> editSet(row, setIndex));
+            LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(0, -2, 1);
+            editLp.setMarginEnd(activity.dp(8));
+            edit.setLayoutParams(editLp);
             Button remove =
-                    button(
+                    deleteButton(
                             controls,
                             s("manual_remove_set"),
+                            false,
                             () -> {
                                 logs.remove(setIndex);
                                 refreshAtCurrentPosition("manualHistory");
                             });
             remove.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         }
-        button(
+        addButton(
                 item,
                 s("manual_add_set"),
+                true,
                 () -> {
                     if (logs.length() >= ManualHistory.MAX_SETS) toast(s("manual_set_limit"));
                     else editSet(row, -1);
                 });
-        button(
+        deleteButton(
                 item,
                 s("remove_exercise"),
+                true,
                 () ->
                         confirm(
                                 s("manual_remove_exercise_confirm"),

@@ -86,4 +86,16 @@ public class GlmProtocolTest {
         assertFalse(empty.success);
         assertEquals("empty_response", empty.errorCode);
     }
+
+    @Test
+    public void buildsCompactPingRequestBody() {
+        String body = GlmProtocol.buildPingRequestBody("deepseek-chat");
+        Map<String, Object> parsed = SimpleJson.asObject(SimpleJson.parse(body));
+        assertNotNull(parsed);
+        assertEquals("deepseek-chat", parsed.get("model"));
+        assertEquals(Boolean.FALSE, parsed.get("stream"));
+        assertEquals(16, SimpleJson.asInt(parsed.get("max_tokens"), 0));
+        List<Object> messages = SimpleJson.asList(parsed.get("messages"));
+        assertEquals(1, messages.size());
+    }
 }
