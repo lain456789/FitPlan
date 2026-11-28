@@ -116,7 +116,9 @@ abstract class Screen {
     }
 
     void title(String value) {
-        text(content, value, 27).setTypeface(null, Typeface.BOLD);
+        TextView tv = text(content, value, 30);
+        tv.setTypeface(null, Typeface.BOLD);
+        tv.setPadding(0, activity.dp(2), 0, activity.dp(6));
     }
 
     LinearLayout column() {
@@ -129,6 +131,22 @@ abstract class Screen {
 
     Button button(LinearLayout parent, String label, Runnable action) {
         return activity.button(parent, label, action);
+    }
+
+    Button primaryButton(LinearLayout parent, String label, Runnable action) {
+        return activity.primaryButton(parent, label, action);
+    }
+
+    Button editButton(LinearLayout parent, String label, Runnable action) {
+        return UiKit.secondaryButton(activity, parent, label, R.drawable.ic_edit, action);
+    }
+
+    Button addButton(LinearLayout parent, String label, boolean fullWidth, Runnable action) {
+        return activity.addButton(parent, label, fullWidth, action);
+    }
+
+    Button deleteButton(LinearLayout parent, String label, boolean fullWidth, Runnable action) {
+        return activity.deleteButton(parent, label, fullWidth, action);
     }
 
     Button backButton(LinearLayout parent, String label, Runnable action) {
@@ -149,7 +167,12 @@ abstract class Screen {
             edit.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         edit.setText(initial);
         edit.setTextColor(MainActivity.FG);
-        parent.addView(edit, new LinearLayout.LayoutParams(-1, -2));
+        edit.setHintTextColor(MainActivity.MUTED);
+        edit.setBackground(UiKit.box(activity, UiKit.SURFACE_DEEP, UiKit.BORDER, 12));
+        edit.setPadding(activity.dp(12), activity.dp(10), activity.dp(12), activity.dp(10));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.bottomMargin = activity.dp(6);
+        parent.addView(edit, lp);
         return edit;
     }
 
@@ -269,9 +292,16 @@ abstract class Screen {
         if (files == null || activity.find("exercise", id) == null) return null;
         ImageView image = new ImageView(activity);
         image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        Glide.with(activity).asBitmap().load(files.thumb).diskCacheStrategy(DiskCacheStrategy.NONE).into(image);
+        Glide.with(activity)
+                .asBitmap()
+                .load(files.thumb)
+                .diskCacheStrategy(DiskCacheStrategy.NONE)
+                .into(image);
         boolean animated = files.gif.isFile();
-        return clickableThumbnail(image, animated, s(animated ? "exercise_demo" : "exercise_photo", name),
+        return clickableThumbnail(
+                image,
+                animated,
+                s(animated ? "exercise_demo" : "exercise_photo", name),
                 () -> showCustomMedia(files, animated, name));
     }
 
@@ -280,21 +310,35 @@ abstract class Screen {
         full.setAdjustViewBounds(true);
         full.setMinimumHeight(activity.dp(240));
         full.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        AlertDialog dialog = new AlertDialog.Builder(activity).setTitle(name).setView(full)
-                .setPositiveButton(s("demo_close"), null).create();
+        AlertDialog dialog =
+                new AlertDialog.Builder(activity)
+                        .setTitle(name)
+                        .setView(full)
+                        .setPositiveButton(s("demo_close"), null)
+                        .create();
         dialog.setOnDismissListener(d -> Glide.with(activity.getApplicationContext()).clear(full));
         dialog.show();
         if (animated) {
-            Glide.with(activity).asGif().load(files.gif).override(1024, 1024)
-                    .diskCacheStrategy(DiskCacheStrategy.NONE).into(new ImageViewTarget<GifDrawable>(full) {
-                        @Override protected void setResource(GifDrawable gif) {
-                            if (gif != null) gif.setLoopCount(GifDrawable.LOOP_FOREVER);
-                            full.setImageDrawable(gif);
-                        }
-                    });
+            Glide.with(activity)
+                    .asGif()
+                    .load(files.gif)
+                    .override(1024, 1024)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .into(
+                            new ImageViewTarget<GifDrawable>(full) {
+                                @Override
+                                protected void setResource(GifDrawable gif) {
+                                    if (gif != null) gif.setLoopCount(GifDrawable.LOOP_FOREVER);
+                                    full.setImageDrawable(gif);
+                                }
+                            });
         } else {
-            Glide.with(activity).asBitmap().load(files.photo).override(1280, 1280)
-                    .diskCacheStrategy(DiskCacheStrategy.NONE).into(full);
+            Glide.with(activity)
+                    .asBitmap()
+                    .load(files.photo)
+                    .override(1280, 1280)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .into(full);
         }
     }
 
@@ -315,7 +359,8 @@ abstract class Screen {
         return labels;
     }
 
-    private View clickableThumbnail(ImageView image, boolean animated, String title, Runnable open) {
+    private View clickableThumbnail(
+            ImageView image, boolean animated, String title, Runnable open) {
         FrameLayout frame = new FrameLayout(activity);
         frame.addView(image, new FrameLayout.LayoutParams(-1, -1));
         if (animated) {
@@ -327,7 +372,8 @@ abstract class Screen {
             badge.setBackground(activity.shape(0xCC262A30, 16));
             badge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             int size = activity.dp(24);
-            frame.addView(badge, new FrameLayout.LayoutParams(size, size, Gravity.BOTTOM | Gravity.END));
+            frame.addView(
+                    badge, new FrameLayout.LayoutParams(size, size, Gravity.BOTTOM | Gravity.END));
         }
         frame.setContentDescription(title);
         frame.setFocusable(true);
@@ -341,42 +387,45 @@ abstract class Screen {
         image.setImageResource(EXERCISE_IMAGES[index]);
         image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         String title = s("exercise_demo", s("ex" + index));
-        return preview ? clickableThumbnail(image, true, title, () -> showDemo(index, title)) : image;
+        return preview
+                ? clickableThumbnail(image, true, title, () -> showDemo(index, title))
+                : image;
     }
 
     private void showDemo(int index, String title) {
         FrameLayout stage = new FrameLayout(activity);
         VideoView video = new VideoView(activity);
         stage.addView(video, new FrameLayout.LayoutParams(-1, -2, Gravity.CENTER));
-        AlertDialog dialog = new AlertDialog.Builder(activity)
-                .setTitle(title)
-                .setView(stage)
-                .setPositiveButton(s("demo_close"), null)
-                .create();
+        AlertDialog dialog =
+                new AlertDialog.Builder(activity)
+                        .setTitle(title)
+                        .setView(stage)
+                        .setPositiveButton(s("demo_close"), null)
+                        .create();
         dialog.setOnDismissListener(d -> video.stopPlayback());
         video.setOnPreparedListener(player -> {
             player.setVolume(0f, 0f);
             player.setLooping(true);
         });
         dialog.show();
-        video.setVideoURI(Uri.parse("android.resource://" + activity.getPackageName() + "/" + DEMOS[index]));
+        video.setVideoURI(
+                Uri.parse("android.resource://" + activity.getPackageName() + "/" + DEMOS[index]));
         video.start();
     }
 
     /** Fixed order for exercise pickers: by body part, then localized name, then id. */
     void sortExercises(List<JSONObject> exercises) {
-        exercises.sort(
-                (a, b) -> {
-                    String idA = a.optString("exerciseId", a.optString("id"));
-                    String idB = b.optString("exerciseId", b.optString("id"));
-                    int pa = Catalog.partIndex(Catalog.exercisePart(idA, a.optString("part")));
-                    int pb = Catalog.partIndex(Catalog.exercisePart(idB, b.optString("part")));
-                    if (pa != pb) return Integer.compare(pa, pb);
-                    String na = activity.exerciseName(a);
-                    String nb = activity.exerciseName(b);
-                    int cmp = na.compareToIgnoreCase(nb);
-                    return cmp != 0 ? cmp : idA.compareTo(idB);
-                });
+        exercises.sort((a, b) -> {
+            String idA = a.optString("exerciseId", a.optString("id"));
+            String idB = b.optString("exerciseId", b.optString("id"));
+            int pa = Catalog.partIndex(Catalog.exercisePart(idA, a.optString("part")));
+            int pb = Catalog.partIndex(Catalog.exercisePart(idB, b.optString("part")));
+            if (pa != pb) return Integer.compare(pa, pb);
+            String na = activity.exerciseName(a);
+            String nb = activity.exerciseName(b);
+            int cmp = na.compareToIgnoreCase(nb);
+            return cmp != 0 ? cmp : idA.compareTo(idB);
+        });
     }
 
     void refreshAtCurrentPosition(String route) {
@@ -420,13 +469,14 @@ abstract class Screen {
             JSONArray logs = row.optJSONArray("logs");
             LinearLayout controls = new LinearLayout(activity);
             exerciseCard.addView(controls);
-            Button remove = button(controls, s("remove_set"), () -> {});
-            Button add = button(controls, s("add_set"), () -> {});
+            Button remove = deleteButton(controls, s("remove_set"), false, () -> {});
+            Button add = addButton(controls, s("add_set"), false, () -> {});
             Runnable refresh =
                     () -> {
                         details.removeAllViews();
                         renderSetDetails(session, rowIndex, true, details);
                         remove.setEnabled(WorkoutAdjustments.pendingRow(row) > 0);
+                        remove.setAlpha(remove.isEnabled() ? 1f : 0.4f);
                         boolean skipped = false;
                         for (int j = 0; j < logs.length(); j++) {
                             JSONObject log = logs.optJSONObject(j);
@@ -434,8 +484,11 @@ abstract class Screen {
                                 skipped = true;
                         }
                         add.setEnabled(!skipped || remove.isEnabled());
+                        add.setAlpha(add.isEnabled() ? 1f : 0.4f);
                     };
-            remove.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+            LinearLayout.LayoutParams removeLp = new LinearLayout.LayoutParams(0, -2, 1);
+            removeLp.setMarginEnd(activity.dp(8));
+            remove.setLayoutParams(removeLp);
             add.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
             Runnable saved =
                     () -> {

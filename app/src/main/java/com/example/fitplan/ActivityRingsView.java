@@ -10,7 +10,10 @@ import android.view.View;
 
 /** Native, offline drawing. Text beside the rings supplies exact values and target states. */
 final class ActivityRingsView extends View {
-    static final int SETS = 0xffb8f261, EXERCISES = 0xff5edce8, TIME = 0xffb9a0ff;
+    // Classic Apple Fitness tri-ring palette: Move (coral-red), Exercise (volt-green), Stand (cyan)
+    static final int SETS = UiKit.RING_MOVE,
+            EXERCISES = UiKit.RING_EXERCISE,
+            TIME = UiKit.RING_STAND;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF bounds = new RectF();
     private final float[] values;
@@ -59,8 +62,8 @@ final class ActivityRingsView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         float size = Math.min(getWidth(), getHeight()), cx = getWidth() / 2f, cy = getHeight() / 2f;
-        float stroke = size * .095f;
-        float gap = size * .025f;
+        float stroke = size * .108f;
+        float gap = size * .022f;
         float outerRadius = size * .495f - stroke / 2;
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(stroke);
@@ -69,7 +72,7 @@ final class ActivityRingsView extends View {
             float radius = outerRadius - i * (stroke + gap);
             bounds.set(cx - radius, cy - radius, cx + radius, cy + radius);
             int color = colors[i];
-            paint.setColor(Color.argb(42, Color.red(color), Color.green(color), Color.blue(color)));
+            paint.setColor(Color.argb(54, Color.red(color), Color.green(color), Color.blue(color)));
             canvas.drawOval(bounds, paint);
             float sweep = values[i] * reveal * 360;
             if (sweep > 0) {

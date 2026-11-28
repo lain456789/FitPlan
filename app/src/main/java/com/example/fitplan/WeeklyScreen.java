@@ -43,21 +43,60 @@ final class WeeklyScreen extends Screen {
 
     void render(Consumer<ReportEngine.Report> todayLoaded) {
         this.todayLoaded = todayLoaded;
-        title(s("weekly_title"));
-        dateRange = text(content, "", 16);
+
+        // Compact Apple Fitness section header with inline < / > week switcher
+        LinearLayout header = new LinearLayout(activity);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams hLp = new LinearLayout.LayoutParams(-1, -2);
+        hLp.topMargin = activity.dp(12);
+        content.addView(header, hLp);
+
+        LinearLayout titleCol = new LinearLayout(activity);
+        titleCol.setOrientation(LinearLayout.VERTICAL);
+        header.addView(titleCol, new LinearLayout.LayoutParams(0, -2, 1));
+
+        TextView heading = new TextView(activity);
+        heading.setText(s("weekly_title"));
+        heading.setTextSize(22);
+        heading.setTextColor(MainActivity.FG);
+        heading.setTypeface(null, Typeface.BOLD);
+        titleCol.addView(heading);
+
+        dateRange = new TextView(activity);
+        dateRange.setTextSize(12);
+        dateRange.setTextColor(MainActivity.MUTED);
         dateRange.setTag("weekly_range");
+        titleCol.addView(dateRange);
+
         LinearLayout controls = new LinearLayout(activity);
-        content.addView(controls);
-        Button prev = button(controls, s("previous_week"), () -> changeWeek(-7));
-        prev.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        next = button(controls, s("next_week"), () -> changeWeek(7));
-        next.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        controls.setOrientation(LinearLayout.HORIZONTAL);
+        header.addView(controls, new LinearLayout.LayoutParams(-2, -2));
+
+        Button prev =
+                UiKit.compactPill(activity, "\u2039", UiKit.SURFACE, 0, MainActivity.FG, 0, true);
+        prev.setTextSize(18);
+        prev.setContentDescription(s("previous_week"));
+        prev.setPadding(activity.dp(14), activity.dp(4), activity.dp(14), activity.dp(4));
+        prev.setOnClickListener(v -> changeWeek(-7));
+        LinearLayout.LayoutParams prevLp = new LinearLayout.LayoutParams(-2, -2);
+        prevLp.setMarginEnd(activity.dp(6));
+        controls.addView(prev, prevLp);
+
+        next = UiKit.compactPill(activity, "\u203A", UiKit.SURFACE, 0, MainActivity.FG, 0, true);
+        next.setTextSize(18);
+        next.setContentDescription(s("next_week"));
+        next.setPadding(activity.dp(14), activity.dp(4), activity.dp(14), activity.dp(4));
+        next.setOnClickListener(v -> changeWeek(7));
+        controls.addView(next, new LinearLayout.LayoutParams(-2, -2));
+
         back = backButton(content, s("back_current"), () -> load(currentWeek()));
+
         reportArea = new LinearLayout(activity);
         reportArea.setOrientation(LinearLayout.VERTICAL);
         reportArea.setTag("weekly_report");
         content.addView(reportArea);
-        status = text(reportArea, s("loading"), 16);
+        status = text(reportArea, s("loading"), 14);
         load(activity.selectedWeek);
     }
 
@@ -72,7 +111,7 @@ final class WeeklyScreen extends Screen {
     private String range(long week) {
         DateFormat format = DateFormat.getDateInstance(DateFormat.MEDIUM, activity.locale());
         return format.format(new Date(week))
-                + " — "
+                + " – "
                 + format.format(new Date(ReportEngine.shiftDays(week, 6, TimeZone.getDefault())));
     }
 
@@ -81,7 +120,7 @@ final class WeeklyScreen extends Screen {
         activity.selectedWeek =
                 Math.min(ReportEngine.weekStart(week, TimeZone.getDefault()), current);
         next.setEnabled(activity.selectedWeek < current);
-        next.setAlpha(next.isEnabled() ? 1f : .4f);
+        next.setAlpha(next.isEnabled() ? 1f : .35f);
         back.setVisibility(activity.selectedWeek < current ? View.VISIBLE : View.GONE);
         if (!hasReport) {
             dateRange.setText(range(activity.selectedWeek));
@@ -91,13 +130,10 @@ final class WeeklyScreen extends Screen {
         activity.loadReport(
                 activity.selectedWeek,
                 report -> {
-                    // A later tap can supersede this request without changing the page.
                     if (request != requestId) return;
                     LinearLayout replacement = new LinearLayout(activity);
                     replacement.setOrientation(LinearLayout.VERTICAL);
                     loaded(report, replacement);
-                    // Keep the current cards on screen until the replacement is complete.
-                    // Neither the ScrollView nor today's animated rings is recreated.
                     reportArea.removeAllViews();
                     reportArea.addView(replacement);
                     dateRange.setText(range(report.current.start));
@@ -111,56 +147,94 @@ final class WeeklyScreen extends Screen {
                 });
     }
 
-    private String difference(double current, double previous) {
+    private String compactDelta(double current, double previous) {
+        if (previous == 0 && current == 0) return "—";
+        if (previous == 0) return "+" + num(current);
         double d = current - previous;
-        String number = (d > 0 ? "+" : "") + num(d);
-        return s(previous == 0 ? "no_comparison" : "vs_previous", number);
+        if (Math.abs(d) < 1e-6) return "±0";
+        return (d > 0 ? "+" : "") + num(d);
     }
 
-    private void tile(LinearLayout parent, String label, String value, String change, int color) {
+    private void tile(
+            LinearLayout parent,
+            String label,
+            String value,
+            String delta,
+            int color,
+            boolean addEndGap) {
         LinearLayout c = card(parent);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -1, 1);
-        lp.setMargins(activity.dp(3), activity.dp(5), activity.dp(3), activity.dp(5));
+        lp.setMargins(0, activity.dp(4), addEndGap ? activity.dp(8) : 0, activity.dp(4));
         c.setLayoutParams(lp);
-        text(c, label, 14);
-        TextView n = text(c, value, 26);
+        c.setPadding(activity.dp(14), activity.dp(12), activity.dp(14), activity.dp(12));
+
+        TextView cap = new TextView(activity);
+        cap.setText(label);
+        cap.setTextSize(12);
+        cap.setTextColor(MainActivity.MUTED);
+        c.addView(cap);
+
+        TextView n = new TextView(activity);
+        n.setText(value);
+        n.setTextSize(28);
         n.setTextColor(color);
         n.setTypeface(null, Typeface.BOLD);
-        text(c, change, 12);
+        LinearLayout.LayoutParams nLp = new LinearLayout.LayoutParams(-2, -2);
+        nLp.topMargin = activity.dp(2);
+        c.addView(n, nLp);
+
+        TextView d = new TextView(activity);
+        d.setText(delta);
+        d.setTextSize(12);
+        d.setTextColor(MainActivity.MUTED);
+        c.addView(d);
     }
 
     private void loaded(ReportEngine.Report report, LinearLayout content) {
         ReportEngine.Summary r = report.current, p = report.previous;
-        text(content, s(report.partial ? "to_date" : "full_week"), 14);
         LinearLayout row = new LinearLayout(activity);
-        content.addView(row);
+        LinearLayout.LayoutParams r1Lp = new LinearLayout.LayoutParams(-1, -2);
+        r1Lp.topMargin = activity.dp(4);
+        content.addView(row, r1Lp);
         tile(
                 row,
                 s("sessions"),
                 num(r.sessions),
-                difference(r.sessions, p.sessions),
-                MainActivity.ACCENT);
-        tile(row, s("days"), num(r.days), difference(r.days, p.days), 0xff8eb6ff);
+                compactDelta(r.sessions, p.sessions),
+                UiKit.RING_MOVE,
+                true);
+        tile(row, s("days"), num(r.days), compactDelta(r.days, p.days), UiKit.RING_EXERCISE, false);
+
         LinearLayout row2 = new LinearLayout(activity);
-        content.addView(row2);
-        tile(row2, s("completed_sets"), num(r.sets), difference(r.sets, p.sets), 0xffc1a1ff);
+        content.addView(row2, new LinearLayout.LayoutParams(-1, -2));
+        tile(
+                row2,
+                s("completed_sets"),
+                num(r.sets),
+                compactDelta(r.sets, p.sets),
+                UiKit.RING_STAND,
+                true);
         tile(
                 row2,
                 s("duration"),
-                num(r.duration / 60000.0),
-                s("minutes_unit") + "\n" + difference(r.duration / 60000.0, p.duration / 60000.0),
-                0xff6edddd);
+                num(r.duration / 60000.0) + " " + s("minutes_unit"),
+                compactDelta(r.duration / 60000.0, p.duration / 60000.0),
+                UiKit.CHART_AMBER,
+                false);
+
         LinearLayout parts = section(content, "part_chart");
         if (r.parts.isEmpty()) text(parts, s("empty_week"), 14);
         for (Map.Entry<String, Integer> entry : r.parts.entrySet()) {
-            text(parts, s("part_summary", activity.partName(entry.getKey()), entry.getValue()), 16);
+            text(parts, s("part_summary", activity.partName(entry.getKey()), entry.getValue()), 15);
             ProgressBar bar =
                     new ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal);
             bar.setMax(Math.max(1, r.sets));
             bar.setProgress(entry.getValue());
-            bar.setProgressTintList(android.content.res.ColorStateList.valueOf(0xffc1a1ff));
-            parts.addView(bar, new LinearLayout.LayoutParams(-1, activity.dp(8)));
+            bar.setProgressTintList(
+                    android.content.res.ColorStateList.valueOf(UiKit.RING_EXERCISE));
+            parts.addView(bar, new LinearLayout.LayoutParams(-1, activity.dp(7)));
         }
+
         List<ReportEngine.Point> daily = new ArrayList<>();
         String[] dailyLabels = new String[7];
         for (int i = 0; i < 7; i++) {
@@ -169,24 +243,17 @@ final class WeeklyScreen extends Screen {
             dailyLabels[i] = new SimpleDateFormat("EEE", activity.locale()).format(new Date(time));
         }
         chartInto(section(content, "daily_chart"), daily, dailyLabels, false, s("completed_sets"));
+
         LinearLayout trend = section(content, "eight_weeks");
         String[] metrics = {"sessions", "completed_sets", "total_volume"};
         int index =
                 activity.metric.equals("completed_sets")
                         ? 1
                         : activity.metric.equals("total_volume") ? 2 : 0;
-        Spinner metric =
-                select(
-                        trend,
-                        s("metric"),
-                        new String[] {s(metrics[0]), s(metrics[1]), s(metrics[2])},
-                        index,
-                        false);
-        LinearLayout chartArea = activity.column();
-        trend.addView(chartArea);
-        Runnable render =
+        LinearLayout chartArea = new LinearLayout(activity);
+        chartArea.setOrientation(LinearLayout.VERTICAL);
+        Runnable renderChart =
                 () -> {
-                    activity.metric = metrics[metric.getSelectedItemPosition()];
                     chartArea.removeAllViews();
                     List<ReportEngine.Point> points = new ArrayList<>();
                     String[] labels = new String[8];
@@ -211,20 +278,29 @@ final class WeeklyScreen extends Screen {
                                     ? s("volume_unit")
                                     : s(activity.metric));
                 };
-        metric.setOnItemSelectedListener(listener(render));
-        render.run();
+        UiKit.segmentedControl(
+                activity,
+                trend,
+                new String[] {s(metrics[0]), s(metrics[1]), s(metrics[2])},
+                index,
+                selectedIdx -> {
+                    activity.metric = metrics[selectedIdx];
+                    renderChart.run();
+                });
+        trend.addView(chartArea, new LinearLayout.LayoutParams(-1, -2));
+        renderChart.run();
+
         LinearLayout exercises = section(content, "exercise_trend");
         button(exercises, s("progress_title"), () -> show("progress"));
-        if (report.exercises.isEmpty()) text(exercises, s("no_exercise"), 16);
+        if (report.exercises.isEmpty()) text(exercises, s("no_exercise"), 14);
         else {
             List<ReportEngine.ExerciseTrend> all = new ArrayList<>(report.exercises.values());
-            all.sort(
-                    (a, b) -> {
-                        int pa = Catalog.partIndex(Catalog.exercisePart(a.id, ""));
-                        int pb = Catalog.partIndex(Catalog.exercisePart(b.id, ""));
-                        if (pa != pb) return Integer.compare(pa, pb);
-                        return a.name.compareToIgnoreCase(b.name);
-                    });
+            all.sort((a, b) -> {
+                int pa = Catalog.partIndex(Catalog.exercisePart(a.id, ""));
+                int pb = Catalog.partIndex(Catalog.exercisePart(b.id, ""));
+                if (pa != pb) return Integer.compare(pa, pb);
+                return a.name.compareToIgnoreCase(b.name);
+            });
             String[] labels = new String[all.size()];
             int selected = 0;
             Map<String, Integer> duplicates = new HashMap<>();
@@ -240,8 +316,9 @@ final class WeeklyScreen extends Screen {
                 if (ex.id.equals(activity.exerciseId)) selected = i;
             }
             Spinner pick = select(exercises, s("choose_exercise"), labels, selected);
-            LinearLayout area = activity.column();
-            exercises.addView(area);
+            LinearLayout area = new LinearLayout(activity);
+            area.setOrientation(LinearLayout.VERTICAL);
+            exercises.addView(area, new LinearLayout.LayoutParams(-1, -2));
             Runnable draw =
                     () -> {
                         ReportEngine.ExerciseTrend ex = all.get(pick.getSelectedItemPosition());
@@ -273,23 +350,24 @@ final class WeeklyScreen extends Screen {
         LinearLayout header = new LinearLayout(activity);
         header.setTag("report_toggle_" + key);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setMinimumHeight(activity.dp(48));
+        header.setMinimumHeight(activity.dp(44));
         header.setFocusable(true);
         card.addView(header, new LinearLayout.LayoutParams(-1, -2));
-        TextView label = text(header, s(key), 20);
+        TextView label = text(header, s(key), 17);
+        label.setTypeface(null, Typeface.BOLD);
         label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         ImageButton arrow = new ImageButton(activity);
         arrow.setTag("report_arrow_" + key);
         arrow.setImageResource(R.drawable.ic_report_expand);
-        arrow.setPadding(activity.dp(12), activity.dp(12), activity.dp(12), activity.dp(12));
+        arrow.setPadding(activity.dp(10), activity.dp(10), activity.dp(10), activity.dp(10));
         arrow.setFocusable(false);
         arrow.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         TypedValue ripple = new TypedValue();
         activity.getTheme()
                 .resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, ripple, true);
         arrow.setBackgroundResource(ripple.resourceId);
-        header.addView(arrow, new LinearLayout.LayoutParams(activity.dp(48), activity.dp(48)));
+        header.addView(arrow, new LinearLayout.LayoutParams(activity.dp(42), activity.dp(42)));
         LinearLayout body = new LinearLayout(activity);
         body.setTag("report_body_" + key);
         body.setOrientation(LinearLayout.VERTICAL);
@@ -317,7 +395,6 @@ final class WeeklyScreen extends Screen {
         header.setOnClickListener(v -> {
             if (!activity.expandedReportSections.remove(key))
                 activity.expandedReportSections.add(key);
-            // Only toggle the existing body; preserve chart selection and the surrounding page.
             update.run();
         });
         arrow.setOnClickListener(v -> header.performClick());
@@ -333,7 +410,7 @@ final class WeeklyScreen extends Screen {
             String unit) {
         TextView selection = new TextView(activity);
         selection.setTextColor(MainActivity.ACCENT);
-        selection.setTextSize(14);
+        selection.setTextSize(13);
         TrendChart view =
                 new TrendChart(
                         activity,
@@ -349,7 +426,7 @@ final class WeeklyScreen extends Screen {
                                                         num(points.get(index).value))
                                                 + " "
                                                 + unit));
-        c.addView(view, new LinearLayout.LayoutParams(-1, activity.dp(190)));
+        c.addView(view, new LinearLayout.LayoutParams(-1, activity.dp(180)));
         c.addView(selection);
         StringBuilder data = new StringBuilder();
         for (int i = 0; i < points.size(); i++) {

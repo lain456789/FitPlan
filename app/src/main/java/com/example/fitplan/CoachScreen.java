@@ -3,20 +3,17 @@ package com.example.fitplan;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -24,27 +21,14 @@ import java.util.List;
 import java.util.TimeZone;
 
 /**
- * Integrated AI Fitness Coach screen. Reads real local workout records, daily check-ins, exercise
- * catalog, and user profile from FitPlan's SQLite Store; keeps chat turns in memory only and clears
- * them when leaving this tab or closing the app.
+ * Apple Fitness-styled AI Fitness Coach screen: compact framed coach persona card, clickable
+ * model/API pill, 1-line Profile link, avatar-backed bubbles, and quick prompts pinned directly
+ * above the bottom composer. All buttons use adaptive WRAP_CONTENT heights to prevent EN clipping.
  */
 final class CoachScreen extends Screen {
-    private static final int USER_BUBBLE = Color.rgb(34, 48, 30);
-    private static final int ERROR_BUBBLE = Color.rgb(58, 28, 30);
-    private static final int OFFLINE_BANNER = Color.rgb(66, 39, 24);
-    private static final int INPUT_BG = Color.rgb(22, 25, 31);
-    private static final int BORDER = Color.rgb(46, 51, 60);
-    private static final int ON_ACCENT = Color.rgb(16, 22, 12);
     private static final String KEY_PRIVACY_ACCEPTED = "coach_privacy_accepted";
 
-    private static final String[] GOAL_CODES = {
-        "", "hypertrophy", "strength", "fat_loss", "health"
-    };
-    private static final String[] EXP_CODES = {"", "beginner", "intermediate", "advanced"};
-    private static final String[] EQUIP_CODES = {
-        "", "full_gym", "dumbbell_bench_band", "home_bodyweight"
-    };
-
+    private CoachAvatarView headerAvatar;
     private LinearLayout offlineBanner;
     private LinearLayout chatContainer;
     private Button sendButton;
@@ -54,44 +38,135 @@ final class CoachScreen extends Screen {
     }
 
     void render() {
-        // 1. Header row: Title + New Chat button
-        LinearLayout header = new LinearLayout(activity);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        content.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        CoachModels.CoachSnapshot snapshot = CoachReader.loadSnapshot(store);
+        CoachApiConfig.EffectiveConfig apiConfig = CoachApiConfig.resolveCurrent(activity);
+        String providerLabel = s(CoachApiConfig.providerLabelKey(apiConfig.provider));
+
+        // 1. Clean Coach Persona Header Card
+        LinearLayout personaCard = card(content);
+        LinearLayout topRow = new LinearLayout(activity);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        topRow.setGravity(Gravity.CENTER_VERTICAL);
+        personaCard.addView(topRow, new LinearLayout.LayoutParams(-1, -2));
+
+        headerAvatar = new CoachAvatarView(activity, 50, true, MainActivity.CARD);
+        headerAvatar.setContentDescription(s("coach_avatar_change"));
+        headerAvatar.setOnClickListener(v -> activity.showCoachAvatarOptions());
+        LinearLayout.LayoutParams avatarLp = new LinearLayout.LayoutParams(-2, -2);
+        avatarLp.setMarginEnd(activity.dp(12));
+        topRow.addView(headerAvatar, avatarLp);
+
+        LinearLayout infoCol = new LinearLayout(activity);
+        infoCol.setOrientation(LinearLayout.VERTICAL);
+        topRow.addView(infoCol, new LinearLayout.LayoutParams(0, -2, 1f));
 
         TextView heading = new TextView(activity);
         heading.setText(s("coach_title"));
-        heading.setTextSize(26);
+        heading.setTextSize(19);
         heading.setTextColor(MainActivity.FG);
         heading.setTypeface(null, Typeface.BOLD);
-        header.addView(heading, new LinearLayout.LayoutParams(0, -2, 1f));
+        infoCol.addView(heading);
 
-        Button newChat = compactButton(s("coach_new_chat"), MainActivity.CARD, MainActivity.ACCENT);
+        // Compact clickable model pill right under title
+        LinearLayout modelPill = new LinearLayout(activity);
+        modelPill.setOrientation(LinearLayout.HORIZONTAL);
+        modelPill.setGravity(Gravity.CENTER_VERTICAL);
+        boolean keyReady = apiConfig.hasKey();
+        modelPill.setBackground(
+                UiKit.rippleBox(
+                        activity,
+                        keyReady ? UiKit.SURFACE : UiKit.OFFLINE_BG,
+                        keyReady ? 0 : UiKit.OFFLINE_BORDER,
+                        12,
+                        0x26FFFFFF));
+        modelPill.setPadding(activity.dp(8), activity.dp(4), activity.dp(8), activity.dp(4));
+        modelPill.setOnClickListener(v -> openApiSettings());
+
+        ImageView sliderIcon = new ImageView(activity);
+        sliderIcon.setImageResource(R.drawable.ic_settings_sliders);
+        sliderIcon.setColorFilter(
+                keyReady ? MainActivity.ACCENT : MainActivity.FG, PorterDuff.Mode.SRC_IN);
+        sliderIcon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams iconLp =
+                new LinearLayout.LayoutParams(activity.dp(13), activity.dp(13));
+        iconLp.setMarginEnd(activity.dp(5));
+        modelPill.addView(sliderIcon, iconLp);
+
+        String shortModel =
+                keyReady
+                        ? (apiConfig.model.isEmpty() ? providerLabel : apiConfig.model)
+                        : s("coach_model_pill_missing", providerLabel);
+        TextView modelText = new TextView(activity);
+        modelText.setText(shortModel);
+        modelText.setTextSize(12);
+        modelText.setTextColor(keyReady ? MainActivity.ACCENT : MainActivity.FG);
+        modelText.setSingleLine(true);
+        modelPill.addView(modelText);
+
+        LinearLayout.LayoutParams mpLp = new LinearLayout.LayoutParams(-2, -2);
+        mpLp.topMargin = activity.dp(4);
+        infoCol.addView(modelPill, mpLp);
+
+        Button newChat =
+                UiKit.compactPill(
+                        activity,
+                        s("coach_new_chat"),
+                        UiKit.SURFACE,
+                        0,
+                        MainActivity.FG,
+                        R.drawable.ic_add,
+                        false);
+        newChat.setTextSize(12);
+        newChat.setPadding(activity.dp(10), activity.dp(6), activity.dp(12), activity.dp(6));
         newChat.setOnClickListener(v -> {
             activity.clearCoachSession();
             toast(s("coach_chat_cleared"));
             show("coach");
         });
-        header.addView(newChat, new LinearLayout.LayoutParams(-2, activity.dp(36)));
+        LinearLayout.LayoutParams newChatLp = new LinearLayout.LayoutParams(-2, -2);
+        newChatLp.setMarginStart(activity.dp(8));
+        topRow.addView(newChat, newChatLp);
 
-        // 2. Live local data status line
-        CoachModels.CoachSnapshot snapshot = CoachReader.loadSnapshot(store);
-        String statusLine =
-                snapshot.workouts.isEmpty() && snapshot.checkins.isEmpty()
-                        ? s("coach_data_empty")
-                        : s(
-                                "coach_data_status",
-                                snapshot.workouts.size(),
-                                snapshot.checkins.size(),
-                                snapshot.exercises.size());
-        TextView dataStatus = text(content, statusLine, 13);
-        dataStatus.setTextColor(MainActivity.MUTED);
+        // 2. Single-line clickable Profile link strip
+        LinearLayout profileStrip = new LinearLayout(activity);
+        profileStrip.setOrientation(LinearLayout.HORIZONTAL);
+        profileStrip.setGravity(Gravity.CENTER_VERTICAL);
+        profileStrip.setBackground(
+                UiKit.rippleBox(activity, UiKit.SURFACE_DEEP, UiKit.BORDER, 14, 0x22FFFFFF));
+        profileStrip.setPadding(activity.dp(12), activity.dp(8), activity.dp(10), activity.dp(8));
+        LinearLayout.LayoutParams stripLp = new LinearLayout.LayoutParams(-1, -2);
+        stripLp.setMargins(0, activity.dp(2), 0, activity.dp(8));
+        content.addView(profileStrip, stripLp);
 
-        // 3. Proactive offline banner (visible immediately when disconnected)
+        TextView profileStripText = new TextView(activity);
+        profileStripText.setText(
+                snapshot.profile.isEmpty()
+                        ? s("coach_profile_link_empty")
+                        : profileSummaryText(snapshot.profile));
+        profileStripText.setTextSize(12);
+        profileStripText.setTextColor(MainActivity.MUTED);
+        profileStripText.setSingleLine(true);
+        profileStripText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        profileStrip.addView(profileStripText, new LinearLayout.LayoutParams(0, -2, 1f));
+
+        ImageView chev = new ImageView(activity);
+        chev.setImageResource(R.drawable.ic_action_chevron);
+        chev.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams chevLp =
+                new LinearLayout.LayoutParams(activity.dp(16), activity.dp(16));
+        chevLp.setMarginStart(activity.dp(6));
+        profileStrip.addView(chev, chevLp);
+
+        profileStrip.setOnClickListener(v -> {
+            activity.profileFormExpanded = true;
+            show("profile");
+        });
+
+        // 3. Proactive offline banner (exact required Chinese prompt preserved)
         offlineBanner = new LinearLayout(activity);
         offlineBanner.setOrientation(LinearLayout.VERTICAL);
-        offlineBanner.setBackground(rounded(OFFLINE_BANNER, 14, Color.rgb(160, 92, 48)));
+        offlineBanner.setBackground(
+                UiKit.box(activity, UiKit.OFFLINE_BG, UiKit.OFFLINE_BORDER, 14));
         offlineBanner.setPadding(
                 activity.dp(14), activity.dp(10), activity.dp(14), activity.dp(10));
         TextView offlineText = new TextView(activity);
@@ -101,54 +176,26 @@ final class CoachScreen extends Screen {
         offlineText.setTypeface(null, Typeface.BOLD);
         offlineBanner.addView(offlineText);
         LinearLayout.LayoutParams bannerLp = new LinearLayout.LayoutParams(-1, -2);
-        bannerLp.setMargins(0, activity.dp(4), 0, activity.dp(8));
+        bannerLp.setMargins(0, 0, 0, activity.dp(8));
         content.addView(offlineBanner, bannerLp);
-        refreshOfflineBanner();
+        refreshOfflineAndAvatarStatus();
 
-        // 4. Collapsible Training Profile card
-        LinearLayout profileCard = card(content);
-        TextView profileTitle = new TextView(activity);
-        profileTitle.setText(
-                s("coach_profile_header") + (activity.coachProfileExpanded ? "  ▲" : "  ▼"));
-        profileTitle.setTextColor(MainActivity.FG);
-        profileTitle.setTextSize(16);
-        profileTitle.setTypeface(null, Typeface.BOLD);
-        profileCard.addView(profileTitle);
+        // 4. Chat messages container
+        chatContainer = new LinearLayout(activity);
+        chatContainer.setOrientation(LinearLayout.VERTICAL);
+        content.addView(chatContainer, new LinearLayout.LayoutParams(-1, -2));
+        renderMessages();
 
-        TextView profileSummary = new TextView(activity);
-        profileSummary.setText(profileSummaryText(snapshot.profile));
-        profileSummary.setTextColor(MainActivity.MUTED);
-        profileSummary.setTextSize(13);
-        LinearLayout.LayoutParams sumLp = new LinearLayout.LayoutParams(-1, -2);
-        sumLp.topMargin = activity.dp(4);
-        profileCard.addView(profileSummary, sumLp);
+        // 5. Pinned bottom dock: Quick prompt chips (directly above composer) -> Input -> Privacy
+        LinearLayout actions = activity.findViewById(R.id.page_actions);
+        actions.removeAllViews();
+        actions.setVisibility(View.VISIBLE);
 
-        LinearLayout profileForm = new LinearLayout(activity);
-        profileForm.setOrientation(LinearLayout.VERTICAL);
-        profileForm.setVisibility(activity.coachProfileExpanded ? View.VISIBLE : View.GONE);
-        LinearLayout.LayoutParams formLp = new LinearLayout.LayoutParams(-1, -2);
-        formLp.topMargin = activity.dp(8);
-        profileCard.addView(profileForm, formLp);
-        populateProfileForm(profileForm, snapshot.profile);
-
-        View.OnClickListener toggleProfile =
-                v -> {
-                    activity.coachProfileExpanded = !activity.coachProfileExpanded;
-                    profileTitle.setText(
-                            s("coach_profile_header")
-                                    + (activity.coachProfileExpanded ? "  ▲" : "  ▼"));
-                    profileForm.setVisibility(
-                            activity.coachProfileExpanded ? View.VISIBLE : View.GONE);
-                };
-        profileTitle.setOnClickListener(toggleProfile);
-        profileSummary.setOnClickListener(toggleProfile);
-
-        // 5. Quick prompt chips
         HorizontalScrollView chipScroll = new HorizontalScrollView(activity);
         chipScroll.setHorizontalScrollBarEnabled(false);
         LinearLayout.LayoutParams chipScrollLp = new LinearLayout.LayoutParams(-1, -2);
-        chipScrollLp.setMargins(0, activity.dp(4), 0, activity.dp(10));
-        content.addView(chipScroll, chipScrollLp);
+        chipScrollLp.setMargins(0, activity.dp(4), 0, activity.dp(6));
+        actions.addView(chipScroll, chipScrollLp);
 
         LinearLayout chipRow = new LinearLayout(activity);
         chipRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -161,47 +208,54 @@ final class CoachScreen extends Screen {
             {"coach_quick_4", "coach_quick_4_prompt"}
         };
         for (String[] item : quickItems) {
-            Button chip = compactButton(s(item[0]), MainActivity.CARD, MainActivity.ACCENT);
-            chip.setBackground(rounded(MainActivity.CARD, 18, BORDER));
+            Button chip =
+                    UiKit.compactPill(
+                            activity,
+                            s(item[0]),
+                            UiKit.CARD,
+                            UiKit.BORDER,
+                            MainActivity.FG,
+                            0,
+                            false);
+            chip.setTextSize(12);
+            chip.setMinHeight(activity.dp(32));
+            chip.setMinimumHeight(activity.dp(32));
             chip.setPadding(activity.dp(12), activity.dp(6), activity.dp(12), activity.dp(6));
             String prompt = s(item[1]);
             chip.setOnClickListener(v -> requestSend(prompt));
-            LinearLayout.LayoutParams chipLp = new LinearLayout.LayoutParams(-2, activity.dp(36));
-            chipLp.setMarginEnd(activity.dp(8));
+            LinearLayout.LayoutParams chipLp = new LinearLayout.LayoutParams(-2, -2);
+            chipLp.setMarginEnd(activity.dp(6));
             chipRow.addView(chip, chipLp);
         }
 
-        // 6. Chat thread container
-        chatContainer = new LinearLayout(activity);
-        chatContainer.setOrientation(LinearLayout.VERTICAL);
-        content.addView(chatContainer, new LinearLayout.LayoutParams(-1, -2));
-        renderMessages();
-
-        // 7. Pinned bottom composer + persistent privacy footer inside R.id.page_actions
-        LinearLayout actions = activity.findViewById(R.id.page_actions);
-        actions.removeAllViews();
-        actions.setVisibility(View.VISIBLE);
-
         LinearLayout inputRow = new LinearLayout(activity);
         inputRow.setOrientation(LinearLayout.HORIZONTAL);
-        inputRow.setGravity(Gravity.BOTTOM);
-        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
-        rowLp.topMargin = activity.dp(6);
-        actions.addView(inputRow, rowLp);
+        inputRow.setGravity(Gravity.CENTER_VERTICAL);
+        actions.addView(inputRow, new LinearLayout.LayoutParams(-1, -2));
 
         EditText inputEdit = new EditText(activity);
         inputEdit.setHint(s("coach_input_hint"));
         inputEdit.setHintTextColor(MainActivity.MUTED);
         inputEdit.setTextColor(MainActivity.FG);
-        inputEdit.setTextSize(15);
+        inputEdit.setTextSize(14);
         inputEdit.setMaxLines(4);
-        inputEdit.setBackground(rounded(INPUT_BG, 14, BORDER));
-        inputEdit.setPadding(activity.dp(12), activity.dp(10), activity.dp(12), activity.dp(10));
+        inputEdit.setBackground(UiKit.box(activity, UiKit.CARD, UiKit.BORDER, 22));
+        inputEdit.setPadding(activity.dp(16), activity.dp(10), activity.dp(16), activity.dp(10));
         LinearLayout.LayoutParams editLp = new LinearLayout.LayoutParams(0, -2, 1f);
         editLp.setMarginEnd(activity.dp(8));
         inputRow.addView(inputEdit, editLp);
 
-        sendButton = compactButton(s("coach_send"), MainActivity.ACCENT, ON_ACCENT);
+        sendButton =
+                UiKit.compactPill(
+                        activity,
+                        s("coach_send"),
+                        MainActivity.ACCENT,
+                        0,
+                        UiKit.ON_PRIMARY,
+                        R.drawable.ic_send,
+                        true);
+        sendButton.setMinHeight(activity.dp(42));
+        sendButton.setMinimumHeight(activity.dp(42));
         sendButton.setEnabled(!activity.coachSending);
         sendButton.setOnClickListener(v -> {
             String prompt = inputEdit.getText().toString().trim();
@@ -210,138 +264,35 @@ final class CoachScreen extends Screen {
                 requestSend(prompt);
             }
         });
-        inputRow.addView(sendButton, new LinearLayout.LayoutParams(-2, activity.dp(44)));
+        inputRow.addView(sendButton, new LinearLayout.LayoutParams(-2, -2));
 
         TextView privacyFooter = new TextView(activity);
-        privacyFooter.setText(s("coach_privacy_footer"));
+        privacyFooter.setText(s("coach_privacy_footer", providerLabel));
         privacyFooter.setTextColor(MainActivity.MUTED);
-        privacyFooter.setTextSize(11);
+        privacyFooter.setTextSize(10.5f);
         LinearLayout.LayoutParams footerLp = new LinearLayout.LayoutParams(-1, -2);
         footerLp.topMargin = activity.dp(4);
         actions.addView(privacyFooter, footerLp);
     }
 
-    private void refreshOfflineBanner() {
+    private void openApiSettings() {
+        new CoachApiDialog(activity).show(() -> show("coach"));
+    }
+
+    private void refreshOfflineAndAvatarStatus() {
+        boolean online = GlmClient.isNetworkAvailable(activity);
         if (offlineBanner != null) {
-            boolean online = GlmClient.isNetworkAvailable(activity);
             offlineBanner.setVisibility(online ? View.GONE : View.VISIBLE);
         }
-    }
-
-    private void populateProfileForm(LinearLayout form, CoachModels.UserProfile profile) {
-        form.removeAllViews();
-        String[] goalLabels = {
-            s("coach_unset"),
-            s("coach_goal_hypertrophy"),
-            s("coach_goal_strength"),
-            s("coach_goal_fat_loss"),
-            s("coach_goal_health")
-        };
-        Spinner goalSpinner =
-                select(
-                        form,
-                        s("coach_profile_goal"),
-                        goalLabels,
-                        indexOf(GOAL_CODES, profile.goal));
-
-        String[] expLabels = {
-            s("coach_unset"),
-            s("coach_exp_beginner"),
-            s("coach_exp_intermediate"),
-            s("coach_exp_advanced")
-        };
-        Spinner expSpinner =
-                select(
-                        form,
-                        s("coach_profile_exp"),
-                        expLabels,
-                        indexOf(EXP_CODES, profile.experience));
-
-        EditText weightEdit =
-                styledInput(form, s("coach_profile_weight"), profile.weightKg, "", true);
-
-        String[] daysLabels = new String[8];
-        daysLabels[0] = s("coach_unset");
-        for (int i = 1; i <= 7; i++) {
-            daysLabels[i] = s("coach_days_fmt", i);
+        if (headerAvatar != null) {
+            int status =
+                    !online
+                            ? CoachAvatarView.STATUS_OFFLINE
+                            : activity.coachSending
+                                    ? CoachAvatarView.STATUS_THINKING
+                                    : CoachAvatarView.STATUS_ONLINE;
+            headerAvatar.setStatus(status);
         }
-        int selectedDays =
-                profile.weeklyDays >= 1 && profile.weeklyDays <= 7 ? profile.weeklyDays : 0;
-        Spinner daysSpinner = select(form, s("coach_profile_days"), daysLabels, selectedDays);
-
-        String[] equipLabels = {
-            s("coach_unset"),
-            s("coach_equip_gym"),
-            s("coach_equip_dumbbell_band"),
-            s("coach_equip_home_bw")
-        };
-        Spinner equipSpinner =
-                select(
-                        form,
-                        s("coach_profile_equip"),
-                        equipLabels,
-                        indexOf(EQUIP_CODES, profile.equipment));
-
-        EditText injuriesEdit =
-                styledInput(
-                        form,
-                        s("coach_profile_injuries"),
-                        profile.injuries,
-                        s("coach_profile_injuries_hint"),
-                        false);
-
-        Button saveBtn = compactButton(s("coach_profile_save"), MainActivity.ACCENT, ON_ACCENT);
-        saveBtn.setOnClickListener(v -> {
-            String weightStr = weightEdit.getText().toString().trim();
-            if (!weightStr.isEmpty()) {
-                try {
-                    double w = Double.parseDouble(weightStr);
-                    if (!Double.isFinite(w) || w < 25 || w > 250) {
-                        toast(s("coach_profile_weight_invalid"));
-                        return;
-                    }
-                } catch (NumberFormatException e) {
-                    toast(s("coach_profile_weight_invalid"));
-                    return;
-                }
-            }
-            CoachModels.UserProfile updated =
-                    new CoachModels.UserProfile(
-                            GOAL_CODES[goalSpinner.getSelectedItemPosition()],
-                            EXP_CODES[expSpinner.getSelectedItemPosition()],
-                            weightStr,
-                            daysSpinner.getSelectedItemPosition(),
-                            EQUIP_CODES[equipSpinner.getSelectedItemPosition()],
-                            injuriesEdit.getText().toString().trim(),
-                            System.currentTimeMillis());
-            CoachReader.saveProfile(store, updated);
-            activity.coachProfileExpanded = false;
-            toast(s("coach_profile_saved"));
-            show("coach");
-        });
-        LinearLayout.LayoutParams saveLp = new LinearLayout.LayoutParams(-1, activity.dp(42));
-        saveLp.topMargin = activity.dp(10);
-        form.addView(saveBtn, saveLp);
-    }
-
-    private EditText styledInput(
-            LinearLayout parent, String label, String initial, String hint, boolean number) {
-        TextView cap = text(parent, label, 13);
-        cap.setTextColor(MainActivity.MUTED);
-        EditText edit = new EditText(activity);
-        edit.setText(initial);
-        edit.setHint(hint);
-        edit.setHintTextColor(MainActivity.MUTED);
-        edit.setTextColor(MainActivity.FG);
-        edit.setTextSize(14);
-        edit.setSingleLine(true);
-        if (number) {
-            edit.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        }
-        edit.setBackground(rounded(INPUT_BG, 10, BORDER));
-        edit.setPadding(activity.dp(10), activity.dp(8), activity.dp(10), activity.dp(8));
-        parent.addView(edit, new LinearLayout.LayoutParams(-1, -2));
-        return edit;
     }
 
     private String profileSummaryText(CoachModels.UserProfile p) {
@@ -350,10 +301,7 @@ final class CoachScreen extends Screen {
         }
         List<String> parts = new ArrayList<>();
         if (!p.goal.isEmpty()) {
-            parts.add(labelForGoal(p.goal));
-        }
-        if (!p.experience.isEmpty()) {
-            parts.add(labelForExp(p.experience));
+            parts.add(s(ProfileSummary.goalLabelKey(p.goal)));
         }
         if (!p.weightKg.isEmpty()) {
             parts.add(p.weightKg + " kg");
@@ -361,64 +309,10 @@ final class CoachScreen extends Screen {
         if (p.weeklyDays > 0) {
             parts.add(s("coach_days_fmt", p.weeklyDays));
         }
-        if (!p.equipment.isEmpty()) {
-            parts.add(labelForEquip(p.equipment));
-        }
-        if (!p.injuries.isEmpty()) {
-            parts.add(p.injuries);
+        if (!p.experience.isEmpty()) {
+            parts.add(s(ProfileSummary.expLabelKey(p.experience)));
         }
         return String.join(" · ", parts);
-    }
-
-    private String labelForGoal(String code) {
-        if ("hypertrophy".equals(code)) {
-            return s("coach_goal_hypertrophy");
-        }
-        if ("strength".equals(code)) {
-            return s("coach_goal_strength");
-        }
-        if ("fat_loss".equals(code)) {
-            return s("coach_goal_fat_loss");
-        }
-        if ("health".equals(code)) {
-            return s("coach_goal_health");
-        }
-        return code;
-    }
-
-    private String labelForExp(String code) {
-        if ("beginner".equals(code)) {
-            return s("coach_exp_beginner");
-        }
-        if ("intermediate".equals(code)) {
-            return s("coach_exp_intermediate");
-        }
-        if ("advanced".equals(code)) {
-            return s("coach_exp_advanced");
-        }
-        return code;
-    }
-
-    private String labelForEquip(String code) {
-        if ("full_gym".equals(code)) {
-            return s("coach_equip_gym");
-        }
-        if ("dumbbell_bench_band".equals(code)) {
-            return s("coach_equip_dumbbell_band");
-        }
-        if ("home_bodyweight".equals(code)) {
-            return s("coach_equip_home_bw");
-        }
-        return code;
-    }
-
-    private static int indexOf(String[] values, String target) {
-        for (int i = 0; i < values.length; i++) {
-            if (values[i].equals(target)) {
-                return i;
-            }
-        }
-        return 0;
     }
 
     private void requestSend(String prompt) {
@@ -426,9 +320,8 @@ final class CoachScreen extends Screen {
             return;
         }
         String trimmed = prompt.trim();
-        refreshOfflineBanner();
+        refreshOfflineAndAvatarStatus();
 
-        // Check offline proactively so the user immediately sees the exact offline message.
         if (!GlmClient.isNetworkAvailable(activity)) {
             activity.coachLastPrompt = trimmed;
             activity.coachMessages.add(
@@ -445,10 +338,12 @@ final class CoachScreen extends Screen {
         SharedPreferences prefs =
                 activity.getSharedPreferences("preferences", Context.MODE_PRIVATE);
         if (!prefs.getBoolean(KEY_PRIVACY_ACCEPTED, false)) {
+            CoachApiConfig.EffectiveConfig apiConfig = CoachApiConfig.resolveCurrent(activity);
+            String providerLabel = s(CoachApiConfig.providerLabelKey(apiConfig.provider));
             activity.activeDialog =
                     new AlertDialog.Builder(activity)
                             .setTitle(s("coach_privacy_title"))
-                            .setMessage(s("coach_privacy_body"))
+                            .setMessage(s("coach_privacy_body", providerLabel))
                             .setNegativeButton(s("cancel"), null)
                             .setPositiveButton(
                                     s("coach_privacy_agree"),
@@ -466,7 +361,7 @@ final class CoachScreen extends Screen {
         if (activity.coachSending) {
             return;
         }
-        refreshOfflineBanner();
+        refreshOfflineAndAvatarStatus();
         if (!GlmClient.isNetworkAvailable(activity)) {
             if (isRetry
                     && !activity.coachMessages.isEmpty()
@@ -488,6 +383,7 @@ final class CoachScreen extends Screen {
 
         activity.coachSending = true;
         activity.coachLastPrompt = userPrompt;
+        refreshOfflineAndAvatarStatus();
         if (sendButton != null) {
             sendButton.setEnabled(false);
         }
@@ -522,12 +418,13 @@ final class CoachScreen extends Screen {
                     CoachContextBuilder.build(
                             snapshot, System.currentTimeMillis(), TimeZone.getDefault(), uiLang);
             String skill = activity.coachSkillMarkdown();
+            CoachApiConfig.EffectiveConfig apiConfig = CoachApiConfig.resolveCurrent(appContext);
             GlmProtocol.GlmResult result =
                     GlmClient.chat(
                             appContext,
-                            BuildConfig.GLM_API_KEY,
-                            BuildConfig.GLM_ENDPOINT,
-                            BuildConfig.GLM_MODEL,
+                            apiConfig.apiKey,
+                            apiConfig.endpoint,
+                            apiConfig.model,
                             skill,
                             built.promptBlock,
                             priorHistory,
@@ -543,8 +440,9 @@ final class CoachScreen extends Screen {
                 if (sendButton != null) {
                     sendButton.setEnabled(true);
                 }
-                refreshOfflineBanner();
+                refreshOfflineAndAvatarStatus();
                 if (result.success) {
+                    activity.coachLastErrorCode = "";
                     activity.coachMessages.add(
                             new CoachModels.ChatMessage(
                                     "assistant",
@@ -552,6 +450,7 @@ final class CoachScreen extends Screen {
                                     false,
                                     System.currentTimeMillis()));
                 } else {
+                    activity.coachLastErrorCode = result.errorCode;
                     activity.coachMessages.add(
                             new CoachModels.ChatMessage(
                                     "assistant",
@@ -573,6 +472,8 @@ final class CoachScreen extends Screen {
                 return s("coach_err_no_key");
             case "auth_error":
                 return s("coach_err_auth");
+            case "invalid_endpoint":
+                return s("coach_api_endpoint_invalid");
             case "rate_limit":
                 return s("coach_err_rate");
             case "network_error":
@@ -591,43 +492,71 @@ final class CoachScreen extends Screen {
             return;
         }
         chatContainer.removeAllViews();
-        addBubble(s("coach_welcome"), false, false);
-        for (CoachModels.ChatMessage msg : activity.coachMessages) {
-            addBubble(msg.content, "user".equals(msg.role), msg.isError);
+        addBubble(s("coach_welcome"), false, false, false);
+        int lastIndex = activity.coachMessages.size() - 1;
+        for (int i = 0; i < activity.coachMessages.size(); i++) {
+            CoachModels.ChatMessage msg = activity.coachMessages.get(i);
+            boolean offerConfig =
+                    i == lastIndex
+                            && msg.isError
+                            && ("missing_key".equals(activity.coachLastErrorCode)
+                                    || "auth_error".equals(activity.coachLastErrorCode)
+                                    || "invalid_endpoint".equals(activity.coachLastErrorCode));
+            addBubble(msg.content, "user".equals(msg.role), msg.isError, offerConfig);
         }
         if (activity.coachSending) {
+            LinearLayout row = new LinearLayout(activity);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.TOP);
+            LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
+            rowLp.bottomMargin = activity.dp(10);
+            chatContainer.addView(row, rowLp);
+
+            CoachAvatarView mini = new CoachAvatarView(activity, 30, false, MainActivity.BG);
+            LinearLayout.LayoutParams miniLp = new LinearLayout.LayoutParams(-2, -2);
+            miniLp.setMarginEnd(activity.dp(8));
+            row.addView(mini, miniLp);
+
             LinearLayout thinking = new LinearLayout(activity);
             thinking.setOrientation(LinearLayout.VERTICAL);
-            thinking.setBackground(rounded(MainActivity.CARD, 14, BORDER));
+            thinking.setBackground(UiKit.box(activity, UiKit.CARD, 0, 18));
             thinking.setPadding(activity.dp(14), activity.dp(10), activity.dp(14), activity.dp(10));
             TextView tv = new TextView(activity);
             tv.setText(s("coach_thinking"));
             tv.setTextColor(MainActivity.ACCENT);
             tv.setTextSize(14);
             thinking.addView(tv);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-2, -2);
-            lp.bottomMargin = activity.dp(10);
-            chatContainer.addView(thinking, lp);
+            row.addView(thinking, new LinearLayout.LayoutParams(-2, -2));
         }
     }
 
-    private void addBubble(String textValue, boolean isUser, boolean isError) {
-        LinearLayout wrapper = new LinearLayout(activity);
-        wrapper.setOrientation(LinearLayout.VERTICAL);
-        wrapper.setGravity(isUser ? Gravity.END : Gravity.START);
-        LinearLayout.LayoutParams wrapLp = new LinearLayout.LayoutParams(-1, -2);
-        wrapLp.bottomMargin = activity.dp(10);
-        chatContainer.addView(wrapper, wrapLp);
+    private void addBubble(
+            String textValue, boolean isUser, boolean isError, boolean offerConfigButton) {
+        LinearLayout row = new LinearLayout(activity);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(isUser ? Gravity.END : Gravity.START);
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
+        rowLp.bottomMargin = activity.dp(10);
+        chatContainer.addView(row, rowLp);
+
+        if (!isUser) {
+            CoachAvatarView mini = new CoachAvatarView(activity, 30, false, MainActivity.BG);
+            LinearLayout.LayoutParams miniLp = new LinearLayout.LayoutParams(-2, -2);
+            miniLp.setMarginEnd(activity.dp(8));
+            miniLp.topMargin = activity.dp(2);
+            row.addView(mini, miniLp);
+        }
 
         LinearLayout bubble = new LinearLayout(activity);
         bubble.setOrientation(LinearLayout.VERTICAL);
-        int bg = isError ? ERROR_BUBBLE : isUser ? USER_BUBBLE : MainActivity.CARD;
-        bubble.setBackground(rounded(bg, 14, isUser ? 0 : BORDER));
+        int bg = isError ? UiKit.DANGER_BG : isUser ? UiKit.USER_BUBBLE : UiKit.CARD;
+        int stroke = isError ? UiKit.DANGER_BORDER : 0;
+        bubble.setBackground(UiKit.box(activity, bg, stroke, 18));
         bubble.setPadding(activity.dp(14), activity.dp(10), activity.dp(14), activity.dp(10));
 
         TextView tv = new TextView(activity);
         tv.setTextColor(MainActivity.FG);
-        tv.setTextSize(15);
+        tv.setTextSize(14.5f);
         tv.setLineSpacing(activity.dp(3), 1.0f);
         tv.setTextIsSelectable(!isUser);
         if (isUser) {
@@ -637,21 +566,53 @@ final class CoachScreen extends Screen {
         }
         bubble.addView(tv, new LinearLayout.LayoutParams(-2, -2));
 
-        if (isError && !activity.coachLastPrompt.isEmpty()) {
-            Button retry = compactButton(s("coach_retry"), MainActivity.ACCENT, ON_ACCENT);
-            retry.setOnClickListener(v -> executeSend(activity.coachLastPrompt, true));
-            LinearLayout.LayoutParams retryLp = new LinearLayout.LayoutParams(-2, activity.dp(34));
-            retryLp.topMargin = activity.dp(8);
-            bubble.addView(retry, retryLp);
+        if (isError && (!activity.coachLastPrompt.isEmpty() || offerConfigButton)) {
+            LinearLayout actionRow = new LinearLayout(activity);
+            actionRow.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout.LayoutParams actLp = new LinearLayout.LayoutParams(-2, -2);
+            actLp.topMargin = activity.dp(8);
+            bubble.addView(actionRow, actLp);
+
+            if (!activity.coachLastPrompt.isEmpty()) {
+                Button retry =
+                        UiKit.compactPill(
+                                activity,
+                                s("coach_retry"),
+                                MainActivity.ACCENT,
+                                0,
+                                UiKit.ON_PRIMARY,
+                                0,
+                                true);
+                retry.setOnClickListener(v -> executeSend(activity.coachLastPrompt, true));
+                LinearLayout.LayoutParams retryLp = new LinearLayout.LayoutParams(-2, -2);
+                retryLp.setMarginEnd(activity.dp(8));
+                actionRow.addView(retry, retryLp);
+            }
+            if (offerConfigButton) {
+                Button cfg =
+                        UiKit.compactPill(
+                                activity,
+                                s("coach_api_open"),
+                                UiKit.SURFACE,
+                                0,
+                                MainActivity.ACCENT,
+                                R.drawable.ic_settings_sliders,
+                                true);
+                cfg.setOnClickListener(v -> openApiSettings());
+                actionRow.addView(cfg, new LinearLayout.LayoutParams(-2, -2));
+            }
         }
 
-        LinearLayout.LayoutParams bubbleLp = new LinearLayout.LayoutParams(-2, -2);
+        LinearLayout.LayoutParams bubbleLp =
+                isUser
+                        ? new LinearLayout.LayoutParams(-2, -2)
+                        : new LinearLayout.LayoutParams(0, -2, 1f);
         if (isUser) {
-            bubbleLp.setMarginStart(activity.dp(40));
+            bubbleLp.setMarginStart(activity.dp(44));
         } else {
-            bubbleLp.setMarginEnd(activity.dp(14));
+            bubbleLp.setMarginEnd(activity.dp(6));
         }
-        wrapper.addView(bubble, bubbleLp);
+        row.addView(bubble, bubbleLp);
     }
 
     private void scrollToBottom() {
@@ -659,31 +620,5 @@ final class CoachScreen extends Screen {
         if (scroller != null) {
             scroller.post(() -> scroller.fullScroll(View.FOCUS_DOWN));
         }
-    }
-
-    private Button compactButton(String label, int bgColor, int fgColor) {
-        Button b = new Button(activity);
-        b.setText(label);
-        b.setAllCaps(false);
-        b.setTextSize(13);
-        b.setTextColor(fgColor);
-        b.setBackgroundTintList(ColorStateList.valueOf(bgColor));
-        b.setBackground(rounded(bgColor, 10, bgColor == MainActivity.ACCENT ? 0 : BORDER));
-        b.setMinWidth(0);
-        b.setMinimumWidth(0);
-        b.setMinHeight(0);
-        b.setMinimumHeight(0);
-        b.setPadding(activity.dp(12), activity.dp(4), activity.dp(12), activity.dp(4));
-        return b;
-    }
-
-    private GradientDrawable rounded(int fillColor, int radiusDp, int strokeColor) {
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setColor(fillColor);
-        drawable.setCornerRadius(activity.dp(radiusDp));
-        if (strokeColor != 0) {
-            drawable.setStroke(activity.dp(1), strokeColor);
-        }
-        return drawable;
     }
 }

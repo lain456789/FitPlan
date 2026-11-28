@@ -2,14 +2,15 @@ package com.example.fitplan;
 
 import static com.example.fitplan.Store.id;
 
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -21,8 +22,12 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.PickVisualMediaRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.graphics.Insets;
@@ -51,11 +56,11 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class MainActivity extends AppCompatActivity {
-    static final int BG = Color.rgb(12, 14, 17),
-            CARD = Color.rgb(29, 32, 38),
-            FG = Color.rgb(241, 245, 242),
-            MUTED = Color.rgb(162, 173, 168),
-            ACCENT = Color.rgb(184, 242, 97);
+    static final int BG = UiKit.BG,
+            CARD = UiKit.CARD,
+            FG = UiKit.FG,
+            MUTED = UiKit.MUTED,
+            ACCENT = UiKit.PRIMARY;
     Store store;
     LinearLayout content;
     android.app.AlertDialog activeDialog;
@@ -76,11 +81,16 @@ public class MainActivity extends AppCompatActivity {
     Consumer<Boolean> updateRestControls;
     private long lastRunningRestUntil;
     final List<CoachModels.ChatMessage> coachMessages = new ArrayList<>();
-    boolean coachProfileExpanded = false;
+    boolean profileFormExpanded = false;
+    boolean profileDefinitionsExpanded = false;
     boolean coachSending = false;
     int coachEpoch = 0;
     String coachLastPrompt = "";
+    String coachLastErrorCode = "";
     private String cachedCoachSkill;
+    private final ActivityResultLauncher<PickVisualMediaRequest> coachAvatarPicker =
+            registerForActivityResult(
+                    new ActivityResultContracts.PickVisualMedia(), this::onCoachAvatarPicked);
     private Context localized;
     private int generation;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -249,7 +259,71 @@ public class MainActivity extends AppCompatActivity {
         coachEpoch++;
         coachSending = false;
         coachLastPrompt = "";
+        coachLastErrorCode = "";
         coachMessages.clear();
+    }
+
+    void showCoachAvatarOptions() {
+        boolean hasCustom = CoachAvatarView.hasCustomAvatar(this);
+        String[] options =
+                hasCustom
+                        ? new String[] {s("coach_avatar_pick"), s("coach_avatar_reset")}
+                        : new String[] {s("coach_avatar_pick")};
+        activeDialog =
+                new AlertDialog.Builder(this)
+                        .setTitle(s("coach_avatar_title"))
+                        .setItems(
+                                options,
+                                (dialog, which) -> {
+                                    if (which == 0) {
+                                        coachAvatarPicker.launch(
+                                                new PickVisualMediaRequest.Builder()
+                                                        .setMediaType(
+                                                                ActivityResultContracts
+                                                                        .PickVisualMedia.ImageOnly
+                                                                        .INSTANCE)
+                                                        .build());
+                                    } else if (which == 1) {
+                                        CoachAvatarView.clearCustomAvatar(this);
+                                        Toast.makeText(
+                                                        this,
+                                                        s("coach_avatar_reset_done"),
+                                                        Toast.LENGTH_SHORT)
+                                                .show();
+                                        if (page.equals("coach") || page.equals("profile")) {
+                                            show(page);
+                                        }
+                                    }
+                                })
+                        .setNegativeButton(s("cancel"), null)
+                        .show();
+    }
+
+    private void onCoachAvatarPicked(Uri uri) {
+        if (uri == null) {
+            return;
+        }
+        Context app = getApplicationContext();
+        runCoachTask(() -> {
+            try {
+                CoachAvatarView.importCustomAvatar(app, uri);
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    Toast.makeText(this, s("coach_avatar_saved"), Toast.LENGTH_SHORT).show();
+                    if (page.equals("coach") || page.equals("profile")) {
+                        show(page);
+                    }
+                });
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    if (!isFinishing() && !isDestroyed()) {
+                        Toast.makeText(this, s("coach_avatar_error"), Toast.LENGTH_LONG).show();
+                    }
+                });
+            }
+        });
     }
 
     void runCoachTask(Runnable task) {
@@ -451,9 +525,10 @@ public class MainActivity extends AppCompatActivity {
 
     LinearLayout card(LinearLayout parent) {
         LinearLayout c = column();
-        c.setBackground(shape(CARD, 24));
+        c.setPadding(dp(16), dp(14), dp(16), dp(14));
+        c.setBackground(UiKit.cardSurface(this));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.setMargins(0, dp(4), 0, dp(4));
+        lp.setMargins(0, dp(6), 0, dp(6));
         parent.addView(c, lp);
         return c;
     }
@@ -463,37 +538,30 @@ public class MainActivity extends AppCompatActivity {
         v.setText(value);
         v.setTextSize(size);
         v.setTextColor(size <= 14 ? MUTED : FG);
-        v.setPadding(0, dp(6), 0, dp(6));
+        v.setPadding(0, dp(5), 0, dp(5));
         parent.addView(v);
         return v;
     }
 
     Button button(LinearLayout parent, String label, Runnable action) {
-        Button b = new Button(this);
-        b.setText(label);
-        b.setAllCaps(false);
-        b.setTextSize(14);
-        b.setTextColor(ACCENT);
-        b.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(43, 52, 39)));
-        b.setMinHeight(dp(40));
-        parent.addView(b, new LinearLayout.LayoutParams(-1, -2));
-        b.setOnClickListener(v -> action.run());
-        return b;
+        return UiKit.secondaryButton(this, parent, label, 0, action);
     }
 
-    // 全局统一的返回按钮：返回箭头符号 + 统一字号/颜色，保持可见的按钮底色。
+    Button primaryButton(LinearLayout parent, String label, Runnable action) {
+        return UiKit.primaryButton(this, parent, label, action);
+    }
+
+    Button addButton(LinearLayout parent, String label, boolean fullWidth, Runnable action) {
+        return UiKit.addButton(this, parent, label, fullWidth, action);
+    }
+
+    Button deleteButton(LinearLayout parent, String label, boolean fullWidth, Runnable action) {
+        return UiKit.deleteButton(this, parent, label, fullWidth, action);
+    }
+
+    // 全局统一的返回按钮：紧凑深灰描边胶囊 + 返回箭头符号。
     Button backButton(LinearLayout parent, String label, Runnable action) {
-        Button b = new Button(this);
-        b.setText("\u2190 " + label);
-        b.setAllCaps(false);
-        b.setTextSize(14);
-        b.setTextColor(ACCENT);
-        b.setBackgroundTintList(ColorStateList.valueOf(Color.rgb(43, 52, 39)));
-        b.setMinHeight(dp(40));
-        b.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-        parent.addView(b, new LinearLayout.LayoutParams(-1, -2));
-        b.setOnClickListener(v -> action.run());
-        return b;
+        return UiKit.backButton(this, parent, label, action);
     }
 
     void vibrate() {
@@ -605,7 +673,7 @@ public class MainActivity extends AppCompatActivity {
     private void renderNavigation() {
         LinearLayout nav = findViewById(R.id.navigation);
         nav.removeAllViews();
-        nav.setBackground(shape(Color.rgb(36, 40, 46), 32));
+        nav.setBackground(UiKit.box(this, UiKit.CARD, UiKit.BORDER, 32));
         String group =
                 (page.equals("home") || (page.equals("progress") && progressReturn.equals("home")))
                         ? "home"
@@ -627,56 +695,79 @@ public class MainActivity extends AppCompatActivity {
             LinearLayout tab = new LinearLayout(this);
             tab.setOrientation(LinearLayout.VERTICAL);
             tab.setGravity(Gravity.CENTER);
-            tab.setPadding(dp(2), dp(8), dp(2), dp(8));
-            tab.setBackground(shape(selected ? Color.rgb(58, 67, 43) : Color.TRANSPARENT, 26));
+            tab.setPadding(dp(2), dp(7), dp(2), dp(7));
+            tab.setBackground(shape(selected ? UiKit.SURFACE : Color.TRANSPARENT, 26));
             NavIcon icon = new NavIcon(this, i, selected ? ACCENT : MUTED);
-            tab.addView(icon, new LinearLayout.LayoutParams(dp(22), dp(22)));
+            tab.addView(icon, new LinearLayout.LayoutParams(dp(21), dp(21)));
             TextView label = new TextView(this);
             label.setText(s(labels[i]));
-            label.setTextSize(11);
+            label.setTextSize(10.5f);
             label.setSingleLine(true);
             label.setTextColor(selected ? ACCENT : MUTED);
+            label.setTypeface(
+                    null,
+                    selected ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
             label.setGravity(Gravity.CENTER);
-            tab.addView(label);
+            LinearLayout.LayoutParams lblLp = new LinearLayout.LayoutParams(-2, -2);
+            lblLp.topMargin = dp(2);
+            tab.addView(label, lblLp);
             tab.setContentDescription(s(labels[i]));
             tab.setSelected(selected);
             tab.setFocusable(true);
             tab.setOnClickListener(v -> show(route));
-            nav.addView(tab, new LinearLayout.LayoutParams(0, dp(64), 1));
+            nav.addView(tab, new LinearLayout.LayoutParams(0, dp(56), 1));
         }
     }
 
     void trainingTabs() {
-        text(content, s("training"), 20);
+        TextView heading = text(content, s("training"), 30);
+        heading.setTypeface(null, android.graphics.Typeface.BOLD);
+        heading.setPadding(0, dp(2), 0, dp(4));
         tabs(
                 new String[] {"dailyPlan", "plans", "library"},
                 new String[] {"daily_plan_tab", "my_plans_tab", "library"});
         if (store.first("active") != null)
-            button(content, s("continue_workout"), () -> show("workout"));
+            primaryButton(content, s("continue_workout"), () -> show("workout"));
     }
 
     void recordTabs() {
         LinearLayout header = new LinearLayout(this);
-        content.addView(header);
-        TextView label = text(header, s("records"), 20);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        content.addView(header, new LinearLayout.LayoutParams(-1, -2));
+        TextView label = text(header, s("records"), 30);
+        label.setTypeface(null, android.graphics.Typeface.BOLD);
+        label.setPadding(0, dp(2), 0, dp(4));
         label.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button add = button(header, s("manual_add"), () -> show("manualHistory"));
+        Button add = addButton(header, s("manual_add"), false, () -> show("manualHistory"));
         add.setContentDescription(s("manual_title"));
-        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
         tabs(new String[] {"history", "progress"}, new String[] {"history", "progress_tab"});
     }
 
     private LinearLayout tabs(String[] routes, String[] labels) {
         LinearLayout row = new LinearLayout(this);
-        content.addView(row);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setBackground(UiKit.box(this, UiKit.CARD, 0, 16));
+        row.setPadding(dp(3), dp(3), dp(3), dp(3));
+        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(-1, -2);
+        rowLp.setMargins(0, dp(4), 0, dp(10));
+        content.addView(row, rowLp);
         for (int i = 0; i < routes.length; i++) {
             final String route = routes[i];
-            Button b = button(row, s(labels[i]), () -> show(route));
-            b.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-            if (page.equals(route)) {
-                b.setTextColor(BG);
-                b.setBackgroundTintList(ColorStateList.valueOf(ACCENT));
-            }
+            boolean active = page.equals(route);
+            Button b =
+                    UiKit.compactPill(
+                            this,
+                            s(labels[i]),
+                            active ? UiKit.SURFACE_HIGHLIGHT : Color.TRANSPARENT,
+                            0,
+                            active ? FG : MUTED,
+                            0,
+                            active);
+            b.setTextSize(13);
+            b.setPadding(dp(8), dp(7), dp(8), dp(7));
+            b.setBackground(active ? UiKit.box(this, UiKit.SURFACE_HIGHLIGHT, 0, 13) : null);
+            b.setOnClickListener(v -> show(route));
+            row.addView(b, new LinearLayout.LayoutParams(0, -2, 1));
         }
         return row;
     }

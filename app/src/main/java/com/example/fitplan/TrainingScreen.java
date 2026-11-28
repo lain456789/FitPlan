@@ -9,7 +9,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.database.sqlite.SQLiteException;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
@@ -61,21 +60,34 @@ final class TrainingScreen extends Screen {
         TextView title = text(heading, s("library"), 27);
         title.setTypeface(null, Typeface.BOLD);
         title.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button add = button(heading, s("add_custom"), () ->
-                new CustomExerciseDialog().show(activity.getSupportFragmentManager(), "customExercise"));
-        add.setLayoutParams(new LinearLayout.LayoutParams(-2, -2));
+        Button add =
+                addButton(
+                        heading,
+                        s("add_custom"),
+                        false,
+                        () ->
+                                new CustomExerciseDialog()
+                                        .show(
+                                                activity.getSupportFragmentManager(),
+                                                "customExercise"));
         RadioGroup modes = new RadioGroup(activity);
         modes.setOrientation(LinearLayout.HORIZONTAL);
-        content.addView(modes);
+        modes.setBackground(UiKit.box(activity, UiKit.CARD, 0, 14));
+        modes.setPadding(activity.dp(3), activity.dp(3), activity.dp(3), activity.dp(3));
+        LinearLayout.LayoutParams modeLp = new LinearLayout.LayoutParams(-1, -2);
+        modeLp.setMargins(0, activity.dp(6), 0, activity.dp(8));
+        content.addView(modes, modeLp);
         RadioButton names = mode(modes, s("browse_name"));
         RadioButton muscles = mode(modes, s("browse_muscle"));
         muscles.setChecked(true);
+        styleBrowseMode(muscles, names);
         LinearLayout namePane = pane(content);
         LinearLayout musclePane = pane(content);
         namePane.setVisibility(View.GONE);
         muscleLibrary(musclePane);
         modes.setOnCheckedChangeListener((group, checked) -> {
             boolean byMuscle = checked == muscles.getId();
+            styleBrowseMode(muscles, names);
             if (byMuscle && musclePane.getChildCount() == 0) muscleLibrary(musclePane);
             if (!byMuscle && namePane.getChildCount() == 0) nameLibrary(namePane);
             namePane.setVisibility(byMuscle ? View.GONE : View.VISIBLE);
@@ -86,10 +98,23 @@ final class TrainingScreen extends Screen {
     private RadioButton mode(RadioGroup parent, String label) {
         RadioButton option = new RadioButton(activity);
         option.setId(View.generateViewId());
+        option.setButtonDrawable(null);
         option.setText(label);
-        option.setMinHeight(activity.dp(48));
+        option.setTextSize(13);
+        option.setGravity(Gravity.CENTER);
+        option.setMinHeight(activity.dp(36));
+        option.setPadding(activity.dp(10), activity.dp(7), activity.dp(10), activity.dp(7));
         parent.addView(option, new RadioGroup.LayoutParams(0, -2, 1));
         return option;
+    }
+
+    private void styleBrowseMode(RadioButton... buttons) {
+        for (RadioButton b : buttons) {
+            boolean active = b.isChecked();
+            b.setBackground(active ? UiKit.box(activity, UiKit.SURFACE_HIGHLIGHT, 0, 11) : null);
+            b.setTextColor(active ? MainActivity.FG : MainActivity.MUTED);
+            b.setTypeface(null, active ? Typeface.BOLD : Typeface.NORMAL);
+        }
     }
 
     private LinearLayout pane(LinearLayout parent) {
@@ -311,9 +336,10 @@ final class TrainingScreen extends Screen {
                 Catalog.builtIn(id) >= 0 ? equipmentText(id) : customEquipmentText(exercise),
                 14);
         if (select == null && Catalog.builtIn(id) < 0)
-            button(
+            deleteButton(
                     cardView,
                     s("delete_custom_exercise"),
+                    true,
                     () ->
                             confirm(
                                     s("confirm_delete_custom_exercise", label),
@@ -383,7 +409,8 @@ final class TrainingScreen extends Screen {
         String base = s("my_plan");
         Set<String> names = new HashSet<>();
         JSONArray plans = store.list("plan");
-        for (int i = 0; i < plans.length(); i++) names.add(plans.optJSONObject(i).optString("name"));
+        for (int i = 0; i < plans.length(); i++)
+            names.add(plans.optJSONObject(i).optString("name"));
         int n = 1;
         while (names.contains(base + n)) n++;
         return base + n;
@@ -410,16 +437,22 @@ final class TrainingScreen extends Screen {
                                 "reps",
                                 r.optInt("reps")));
             }
-        return object("name", defaultPlanName(), "created", System.currentTimeMillis(), "rows", rows);
+        return object(
+                "name", defaultPlanName(), "created", System.currentTimeMillis(), "rows", rows);
     }
 
     void plans() {
         activity.trainingTabs();
-        title(s("plans_title"));
-        text(content, s("plans_intro"), 14);
-        button(
-                content,
+        LinearLayout heading = new LinearLayout(activity);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        content.addView(heading, new LinearLayout.LayoutParams(-1, -2));
+        TextView headingTitle = text(heading, s("plans_title"), 22);
+        headingTitle.setTypeface(null, Typeface.BOLD);
+        headingTitle.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        addButton(
+                heading,
                 s("new_plan"),
+                false,
                 () -> {
                     LinearLayout form = column();
                     EditText name = input(form, s("plan_name"), defaultPlanName(), false);
@@ -442,57 +475,113 @@ final class TrainingScreen extends Screen {
                                 show("plans");
                             });
                 });
-        button(
-                content,
-                s("copy_from_last"),
-                () -> {
-                    JSONObject last = store.first("history");
-                    if (last == null) {
-                        toast(s("no_history"));
-                        return;
-                    }
-                    store.save("plan", planFromRows(last.optJSONArray("rows")));
-                    show("plans");
-                });
-        button(
-                content,
-                s("copy_from_template"),
-                () -> {
-                    JSONArray templates = store.list("plan");
-                    if (templates.length() == 0) {
-                        toast(s("no_template"));
-                        return;
-                    }
-                    String[] names = new String[templates.length()];
-                    for (int i = 0; i < templates.length(); i++)
-                        names[i] = activity.planName(templates.optJSONObject(i));
-                    activity.activeDialog =
-                            new AlertDialog.Builder(activity)
-                                    .setTitle(s("copy_from_template"))
-                                    .setItems(
-                                            names,
-                                            (d, which) -> {
-                                                store.save(
-                                                        "plan",
-                                                        planFromRows(
-                                                                templates.optJSONObject(which)
-                                                                        .optJSONArray("rows")));
-                                                show("plans");
-                                            })
-                                    .setNegativeButton(s("cancel"), null)
-                                    .show();
-                });
+        LinearLayout copyRow = new LinearLayout(activity);
+        copyRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams copyRowLp = new LinearLayout.LayoutParams(-1, -2);
+        copyRowLp.setMargins(0, activity.dp(4), 0, activity.dp(6));
+        content.addView(copyRow, copyRowLp);
+        Button copyLast =
+                button(
+                        copyRow,
+                        s("copy_from_last"),
+                        () -> {
+                            JSONObject last = store.first("history");
+                            if (last == null) {
+                                toast(s("no_history"));
+                                return;
+                            }
+                            store.save("plan", planFromRows(last.optJSONArray("rows")));
+                            show("plans");
+                        });
+        LinearLayout.LayoutParams copyLastLp = new LinearLayout.LayoutParams(0, -2, 1);
+        copyLastLp.setMarginEnd(activity.dp(8));
+        copyLast.setLayoutParams(copyLastLp);
+        Button copyTemplate =
+                button(
+                        copyRow,
+                        s("copy_from_template"),
+                        () -> {
+                            JSONArray templates = store.list("plan");
+                            if (templates.length() == 0) {
+                                toast(s("no_template"));
+                                return;
+                            }
+                            String[] names = new String[templates.length()];
+                            for (int i = 0; i < templates.length(); i++)
+                                names[i] = activity.planName(templates.optJSONObject(i));
+                            activity.activeDialog =
+                                    new AlertDialog.Builder(activity)
+                                            .setTitle(s("copy_from_template"))
+                                            .setItems(
+                                                    names,
+                                                    (d, which) -> {
+                                                        store.save(
+                                                                "plan",
+                                                                planFromRows(
+                                                                        templates
+                                                                                .optJSONObject(
+                                                                                        which)
+                                                                                .optJSONArray(
+                                                                                        "rows")));
+                                                        show("plans");
+                                                    })
+                                            .setNegativeButton(s("cancel"), null)
+                                            .show();
+                        });
+        copyTemplate.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         JSONArray plans = store.list("plan");
-        if (plans.length() == 0) text(content, s("empty_plans"), 16);
+        if (plans.length() == 0) text(content, s("empty_plans"), 15);
         for (int i = 0; i < plans.length(); i++) {
             JSONObject plan = plans.optJSONObject(i);
             LinearLayout c = card(content);
-            text(c, activity.planName(plan), 20);
-            text(c, s("exercise_count", plan.optJSONArray("rows").length()), 14);
-            button(c, s("view_edit"), () -> activity.openPlan(plan));
-            button(c, s("start_workout"), () -> start(plan));
-            button(
-                    c,
+
+            // Tapping the card header opens Plan Detail / Edit (Apple Fitness native card pattern)
+            LinearLayout headerRow = new LinearLayout(activity);
+            headerRow.setOrientation(LinearLayout.HORIZONTAL);
+            headerRow.setGravity(Gravity.CENTER_VERTICAL);
+            headerRow.setOnClickListener(v -> activity.openPlan(plan));
+            c.addView(headerRow, new LinearLayout.LayoutParams(-1, -2));
+
+            LinearLayout metaCol = new LinearLayout(activity);
+            metaCol.setOrientation(LinearLayout.VERTICAL);
+            headerRow.addView(metaCol, new LinearLayout.LayoutParams(0, -2, 1));
+
+            TextView planTitle = new TextView(activity);
+            planTitle.setText(activity.planName(plan));
+            planTitle.setTextSize(18);
+            planTitle.setTextColor(MainActivity.FG);
+            planTitle.setTypeface(null, Typeface.BOLD);
+            metaCol.addView(planTitle);
+
+            TextView countView = new TextView(activity);
+            countView.setText(s("exercise_count", plan.optJSONArray("rows").length()));
+            countView.setTextSize(13);
+            countView.setTextColor(MainActivity.MUTED);
+            LinearLayout.LayoutParams cntLp = new LinearLayout.LayoutParams(-2, -2);
+            cntLp.topMargin = activity.dp(2);
+            metaCol.addView(countView, cntLp);
+
+            android.widget.ImageView chevron = new android.widget.ImageView(activity);
+            chevron.setImageResource(R.drawable.ic_action_chevron);
+            chevron.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            headerRow.addView(
+                    chevron, new LinearLayout.LayoutParams(activity.dp(18), activity.dp(18)));
+
+            LinearLayout cardActions = new LinearLayout(activity);
+            cardActions.setOrientation(LinearLayout.HORIZONTAL);
+            cardActions.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout.LayoutParams caLp = new LinearLayout.LayoutParams(-1, -2);
+            caLp.topMargin = activity.dp(12);
+            c.addView(cardActions, caLp);
+
+            Button startBtn = primaryButton(cardActions, s("start_workout"), () -> start(plan));
+            LinearLayout.LayoutParams startLp = new LinearLayout.LayoutParams(0, -2, 1f);
+            startLp.setMarginEnd(activity.dp(10));
+            startBtn.setLayoutParams(startLp);
+
+            UiKit.iconDeleteButton(
+                    activity,
+                    cardActions,
                     s("delete_plan"),
                     () ->
                             confirm(
@@ -506,17 +595,16 @@ final class TrainingScreen extends Screen {
 
     void editPlan(JSONObject plan) {
         content.removeAllViews();
-        title(activity.planName(plan));
-        if (plan.has("note") || plan.has("noteCode")) text(content, s("plan_note"), 14);
-        Runnable refreshBudget = planBudget(plan);
-        refreshBudget.run();
         LinearLayout actions = new LinearLayout(activity);
         actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
         content.addView(actions, new LinearLayout.LayoutParams(-1, -2));
         Button back = backButton(actions, s("back_label"), () -> show("plans"));
-        back.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(-2, -2);
+        backLp.setMarginEnd(activity.dp(8));
+        back.setLayoutParams(backLp);
         Button renameBtn =
-                button(
+                editButton(
                         actions,
                         s("rename"),
                         () -> {
@@ -534,13 +622,15 @@ final class TrainingScreen extends Screen {
                                         activity.openPlan(plan);
                                     });
                         });
-        renameBtn.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
-        Button addBtn =
-                button(
-                        actions,
-                        s("add_exercise"),
-                        () -> pickExercise(plan));
+        LinearLayout.LayoutParams renameLp = new LinearLayout.LayoutParams(0, -2, 1);
+        renameLp.setMarginEnd(activity.dp(8));
+        renameBtn.setLayoutParams(renameLp);
+        Button addBtn = addButton(actions, s("add_exercise"), false, () -> pickExercise(plan));
         addBtn.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        title(activity.planName(plan));
+        if (plan.has("note") || plan.has("noteCode")) text(content, s("plan_note"), 14);
+        Runnable refreshBudget = planBudget(plan);
+        refreshBudget.run();
         JSONArray rows = plan.optJSONArray("rows"), history = store.list("history");
         ProgressScreen progress = new ProgressScreen(activity);
         HorizontalScrollView strip = new HorizontalScrollView(activity);
@@ -565,11 +655,7 @@ final class TrainingScreen extends Screen {
             final int index = i;
             JSONObject row = rows.optJSONObject(i);
             LinearLayout c = activity.column();
-            GradientDrawable cardBg = new GradientDrawable();
-            cardBg.setColor(MainActivity.CARD);
-            cardBg.setCornerRadius(activity.dp(28));
-            cardBg.setStroke(activity.dp(1), 0xFF2E343D);
-            c.setBackground(cardBg);
+            c.setBackground(UiKit.cardSurface(activity));
             c.setElevation(activity.dp(2));
             LinearLayout.LayoutParams cardLayout = new LinearLayout.LayoutParams(cardWidth, -1);
             cardLayout.setMarginEnd(cardGap);
@@ -626,7 +712,7 @@ final class TrainingScreen extends Screen {
             prev.setEnabled(index > 0);
             prev.setAlpha(index > 0 ? 1f : 0.35f);
             prev.setOnClickListener(v -> moveRow(rows, plan, index, index - 1));
-            TextView remove = actionButton(rowActions, s("remove_short"));
+            TextView remove = dangerActionButton(rowActions, s("remove_short"));
             remove.setOnClickListener(v -> {
                 rows.remove(index);
                 store.save("plan", plan);
@@ -701,7 +787,7 @@ final class TrainingScreen extends Screen {
                 return false;
             });
         }
-        button(content, s("start_plan"), () -> start(plan));
+        primaryButton(content, s("start_plan"), () -> start(plan));
     }
 
     private static JSONArray reorder(JSONArray rows, int from, int to) {
@@ -827,11 +913,7 @@ final class TrainingScreen extends Screen {
         b.setTextColor(MainActivity.FG);
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xFF1C2128);
-        bg.setCornerRadius(activity.dp(20));
-        bg.setStroke(activity.dp(1), 0xFF2E343D);
-        b.setBackground(bg);
+        b.setBackground(UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER, 20));
         parent.addView(b, new LinearLayout.LayoutParams(activity.dp(40), activity.dp(40)));
         return b;
     }
@@ -840,13 +922,10 @@ final class TrainingScreen extends Screen {
         TextView b = new TextView(activity);
         b.setTextSize(17);
         b.setTextColor(MainActivity.ACCENT);
+        b.setTypeface(null, Typeface.BOLD);
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xFF1C2128);
-        bg.setCornerRadius(activity.dp(20));
-        bg.setStroke(activity.dp(1), 0xFF2E343D);
-        b.setBackground(bg);
+        b.setBackground(UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER, 20));
         LinearLayout.LayoutParams lp =
                 new LinearLayout.LayoutParams(activity.dp(64), activity.dp(40));
         lp.setMarginStart(activity.dp(8));
@@ -862,12 +941,27 @@ final class TrainingScreen extends Screen {
         b.setTextColor(MainActivity.FG);
         b.setGravity(Gravity.CENTER);
         b.setClickable(true);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xFF1C2128);
-        bg.setCornerRadius(activity.dp(18));
-        bg.setStroke(activity.dp(1), 0xFF2E343D);
-        b.setBackground(bg);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, activity.dp(36), 1);
+        b.setBackground(UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER_STRONG, 18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
+        lp.setMarginEnd(activity.dp(8));
+        b.setMinHeight(activity.dp(36));
+        b.setPadding(activity.dp(6), activity.dp(7), activity.dp(6), activity.dp(7));
+        parent.addView(b, lp);
+        return b;
+    }
+
+    private TextView dangerActionButton(LinearLayout parent, String text) {
+        TextView b = new TextView(activity);
+        b.setText(text);
+        b.setTextSize(13);
+        b.setTextColor(UiKit.DANGER);
+        b.setTypeface(null, Typeface.BOLD);
+        b.setGravity(Gravity.CENTER);
+        b.setClickable(true);
+        b.setBackground(UiKit.box(activity, UiKit.DANGER_BG, UiKit.DANGER_BORDER, 18));
+        b.setMinHeight(activity.dp(36));
+        b.setPadding(activity.dp(6), activity.dp(7), activity.dp(6), activity.dp(7));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
         lp.setMarginEnd(activity.dp(8));
         parent.addView(b, lp);
         return b;
@@ -997,7 +1091,8 @@ final class TrainingScreen extends Screen {
             LinearLayout actions = new LinearLayout(activity);
             card.addView(actions);
             Button complete =
-                    button(actions, s("complete_set"), () -> completeNextSet(session, rowIndex));
+                    primaryButton(
+                            actions, s("complete_set"), () -> completeNextSet(session, rowIndex));
             complete.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
             Button adjust =
                     button(
@@ -1102,7 +1197,7 @@ final class TrainingScreen extends Screen {
         endButtons.setOrientation(LinearLayout.HORIZONTAL);
         content.addView(endButtons, new LinearLayout.LayoutParams(-1, -2));
         Button finish =
-                button(
+                primaryButton(
                         endButtons,
                         s("finish"),
                         () -> {
@@ -1113,11 +1208,14 @@ final class TrainingScreen extends Screen {
                             }
                             finishWorkout(session);
                         });
-        finish.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout.LayoutParams finishLp = new LinearLayout.LayoutParams(0, -2, 1);
+        finishLp.setMarginEnd(activity.dp(8));
+        finish.setLayoutParams(finishLp);
         Button discard =
-                button(
+                deleteButton(
                         endButtons,
                         s("discard"),
+                        false,
                         () -> {
                             LinearLayout form = column();
                             CheckBox delete = new CheckBox(activity);
@@ -1172,18 +1270,16 @@ final class TrainingScreen extends Screen {
         LinearLayout idleActions = new LinearLayout(activity);
         timer.addView(idleActions, new LinearLayout.LayoutParams(-1, -2));
         Button start =
-                button(
+                primaryButton(
                         idleActions,
                         s("rest_start", restSeconds()),
                         () -> setRestTimer(session, restSeconds()));
-        start.setTextColor(MainActivity.BG);
-        start.setBackgroundTintList(ColorStateList.valueOf(MainActivity.ACCENT));
         start.setLayoutParams(new LinearLayout.LayoutParams(0, -2, 1));
         Button adjust = button(idleActions, s("rest_adjust"), () -> chooseRestDuration(start));
         LinearLayout.LayoutParams adjustParams = new LinearLayout.LayoutParams(-2, -2);
         adjustParams.setMarginStart(activity.dp(8));
         adjust.setLayoutParams(adjustParams);
-        Button stop = button(timer, s("stop_rest"), () -> setRestTimer(session, 0));
+        Button stop = deleteButton(timer, s("stop_rest"), true, () -> setRestTimer(session, 0));
         activity.updateRestControls =
                 resting -> {
                     idleActions.setVisibility(resting ? View.GONE : View.VISIBLE);
@@ -1306,7 +1402,8 @@ final class TrainingScreen extends Screen {
     }
 
     String equipmentText(String exercise) {
-        if (Catalog.builtIn(exercise) < 0) return customEquipmentText(activity.find("exercise", exercise));
+        if (Catalog.builtIn(exercise) < 0)
+            return customEquipmentText(activity.find("exercise", exercise));
         if (!Catalog.equipmentKnown(exercise)) return s("equipment_unspecified");
         StringJoiner labels = new StringJoiner(" / ");
         for (String item : Catalog.equipment(exercise)) labels.add(s("eq_" + item));
@@ -1319,7 +1416,10 @@ final class TrainingScreen extends Screen {
         StringJoiner labels = new StringJoiner(" / ");
         for (String code : Catalog.EQUIPMENT)
             for (int i = 0; i < codes.length(); i++)
-                if (code.equals(codes.optString(i))) { labels.add(s("eq_" + code)); break; }
+                if (code.equals(codes.optString(i))) {
+                    labels.add(s("eq_" + code));
+                    break;
+                }
         String other = exercise.optString("otherEquipment").trim();
         if (!other.isEmpty()) labels.add(other);
         return labels.length() == 0 ? s("equipment_none") : labels.toString();
@@ -1396,10 +1496,9 @@ final class TrainingScreen extends Screen {
         choice.setCompoundDrawablesRelativeWithIntrinsicBounds(
                 0, 0, R.drawable.ic_action_chevron, 0);
         choice.setCompoundDrawablePadding(activity.dp(10));
-        GradientDrawable surface = activity.shape(Color.rgb(43, 52, 39), 14);
-        surface.setStroke(activity.dp(1), Color.rgb(126, 153, 99));
+        GradientDrawable surface = UiKit.box(activity, UiKit.SURFACE, UiKit.BORDER_STRONG, 16);
         choice.setBackgroundTintList(null);
-        choice.setBackground(new RippleDrawable(ColorStateList.valueOf(0x44B8F261), surface, null));
+        choice.setBackground(new RippleDrawable(ColorStateList.valueOf(0x33C6F432), surface, null));
         LinearLayout.LayoutParams layout = (LinearLayout.LayoutParams) choice.getLayoutParams();
         layout.bottomMargin = activity.dp(8);
     }

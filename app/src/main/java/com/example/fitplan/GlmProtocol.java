@@ -85,6 +85,18 @@ public final class GlmProtocol {
         return SimpleJson.stringify(body);
     }
 
+    public static String buildPingRequestBody(String model) {
+        String safeModel = model == null || model.trim().isEmpty() ? "glm-4-flash" : model.trim();
+        List<Map<String, Object>> messages = new ArrayList<>();
+        messages.add(message("user", "Reply OK."));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", safeModel);
+        body.put("messages", messages);
+        body.put("stream", false);
+        body.put("max_tokens", 16);
+        return SimpleJson.stringify(body);
+    }
+
     public static GlmResult parseResponse(int httpCode, String responseBody) {
         if (responseBody == null || responseBody.trim().isEmpty()) {
             return GlmResult.error("empty_response", "HTTP " + httpCode);
